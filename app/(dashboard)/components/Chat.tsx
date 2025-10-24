@@ -160,6 +160,7 @@ const MessageBubble = (props: MessageBubbleProps) => {
 
 export default function Chat() {
   const { data: session } = useSession();
+  const userName = session?.user?.name || 'Anonymous';
   const [activeRoom, setActiveRoom] = useState("general");
   // const { messages, sendMessage, sendFile, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
   const [text, setText] = useState("");
@@ -674,11 +675,11 @@ export default function Chat() {
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {isCallActive && localStream && (
-            <CallView 
+            <CallView
               localStream={localStream}
               remoteStreams={remoteStreams}
-              userName={session?.user?.fullName || "Anonymous"}
               onEndCall={handleEndCall}
+              userName={userName}
             />
           )}
           {/* Chat Header */}
@@ -747,7 +748,7 @@ export default function Chat() {
               const showTimeSeparator = index === 0 ||
                 (prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString());
 
-              console.log('Rendering message:', msg.id, msg.text, msg.file);
+
 
               return (
                 <div

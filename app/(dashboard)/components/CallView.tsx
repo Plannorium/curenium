@@ -60,18 +60,28 @@ const VideoTile = ({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking 
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
-      console.log('VideoTile stream:', stream);
     }
   }, [stream]);
+
+  const userInitials = (userName || "")
+    .split(" ")
+    .map((n: string) => n[0] || "")
+    .join("")
+    .slice(0, 2);
 
   return (
     <div className={`relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-2 ring-transparent'}`}>
       {stream && !isVideoOff ? (
         <video ref={videoRef} autoPlay playsInline muted={isLocal} className="w-full h-full object-cover" />
       ) : (
-        <div className="flex flex-col items-center justify-center text-white bg-gray-900/50 w-full h-full">
-          <VideoOff size={48} className="opacity-50" />
-          <p className="mt-2 text-sm font-medium opacity-70">Camera is off</p>
+        <div className="flex flex-col items-center justify-center text-white bg-gray-800 w-full h-full">
+          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <span className="text-4xl font-bold text-primary">{userInitials}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <VideoOff size={16} className="opacity-70" />
+            <p className="text-sm font-medium opacity-70">Camera is off</p>
+          </div>
         </div>
       )}
       <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
@@ -89,7 +99,21 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   const [chatMessages, setChatMessages] = useState<CallChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const isLocalSpeaking = useSpeakingIndicator(localStream);
-  const [reactions, setReactions] = useState<{ [key: string]: { emoji: string, id: number }[] }>({});
+  const [reactions, setReactions] = useState<{ emoji: string, id: number, name: string }[]>([]);
+  const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (reactionPickerRef.current && !reactionPickerRef.current.contains(event.target as Node)) {
+        setIsReactionPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [reactionPickerRef]);
 
 
   const handleToggleMute = () => {
@@ -129,19 +153,13 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   };
 
   const handleSendReaction = (emoji: string) => {
-    const newReaction = { emoji, id: Date.now() };
-    setReactions(prev => ({
-      ...prev,
-      local: [...(prev.local || []), newReaction]
-    }));
-
-    // Remove reaction after animation
+    const newReaction = { id: Date.now(), emoji, name: userName };
+    setReactions((prev) => [...prev, newReaction]);
+    setIsReactionPickerOpen(false);
     setTimeout(() => {
-      setReactions(prev => {
-        const userReactions = (prev.local || []).filter(r => r.id !== newReaction.id);
-        return { ...prev, local: userReactions };
-      });
-    }, 3000);
+      setReactions((prev) => prev.filter((r) => r.id !== newReaction.id));
+    }, 750);
+    // sendReaction(emoji);
   };
 
   if (isMinimized) {
@@ -188,6 +206,29 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           {Object.entries(remoteStreams).map(([peerId, remote]) => <RemoteVideoTile key={peerId} peerId={peerId} remote={remote} />)}
         </div>
 
+        {/* Floating Reactions */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <AnimatePresence>
+            {reactions.map((reaction) => (
+              <motion.div
+                key={reaction.id}
+                initial={{ opacity: 0, y: 150, scale: 0.5 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 20 } }}
+                exit={{ opacity: 0, y: -300, scale: 0.5, transition: { duration: 1, ease: 'easeOut' } }}
+                className="absolute bottom-24"
+                style={{
+                  left: `${Math.random() * 80 + 10}%`,
+                }}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-5xl" style={{ textShadow: '0 0 15px rgba(0,0,0,0.7)' }}>{reaction.emoji}</span>
+                  <span className="text-white text-xs font-bold bg-black/50 px-2.5 py-1 rounded-full mt-1">{reaction.name}</span>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
         {/* Controls */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gray-900/70 backdrop-blur-md p-3 rounded-full border border-white/10 shadow-2xl">
           <Button onClick={handleToggleMute} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
@@ -196,15 +237,25 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           <Button onClick={handleToggleVideo} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
             {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
           </Button>
-          <div className="group relative">
-            <Button variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
+          <div className="relative" ref={reactionPickerRef}>
+            <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
               <Smile size={24} />
             </Button>
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800/80 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-              {['👍', '❤️', '👏', '😂'].map(emoji => (
-                <button key={emoji} onClick={() => handleSendReaction(emoji)} className="text-2xl p-2 rounded-full hover:bg-white/20 transition-transform hover:scale-125">{emoji}</button>
-              ))}
-            </div>
+            <AnimatePresence>
+              {isReactionPickerOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800/80 p-2 rounded-full"
+                >
+                  {['👍', '❤️', '👏', '😂'].map(emoji => (
+                    <button key={emoji} onClick={() => handleSendReaction(emoji)} className="text-2xl p-2 rounded-full hover:bg-white/20 transition-transform hover:scale-125">{emoji}</button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <Button onClick={onEndCall} variant="destructive" size="lg" className="rounded-full w-20 h-16">
             <PhoneOff size={24} />

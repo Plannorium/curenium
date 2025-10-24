@@ -37,4 +37,33 @@ export const authOptions: NextAuthOptions = {
               }
         })
     ],
+    callbacks: {
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+                token._id = user._id;
+                token.fullName = user.fullName;
+                token.role = user.role;
+                token.organizationId = user.organizationId;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            if (session.user) {
+                session.user.id = token.id as string;
+                session.user._id = token._id as string;
+                session.user.fullName = token.fullName as string;
+                session.user.role = token.role as string;
+                session.user.organizationId = token.organizationId as string;
+                session.user.token = token.sub;
+            }
+            return session;
+        },
+    },
+    session: {
+        strategy: "jwt",
+    },
+    pages: {
+        signIn: '/login',
+    },
 };

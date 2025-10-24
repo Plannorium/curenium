@@ -65,8 +65,13 @@ export async function startMeshCall({
         })
       );
     } else if (msg.type === "answer" && msg.from && msg.sdp) {
-      const pc = pcMap[msg.from];
-      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      const peerId = msg.from;
+      const pc = pcMap[peerId];
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        // When we get an answer, the remote peer might not have a stream yet, but we now know their name.
+        // We can update the name here if we have a placeholder.
+      }
     } else if (msg.type === "candidate" && msg.from && msg.candidate) {
       const pc = pcMap[msg.from];
       if (pc) await pc.addIceCandidate(msg.candidate);
@@ -89,7 +94,7 @@ export async function startMeshCall({
     );
   }
 
-  function createPeerConnection(peerId: string, userName: string) {
+  function createPeerConnection(peerId: string, peerName: string) {
     if (pcMap[peerId]) return pcMap[peerId];
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }], // free STUN
@@ -101,8 +106,14 @@ export async function startMeshCall({
     // handle remote stream
     const remoteStream = new MediaStream();
     pc.ontrack = (ev) => {
-      ev.streams[0].getTracks().forEach((tr) => remoteStream.addTrack(tr));
-      onRemoteStream(remoteStream, peerId, userName);
+      // When the track is received, we know the stream is starting.
+      // The name was passed when the connection was initiated.
+      ev.streams[0].getTracks().forEach((tr) => {
+        if (!remoteStream.getTrackById(tr.id)) {
+          remoteStream.addTrack(tr);
+        }
+      });
+      onRemoteStream(remoteStream, peerId, peerName);
     };
 
     // ICE candidates
