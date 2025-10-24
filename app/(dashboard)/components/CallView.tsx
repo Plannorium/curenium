@@ -1,0 +1,280 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Mic, MicOff, Video, VideoOff, Minimize2, Maximize2, PhoneOff, MessageSquare, Send, Smile, ThumbsUp, Heart, Laugh } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+
+interface CallViewProps {
+  localStream: MediaStream | null;
+  remoteStreams: { [key: string]: { stream: MediaStream, name: string } };
+  onEndCall: () => void;
+  userName: string;
+}
+
+interface CallChatMessage {
+  id: string;
+  userName: string;
+  text: string;
+  timestamp: string;
+}
+
+const useSpeakingIndicator = (stream: MediaStream | null) => {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    if (stream && stream.getAudioTracks().length > 0) {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      audioContextRef.current = audioContext;
+
+      let animationFrameId: number;
+      const detectSpeaking = () => {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        setIsSpeaking(average > 20); // Threshold for speaking
+        animationFrameId = requestAnimationFrame(detectSpeaking);
+      };
+
+      detectSpeaking();
+
+      return () => {
+        cancelAnimationFrame(animationFrameId);
+        source.disconnect();
+        analyser.disconnect();
+        audioContext.close().catch(console.error);
+      };
+    }
+  }, [stream]);
+
+  return isSpeaking;
+};
+
+const VideoTile = ({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking }: { stream: MediaStream, isMuted: boolean, userName: string, isLocal?: boolean, isVideoOff?: boolean, isSpeaking?: boolean }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      console.log('VideoTile stream:', stream);
+    }
+  }, [stream]);
+
+  return (
+    <div className={`relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-2 ring-transparent'}`}>
+      {stream && !isVideoOff ? (
+        <video ref={videoRef} autoPlay playsInline muted={isLocal} className="w-full h-full object-cover" />
+      ) : (
+        <div className="flex flex-col items-center justify-center text-white bg-gray-900/50 w-full h-full">
+          <VideoOff size={48} className="opacity-50" />
+          <p className="mt-2 text-sm font-medium opacity-70">Camera is off</p>
+        </div>
+      )}
+      <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+        {userName}
+      </div>
+    </div>
+  );
+};
+
+export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, onEndCall, userName }) => {
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<CallChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const isLocalSpeaking = useSpeakingIndicator(localStream);
+  const [reactions, setReactions] = useState<{ [key: string]: { emoji: string, id: number }[] }>({});
+
+
+  const handleToggleMute = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleToggleVideo = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoOff(!isVideoOff);
+    }
+  };
+
+  const handleToggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  const handleSendChatMessage = () => {
+    if (chatInput.trim()) {
+      const newMessage: CallChatMessage = {
+        id: crypto.randomUUID(),
+        userName: userName,
+        text: chatInput.trim(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      // In a real app, you'd send this message over the data channel
+      setChatMessages(prev => [...prev, newMessage]);
+      setChatInput('');
+    }
+  };
+
+  const handleSendReaction = (emoji: string) => {
+    const newReaction = { emoji, id: Date.now() };
+    setReactions(prev => ({
+      ...prev,
+      local: [...(prev.local || []), newReaction]
+    }));
+
+    // Remove reaction after animation
+    setTimeout(() => {
+      setReactions(prev => {
+        const userReactions = (prev.local || []).filter(r => r.id !== newReaction.id);
+        return { ...prev, local: userReactions };
+      });
+    }, 3000);
+  };
+
+  if (isMinimized) {
+    return (
+      <motion.div
+        drag
+        dragMomentum={false}
+        className="fixed bottom-4 right-4 z-50 w-64 h-40 rounded-xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing"
+      >
+        <div className="relative w-full h-full bg-black group">
+          {localStream && !isVideoOff ? (<video ref={el => {
+            if (el) el.srcObject = localStream;
+          }} autoPlay playsInline muted className="w-full h-full object-cover" />) : (<div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+              <VideoOff size={32} />
+            </div>)}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white">
+              <Maximize2 size={16} />
+            </Button>
+          </div>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button onClick={handleToggleMute} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white">
+              {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+            </Button>
+            <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white">
+              {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
+            </Button>
+            <Button onClick={onEndCall} variant="destructive" size="icon" className="w-12 h-10 rounded-full">
+              <PhoneOff size={18} />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden">
+      <div className="relative w-full h-full flex flex-col">
+        {/* Main Video Grid */}
+        <div className="flex-1 grid gap-4 w-full h-full p-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 transition-all duration-300" style={{ paddingRight: isChatOpen ? '340px' : '1rem' }}>
+          {localStream && <VideoTile stream={localStream} isMuted={isMuted} userName={`${userName} (You)`} isLocal={true} isVideoOff={isVideoOff} isSpeaking={isLocalSpeaking} />}
+          {Object.entries(remoteStreams).map(([peerId, remote]) => <RemoteVideoTile key={peerId} peerId={peerId} remote={remote} />)}
+        </div>
+
+        {/* Controls */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gray-900/70 backdrop-blur-md p-3 rounded-full border border-white/10 shadow-2xl">
+          <Button onClick={handleToggleMute} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
+            {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+          </Button>
+          <Button onClick={handleToggleVideo} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
+            {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
+          </Button>
+          <div className="group relative">
+            <Button variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
+              <Smile size={24} />
+            </Button>
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800/80 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+              {['👍', '❤️', '👏', '😂'].map(emoji => (
+                <button key={emoji} onClick={() => handleSendReaction(emoji)} className="text-2xl p-2 rounded-full hover:bg-white/20 transition-transform hover:scale-125">{emoji}</button>
+              ))}
+            </div>
+          </div>
+          <Button onClick={onEndCall} variant="destructive" size="lg" className="rounded-full w-20 h-16">
+            <PhoneOff size={24} />
+          </Button>
+          <Button onClick={() => setIsChatOpen(!isChatOpen)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
+            <MessageSquare size={24} />
+          </Button>
+        </div>
+
+        {/* Top Right Controls */}
+        <div className="absolute top-4 right-4" style={{ right: isChatOpen ? '340px' : '1rem', transition: 'right 0.3s ease-in-out' }}>
+          <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white">
+            <Minimize2 size={20} />
+          </Button>
+        </div>
+      </div>
+
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: '0%' }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="absolute top-0 right-0 h-full w-80 bg-gray-900/80 backdrop-blur-lg border-l border-white/10 flex flex-col"
+          >
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="font-bold text-white">In-call messages</h3>
+              <Button onClick={() => setIsChatOpen(false)} variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
+                <Maximize2 size={16} />
+              </Button>
+            </div>
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+              {chatMessages.map(msg => (
+                <div key={msg.id} className="text-white/90 text-sm">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-bold">{msg.userName}</span>
+                    <span className="text-xs text-white/50">{msg.timestamp}</span>
+                  </div>
+                  <p className="text-white/80">{msg.text}</p>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 border-t border-white/10">
+              <div className="flex items-center gap-2 bg-gray-800/70 rounded-lg p-2">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()}
+                  className="bg-transparent w-full text-white placeholder:text-white/50 focus:outline-none text-sm"
+                />
+                <Button onClick={handleSendChatMessage} size="icon" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 w-8 h-8">
+                  <Send size={16} />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const RemoteVideoTile = ({ peerId, remote }: {
+  peerId: string;
+  remote: { stream: MediaStream; name: string };
+}) => {
+  const isSpeaking = useSpeakingIndicator(remote.stream);
+  return <VideoTile stream={remote.stream} isMuted={false} userName={remote.name} isSpeaking={isSpeaking} />;
+};
