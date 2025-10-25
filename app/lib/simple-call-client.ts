@@ -133,11 +133,21 @@ export async function startMeshCall({
     return pc;
   }
 
+  function replaceTrack(newTrack: MediaStreamTrack) {
+    Object.values(pcMap).forEach(pc => {
+      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+      if (sender) {
+        sender.replaceTrack(newTrack);
+      }
+    });
+  }
+
   return {
     endCall: () => {
       Object.values(pcMap).forEach((pc) => pc.close());
       localStream.getTracks().forEach((track) => track.stop());
       ws.close();
     },
+    replaceTrack,
   };
 }

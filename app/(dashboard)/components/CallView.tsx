@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Minimize2, Maximize2, PhoneOff, MessageSquare, Send, Smile, ThumbsUp, Heart, Laugh } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Minimize2, Maximize2, PhoneOff, MessageSquare, Send, Smile, ScreenShare, ThumbsUp, Heart, Laugh, StopCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
@@ -8,6 +8,9 @@ interface CallViewProps {
   remoteStreams: { [key: string]: { stream: MediaStream, name: string } };
   onEndCall: () => void;
   userName: string;
+  onToggleScreenShare: () => void;
+  isScreenSharing: boolean;
+  screenStream: MediaStream | null;
 }
 
 interface CallChatMessage {
@@ -91,7 +94,111 @@ const VideoTile = ({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking 
   );
 };
 
-export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, onEndCall, userName }) => {
+
+
+const TooltipButton = ({ children, tooltip, forceHide }: { children: React.ReactNode, tooltip: string, forceHide?: boolean }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div 
+      className="relative flex items-center justify-center"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {children}
+      <AnimatePresence>
+        {isHovered && !forceHide && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute bottom-full mb-3 px-3 py-1.5 bg-gray-800/90 backdrop-blur-md text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap"
+          >
+            {tooltip}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'default' }: { onToggleScreenShare: () => void, isScreenSharing: boolean, variant?: 'default' | 'minimized' }) => {
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setIsPopupOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleMainButtonClick = () => {
+    if (isScreenSharing) {
+      setIsPopupOpen(prev => !prev);
+    } else {
+      onToggleScreenShare();
+    }
+  };
+
+  const handleOptionClick = (action: 'stop' | 'change') => {
+    onToggleScreenShare(); // This will handle both stopping and changing
+    setIsPopupOpen(false);
+  };
+
+  const buttonSize = variant === 'minimized' ? 'w-10 h-10' : 'w-16 h-16';
+  const iconSize = variant === 'minimized' ? 18 : 24;
+
+  return (
+    <TooltipButton tooltip={isScreenSharing ? "Screen sharing options" : "Share screen"} forceHide={isPopupOpen}>
+      <div className="relative" ref={popupRef}>
+        <Button
+          onClick={handleMainButtonClick}
+          variant="outline"
+          size={variant === 'minimized' ? 'icon' : 'lg'}
+          className={`${buttonSize} rounded-full ${isScreenSharing ? 'bg-blue-500/80 text-white' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'} cursor-pointer`}
+        >
+          <ScreenShare size={iconSize} />
+        </Button>
+        <AnimatePresence>
+          {isPopupOpen && isScreenSharing && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-52 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-xl border border-white/10 overflow-hidden"
+            >
+              <div className="flex flex-col">
+                <button
+                  onClick={() => handleOptionClick('stop')}
+                  className="flex items-center gap-3 px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/20 transition-colors w-full cursor-pointer"
+                >
+                  <StopCircle size={18} />
+                  <span>Stop Sharing</span>
+                </button>
+                <button
+                  onClick={() => handleOptionClick('change')}
+                  className="flex items-center gap-3 px-4 py-3 text-left text-sm text-white/90 hover:bg-white/10 transition-colors w-full cursor-pointer"
+                >
+                  <ScreenShare size={18} />
+                  <span>Share Something Else</span>
+                </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </TooltipButton>
+    );
+};
+
+export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, onEndCall, userName, onToggleScreenShare, isScreenSharing, screenStream }) => {
+
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -170,27 +277,40 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
         className="fixed bottom-4 right-4 z-50 w-64 h-40 rounded-xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing"
       >
         <div className="relative w-full h-full bg-black group">
-          {localStream && !isVideoOff ? (<video ref={el => {
-            if (el) el.srcObject = localStream;
-          }} autoPlay playsInline muted className="w-full h-full object-cover" />) : (<div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+          {isScreenSharing && screenStream ? (
+            <video ref={el => { if (el) el.srcObject = screenStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+          ) : localStream && !isVideoOff ? (
+            <video ref={el => { if (el) el.srcObject = localStream; }} autoPlay playsInline muted className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
               <VideoOff size={32} />
-            </div>)}
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white">
-              <Maximize2 size={16} />
-            </Button>
+            <TooltipButton tooltip="Maximize">
+              <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white cursor-pointer">
+                <Maximize2 size={16} />
+              </Button>
+            </TooltipButton>
           </div>
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button onClick={handleToggleMute} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white">
-              {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
-            </Button>
-            <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white">
-              {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
-            </Button>
-            <Button onClick={onEndCall} variant="destructive" size="icon" className="w-12 h-10 rounded-full">
-              <PhoneOff size={18} />
-            </Button>
+            <TooltipButton tooltip={isMuted ? "Unmute" : "Mute"}>
+              <Button onClick={handleToggleMute} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white cursor-pointer">
+                {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+              </Button>
+            </TooltipButton>
+            <TooltipButton tooltip={isVideoOff ? "Turn on camera" : "Turn off camera"}>
+              <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white cursor-pointer">
+                {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
+              </Button>
+            </TooltipButton>
+            <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" />
+            <TooltipButton tooltip="End call">
+              <Button onClick={onEndCall} variant="destructive" size="icon" className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
+                <PhoneOff size={18} />
+              </Button>
+            </TooltipButton>
           </div>
         </div>
       </motion.div>
@@ -202,6 +322,11 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
       <div className="relative w-full h-full flex flex-col">
         {/* Main Video Grid */}
         <div className="flex-1 grid gap-4 w-full h-full p-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 transition-all duration-300" style={{ paddingRight: isChatOpen ? '340px' : '1rem' }}>
+          {isScreenSharing && screenStream && (
+            <div className="md:col-span-2 lg:col-span-3">
+              <VideoTile stream={screenStream} isMuted={true} userName={"Your Screen"} isLocal={true} />
+            </div>
+          )}
           {localStream && <VideoTile stream={localStream} isMuted={isMuted} userName={`${userName} (You)`} isLocal={true} isVideoOff={isVideoOff} isSpeaking={isLocalSpeaking} />}
           {Object.entries(remoteStreams).map(([peerId, remote]) => <RemoteVideoTile key={peerId} peerId={peerId} remote={remote} />)}
         </div>
@@ -231,16 +356,23 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
 
         {/* Controls */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gray-900/70 backdrop-blur-md p-3 rounded-full border border-white/10 shadow-2xl">
-          <Button onClick={handleToggleMute} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
-            {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-          </Button>
-          <Button onClick={handleToggleVideo} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
-            {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
-          </Button>
-          <div className="relative" ref={reactionPickerRef}>
-            <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
-              <Smile size={24} />
+          <TooltipButton tooltip={isMuted ? "Unmute" : "Mute"}>
+            <Button onClick={handleToggleMute} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
             </Button>
+          </TooltipButton>
+          <TooltipButton tooltip={isVideoOff ? "Turn Camera On" : "Turn Camera Off"}>
+            <Button onClick={handleToggleVideo} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+              {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
+            </Button>
+          </TooltipButton>
+          <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} />
+          <div className="relative" ref={reactionPickerRef}>
+            <TooltipButton tooltip="Send Reaction">
+              <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+                <Smile size={24} />
+              </Button>
+            </TooltipButton>
             <AnimatePresence>
               {isReactionPickerOpen && (
                 <motion.div
@@ -251,25 +383,31 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
                   className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800/80 p-2 rounded-full"
                 >
                   {['👍', '❤️', '👏', '😂'].map(emoji => (
-                    <button key={emoji} onClick={() => handleSendReaction(emoji)} className="text-2xl p-2 rounded-full hover:bg-white/20 transition-transform hover:scale-125">{emoji}</button>
+                    <button key={emoji} onClick={() => handleSendReaction(emoji)} className="text-2xl p-2 rounded-full hover:bg-white/20 transition-transform hover:scale-125 cursor-pointer">{emoji}</button>
                   ))}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          <Button onClick={onEndCall} variant="destructive" size="lg" className="rounded-full w-20 h-16">
-            <PhoneOff size={24} />
-          </Button>
-          <Button onClick={() => setIsChatOpen(!isChatOpen)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16">
-            <MessageSquare size={24} />
-          </Button>
+          <TooltipButton tooltip="End Call">
+            <Button onClick={onEndCall} variant="destructive" size="lg" className="rounded-full w-20 h-16 cursor-pointer" title="">
+              <PhoneOff size={24} />
+            </Button>
+          </TooltipButton>
+          <TooltipButton tooltip={isChatOpen ? "Close Chat" : "Open Chat"}>
+            <Button onClick={() => setIsChatOpen(!isChatOpen)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+              <MessageSquare size={24} />
+            </Button>
+          </TooltipButton>
         </div>
 
         {/* Top Right Controls */}
         <div className="absolute top-4 right-4" style={{ right: isChatOpen ? '340px' : '1rem', transition: 'right 0.3s ease-in-out' }}>
-          <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white">
-            <Minimize2 size={20} />
-          </Button>
+          <TooltipButton tooltip="Minimize">
+            <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white cursor-pointer">
+              <Minimize2 size={20} />
+            </Button>
+          </TooltipButton>
         </div>
       </div>
 

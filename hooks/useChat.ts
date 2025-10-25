@@ -19,13 +19,14 @@ export interface Message {
   file?: MessageFile;
   content?: any;
   createdAt?: string;
+  reactions?: { [emoji: string]: { userId: string; userName: string }[] };
 }
 
 // Allow messages to carry a single file or multiple files
 export type MessageFile = UploadResponse | UploadResponse[] | undefined;
 
 interface WebSocketMessage {
-  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth';
+  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction';
   isTyping?: boolean;
   userName?: string;
   messages?: Message[];
@@ -215,8 +216,37 @@ export const useChat = (room: string) => {
                   createdAt: msg.createdAt || msg.timestamp,
                 }));
               setMessages(historicalMessages);
-            } else if (message.type === 'presence') {
-              setOnlineUsers(message.onlineUsers || []);
+            } else if (message.type === 'reaction') {
+              if (message.payload) {
+                const { messageId, emoji, userId, userName } = message.payload;
+                setMessages(prevMessages =>
+                  prevMessages.map(msg => {
+                    if (msg.id === messageId) {
+                      const reactions = msg.reactions || {};
+                      const users = reactions[emoji] || [];
+                      const userIndex = users.findIndex(u => u.userId === userId);
+              
+                      const newUsers = userIndex > -1
+                        ? users.filter(u => u.userId !== userId)
+                        : [...users, { userId, userName }];
+              
+                      if (newUsers.length === 0) {
+                        const { [emoji]: _, ...rest } = reactions;
+                        return { ...msg, reactions: rest };
+                      } else {
+                        return {
+                          ...msg,
+                          reactions: {
+                            ...reactions,
+                            [emoji]: newUsers,
+                          },
+                        };
+                      }
+                    }
+                    return msg;
+                  })
+                );
+              }
             } else if (message.error) {
               console.error('WebSocket error:', message.error);
             }

@@ -45,6 +45,7 @@ export const authOptions: NextAuthOptions = {
                 token.fullName = user.fullName;
                 token.role = user.role;
                 token.organizationId = user.organizationId;
+                // We don't need to pass the token to the JWT itself
             }
             return token;
         },
@@ -55,7 +56,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.fullName = token.fullName as string;
                 session.user.role = token.role as string;
                 session.user.organizationId = token.organizationId as string;
-                session.user.token = token.sub;
+                // We also don't pass the token to the client-side session object
             }
             return session;
         },

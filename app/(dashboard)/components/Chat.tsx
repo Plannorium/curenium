@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ImageLightbox } from "./ImageLightbox";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { FileAttachment } from './FileAttachment';
 import DocumentPreview from './DocumentPreview';
 import { startMeshCall } from "@/app/lib/simple-call-client";
 import { CallView } from './CallView';
+import { ReactionPicker } from './ReactionPicker';
 
 interface User {
   id: string;
@@ -39,9 +40,10 @@ interface MessageBubbleProps {
   showTime: boolean;
   openDocPreview: (file: any) => void;
   openLightbox: (images: Array<{ url: string; name: string }>, initialIndex: number) => void;
+  handleReaction: (messageId: string, emoji: string) => void;
 }
 
-const MessageBubble = (props: MessageBubbleProps) => {
+const MessageBubbleComponent = (props: MessageBubbleProps) => {
   const {
     msg,
     isSender,
@@ -50,8 +52,10 @@ const MessageBubble = (props: MessageBubbleProps) => {
     showTime,
     openDocPreview,
     openLightbox,
+    handleReaction,
   } = props;
-  
+  const { data: session } = useSession();
+
   const handleOpenLightbox = (clickedUrl: string) => {
     try {
       const filesList = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
@@ -117,6 +121,11 @@ const MessageBubble = (props: MessageBubbleProps) => {
               : "bg-card/95 border-border/40 text-foreground rounded-bl-md"
           }`}
         >
+          <div
+            className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 left-full pl-2`}
+          >
+            {onHoverActions}
+          </div>
           {msg.file ? (
               <div className="space-y-2">
                 {/* Support array of files or single file */}
@@ -145,18 +154,72 @@ const MessageBubble = (props: MessageBubbleProps) => {
             </div>
           )}
         </div>
+        {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+          <div className="flex items-center gap-2 mt-2">
+            {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
+              <div key={emoji} className="relative group">
+                <button
+                  onClick={() => handleReaction(msg.id, emoji)}
+                  className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-xs hover:bg-primary/20 transition-colors duration-200"
+                >
+                  <span>{emoji}</span>
+                  <span className="font-medium text-primary">{Array.isArray(users) ? users.length : 0}</span>
+                </button>
+                <div className="absolute bottom-full mb-2 w-max bg-card border rounded-lg shadow-lg p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  {Array.isArray(users) ? users.map(user => user.userName).join(', ') : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {onHoverActions && (
-        <div
-          className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 right-0 translate-x-full pl-2`}
-        >
-          {onHoverActions}
-        </div>
-      )}
     </motion.div>
   );
 }
+
+const MessageBubble = React.memo(MessageBubbleComponent, (prevProps, nextProps) => {
+  // Shallow compare all props except msg and onHoverActions
+  if (
+    prevProps.isSender !== nextProps.isSender ||
+    prevProps.user?.id !== nextProps.user?.id ||
+    prevProps.showTime !== nextProps.showTime ||
+    prevProps.openDocPreview !== nextProps.openDocPreview ||
+    prevProps.openLightbox !== nextProps.openLightbox ||
+    prevProps.handleReaction !== nextProps.handleReaction
+  ) {
+    return false;
+  }
+
+  // Compare msg object, but skip reactions for now
+  if (
+    prevProps.msg.id !== nextProps.msg.id ||
+    prevProps.msg.text !== nextProps.msg.text ||
+    prevProps.msg.content !== nextProps.msg.content
+  ) {
+    return false;
+  }
+
+  // Deep compare reactions
+  const prevReactions = prevProps.msg.reactions || {};
+  const nextReactions = nextProps.msg.reactions || {};
+
+  const prevReactionKeys = Object.keys(prevReactions);
+  const nextReactionKeys = Object.keys(nextReactions);
+
+  if (prevReactionKeys.length !== nextReactionKeys.length) {
+    return false;
+  }
+
+  for (const emoji of prevReactionKeys) {
+    const prevUsers = prevReactions[emoji];
+    const nextUsers = nextReactions[emoji];
+    if (!nextUsers || (Array.isArray(prevUsers) ? prevUsers.length : 0) !== (Array.isArray(nextUsers) ? nextUsers.length : 0)) {
+      return false;
+    }
+  }
+
+  return true; // Props are equal
+});
 
 export default function Chat() {
   const { data: session } = useSession();
@@ -186,19 +249,38 @@ export default function Chat() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, name: string }>>({});
-  const callRef = useRef<{ endCall: () => void } | null>(null);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const callRef = useRef<{ endCall: () => void; replaceTrack: (track: MediaStreamTrack) => void; } | null>(null);
   const {
     messages,
     sendCombinedMessage,
     uploadFile,
     onlineUsers,
     typingUsers,
-    sendTyping
+    sendTyping,
+    sendPayload
   } = useChat(activeRoom);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
+
+  const handleReaction = (messageId: string, emoji: string) => {
+    if (!session?.user) return;
+    sendPayload({
+      type: 'reaction',
+      payload: {
+        messageId,
+        emoji,
+        userId: session.user.id,
+        userName: session.user.name,
+      }
+    });
+  };
 
   const handleEndCall = () => {
     if (callRef.current) {
@@ -208,9 +290,58 @@ export default function Chat() {
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop());
+    }
     setLocalStream(null);
     setRemoteStreams({});
     setIsCallActive(false);
+    setIsScreenSharing(false);
+    setScreenStream(null);
+  };
+
+  const handleToggleScreenShare = async () => {
+    if (isScreenSharing) {
+      // Stop screen sharing
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+      }
+      if (localStream && callRef.current) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          callRef.current.replaceTrack(videoTrack);
+        }
+      }
+      setScreenStream(null);
+      setIsScreenSharing(false);
+    } else {
+      // Start screen sharing
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = stream.getVideoTracks()[0];
+
+        if (callRef.current) {
+          callRef.current.replaceTrack(screenTrack);
+        }
+
+        // When the user stops sharing from the browser UI
+        screenTrack.onended = () => {
+          if (localStream && callRef.current) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+              callRef.current.replaceTrack(videoTrack);
+            }
+          }
+          setScreenStream(null);
+          setIsScreenSharing(false);
+        };
+
+        setScreenStream(stream);
+        setIsScreenSharing(true);
+      } catch (error) {
+        console.error("Error starting screen share:", error);
+      }
+    }
   };
 
 
@@ -676,11 +807,14 @@ export default function Chat() {
         <div className="flex-1 flex flex-col overflow-hidden">
           {isCallActive && localStream && (
             <CallView
-              localStream={localStream}
-              remoteStreams={remoteStreams}
-              onEndCall={handleEndCall}
-              userName={userName}
-            />
+            localStream={localStream}
+            remoteStreams={remoteStreams}
+            onEndCall={handleEndCall}
+            userName={userName}
+            onToggleScreenShare={handleToggleScreenShare}
+            isScreenSharing={isScreenSharing}
+            screenStream={screenStream}
+          />
           )}
           {/* Chat Header */}
           <div className="backdrop-blur-sm bg-card/50 border-b border-border/50 p-4 flex items-center justify-between">
@@ -770,19 +904,28 @@ export default function Chat() {
                     msg={msg}
                     isSender={isSender}
                     user={user}
-                    onHoverActions={
-                      <div className="flex items-center gap-1 bg-card/90 border border-border/40 rounded-lg p-2 shadow-lg">
-                        <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
-                          <SmileIcon size={14} />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
-                          <InfoIcon size={14} />
-                        </Button>
+                    onHoverActions={(
+                      <div className="relative" ref={reactionPickerRef}>
+                        <div className="flex items-center gap-1 bg-card/90 border border-border/40 rounded-lg p-2 shadow-lg">
+                          <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}>
+                            <SmileIcon size={14} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
+                            <InfoIcon size={14} />
+                          </Button>
+                        </div>
+                        {activeReactionPicker === msg.id && (
+                          <ReactionPicker
+                            onEmojiClick={(emoji) => handleReaction(msg.id, emoji)}
+                            onClose={() => setActiveReactionPicker(null)}
+                          />
+                        )}
                       </div>
-                    }
+                    )}
                     showTime={true}
                     openDocPreview={openDocPreview}
                     openLightbox={openLightbox}
+                    handleReaction={handleReaction}
                   />
                 </div>
               );
