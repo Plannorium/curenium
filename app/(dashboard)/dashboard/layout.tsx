@@ -46,7 +46,7 @@ export default function DashboardLayout({
       />
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 p-2 md:px-4">
           {views[currentView] || children}
         </main>
       </div>

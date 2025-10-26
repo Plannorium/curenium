@@ -16,6 +16,7 @@ import DocumentPreview from './DocumentPreview';
 import { startMeshCall } from "@/app/lib/simple-call-client";
 import { CallView } from './CallView';
 import { ReactionPicker } from './ReactionPicker';
+import { ReactionDetailsModal } from './ReactionDetailsModal';
 
 interface User {
   id: string;
@@ -36,11 +37,11 @@ interface MessageBubbleProps {
   msg: any;
   isSender: boolean;
   user: any;
-  onHoverActions: React.ReactNode;
   showTime: boolean;
   openDocPreview: (file: any) => void;
   openLightbox: (images: Array<{ url: string; name: string }>, initialIndex: number) => void;
   handleReaction: (messageId: string, emoji: string) => void;
+  onReactionClick: (messageId: string, emoji: string, users: any[]) => void;
 }
 
 const MessageBubbleComponent = (props: MessageBubbleProps) => {
@@ -48,13 +49,28 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
     msg,
     isSender,
     user,
-    onHoverActions,
     showTime,
     openDocPreview,
     openLightbox,
     handleReaction,
+    onReactionClick,
   } = props;
   const { data: session } = useSession();
+  const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const reactionPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (reactionPickerRef.current && !reactionPickerRef.current.contains(event.target as Node)) {
+        setReactionPickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleOpenLightbox = (clickedUrl: string) => {
     try {
@@ -124,7 +140,7 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
           <div
             className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 left-full pl-2`}
           >
-            {onHoverActions}
+            {/* {onHoverActions} */}
           </div>
           {msg.file ? (
               <div className="space-y-2">
@@ -154,24 +170,37 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
             </div>
           )}
         </div>
-        {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-          <div className="flex items-center gap-2 mt-2">
-            {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
-              <div key={emoji} className="relative group">
-                <button
-                  onClick={() => handleReaction(msg.id, emoji)}
-                  className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-xs hover:bg-primary/20 transition-colors duration-200"
-                >
-                  <span>{emoji}</span>
-                  <span className="font-medium text-primary">{Array.isArray(users) ? users.length : 0}</span>
-                </button>
-                <div className="absolute bottom-full mb-2 w-max bg-card border rounded-lg shadow-lg p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                  {Array.isArray(users) ? users.map(user => user.userName).join(', ') : ''}
+        <div className="flex items-center gap-2 mt-2 min-h-[28px]">
+          {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+            <>
+              {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
+                <div key={emoji} className="relative group">
+                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-xs hover:bg-primary/20 transition-colors duration-200">
+                    <span>{emoji}</span>
+                    <span className="font-medium text-primary">{Array.isArray(users) ? users.length : 0}</span>
+                  </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </>
+          )}
+          <div className="relative opacity-0 group-hover:opacity-100 transition-opacity" ref={reactionPickerRef}>
+            <button 
+              onClick={() => setReactionPickerOpen(p => !p)} 
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-card hover:bg-accent transition-colors border shadow-sm"
+            >
+              <SmileIcon size={16} className="text-muted-foreground" />
+            </button>
+            {isReactionPickerOpen && (
+              <ReactionPicker
+                onEmojiClick={(emoji) => {
+                  handleReaction(msg.id, emoji);
+                  setReactionPickerOpen(false);
+                }}
+                onClose={() => setReactionPickerOpen(false)}
+              />
+            )}
           </div>
-        )}
+        </div>
       </div>
     </motion.div>
   );
@@ -185,7 +214,8 @@ const MessageBubble = React.memo(MessageBubbleComponent, (prevProps, nextProps) 
     prevProps.showTime !== nextProps.showTime ||
     prevProps.openDocPreview !== nextProps.openDocPreview ||
     prevProps.openLightbox !== nextProps.openLightbox ||
-    prevProps.handleReaction !== nextProps.handleReaction
+    prevProps.handleReaction !== nextProps.handleReaction ||
+    prevProps.onReactionClick !== nextProps.onReactionClick
   ) {
     return false;
   }
@@ -268,6 +298,7 @@ export default function Chat() {
 
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
+  const [activeReactionDetails, setActiveReactionDetails] = useState<{ messageId: string; emoji: string; users: any[] } | null>(null);
 
   const handleReaction = (messageId: string, emoji: string) => {
     if (!session?.user) return;
@@ -280,6 +311,10 @@ export default function Chat() {
         userName: session.user.name,
       }
     });
+  };
+
+  const handleReactionClick = (messageId: string, emoji: string, users: any[]) => {
+    setActiveReactionDetails({ messageId, emoji, users });
   };
 
   const handleEndCall = () => {
@@ -904,28 +939,12 @@ export default function Chat() {
                     msg={msg}
                     isSender={isSender}
                     user={user}
-                    onHoverActions={(
-                      <div className="relative" ref={reactionPickerRef}>
-                        <div className="flex items-center gap-1 bg-card/90 border border-border/40 rounded-lg p-2 shadow-lg">
-                          <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => setActiveReactionPicker(activeReactionPicker === msg.id ? null : msg.id)}>
-                            <SmileIcon size={14} />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="p-1 h-6 w-6">
-                            <InfoIcon size={14} />
-                          </Button>
-                        </div>
-                        {activeReactionPicker === msg.id && (
-                          <ReactionPicker
-                            onEmojiClick={(emoji) => handleReaction(msg.id, emoji)}
-                            onClose={() => setActiveReactionPicker(null)}
-                          />
-                        )}
-                      </div>
-                    )}
+
                     showTime={true}
                     openDocPreview={openDocPreview}
                     openLightbox={openLightbox}
                     handleReaction={handleReaction}
+                    onReactionClick={handleReactionClick}
                   />
                 </div>
               );
@@ -983,50 +1002,52 @@ export default function Chat() {
                 </div>
               </div>
             )}
-            <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
-               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
-               <textarea 
-                 value={text}
-                 onChange={handleTyping}
-                 onKeyDown={handleKeyDown} 
-                 placeholder="Type your message..." 
-                 className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32" 
-                 rows={1} 
-               />
-               <div className="flex items-center space-x-1 ml-3">
-                 <div ref={emojiPickerRef}>
-                   <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                     <SmileIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                   </Button>
-                   {showEmojiPicker && (
-                       <div className="absolute bottom-full right-0 mb-2 z-10">
-                         <EmojiPicker
-                           onEmojiClick={handleEmojiClick}
-                           />
-                       </div>
-                     )}
+            <div className="relative">
+              <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
+                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
+                 <textarea
+                   value={text}
+                   onChange={handleTyping}
+                   onKeyDown={handleKeyDown}
+                   placeholder="Type your message..."
+                   className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32"
+                   rows={1}
+                 />
+                 <div className="flex items-center space-x-1 ml-3">
+                   <div ref={emojiPickerRef}>
+                     <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                       <SmileIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                     </Button>
                    </div>
-                 <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => fileInputRef.current?.click()}>
-                   <PaperclipIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                 </Button>
-                 <Button 
-                   variant="ghost" 
-                   size="sm" 
-                   className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group" 
-                   onClick={() => setShowAlertModal(true)}
-                 >
-                   <BellIcon size={18} className="text-red-500 group-hover:text-red-600 transition-colors" />
-                 </Button>
-                 <Button 
-                   onClick={handleSendMessage} 
-                   disabled={(!text.trim() && stagedFiles.length === 0) || isUploading} 
-                   size="sm"
-                   className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                 >
-                   <SendIcon size={18} />
-                 </Button>
+                   <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => fileInputRef.current?.click()}>
+                     <PaperclipIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                   </Button>
+                   <Button
+                     variant="ghost"
+                     size="sm"
+                     className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group"
+                     onClick={() => setShowAlertModal(true)}
+                   >
+                     <BellIcon size={18} className="text-red-500 group-hover:text-red-600 transition-colors" />
+                   </Button>
+                   <Button
+                     onClick={handleSendMessage}
+                     disabled={(!text.trim() && stagedFiles.length === 0) || isUploading}
+                     size="sm"
+                     className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                   >
+                     <SendIcon size={18} />
+                   </Button>
+                 </div>
                </div>
-             </div>
+               {showEmojiPicker && (
+                 <div className="absolute bottom-full left-0 mb-2 z-10">
+                   <EmojiPicker
+                     onEmojiClick={handleEmojiClick}
+                     />
+                 </div>
+               )}
+            </div>
           </div>
         </div>
 
@@ -1174,6 +1195,22 @@ export default function Chat() {
         <DocumentPreview
           file={selectedDoc}
           onClose={closeDocPreview}
+        />
+      )}
+
+      {/* Reaction Details Modal */}
+      {activeReactionDetails && (
+        <ReactionDetailsModal
+          isOpen={!!activeReactionDetails}
+          onClose={() => setActiveReactionDetails(null)}
+          messageId={activeReactionDetails.messageId}
+          emoji={activeReactionDetails.emoji}
+          users={activeReactionDetails.users}
+          currentUserId={session?.user?.id}
+          onRemoveReaction={(messageId, emoji) => {
+            handleReaction(messageId, emoji);
+            setActiveReactionDetails(null);
+          }}
         />
       )}
     </div>

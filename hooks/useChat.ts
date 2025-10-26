@@ -214,6 +214,7 @@ export const useChat = (room: string) => {
                   text: msg.content || '',
                   file: msg.files || msg.file,
                   createdAt: msg.createdAt || msg.timestamp,
+                  reactions: msg.reactions,
                 }));
               setMessages(historicalMessages);
             } else if (message.type === 'reaction') {

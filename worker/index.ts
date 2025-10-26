@@ -72,6 +72,40 @@ export class ChatRoom {
                 
                 this.broadcast(JSON.stringify(finalMessage));
                 await this.state.storage.put("messages", this.messages);
+            } else if (data.type === 'reaction') {
+                const { messageId, emoji, userId, userName } = data.payload;
+                const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
+
+                if (messageIndex > -1) {
+                    const originalMessage = this.messages[messageIndex];
+                    const currentReactions = originalMessage.reactions || {};
+                    const usersForEmoji = currentReactions[emoji] || [];
+                    const userIndex = usersForEmoji.findIndex((u: any) => u.userId === userId);
+
+                    let newUsersForEmoji;
+                    if (userIndex > -1) {
+                        // User is removing reaction: create a new array without the user
+                        newUsersForEmoji = usersForEmoji.filter((u: any) => u.userId !== userId);
+                    } else {
+                        // User is adding reaction: create a new array with the new user
+                        newUsersForEmoji = [...usersForEmoji, { userId, userName }];
+                    }
+
+                    const newReactions = { ...currentReactions };
+                    if (newUsersForEmoji.length === 0) {
+                        delete newReactions[emoji];
+                    } else {
+                        newReactions[emoji] = newUsersForEmoji;
+                    }
+
+                    // Create a new message object with the new reactions
+                    const updatedMessage = { ...originalMessage, reactions: newReactions };
+                    this.messages[messageIndex] = updatedMessage;
+                    await this.state.storage.put("messages", this.messages);
+                }
+                this.broadcast(JSON.stringify(data));
+            } else if (data.type === 'typing') {
+                this.broadcast(JSON.stringify(data));
             }
         });
 

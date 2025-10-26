@@ -4,6 +4,8 @@ compatibility_date = "2024-10-20"
 account_id = "c6a775d7beaa8147a1be220aa3b49d30"
 compatibility_flags = ["nodejs_compat"]
 
+workers_dev = true
+
 [build]
 command = "npm run build"
 
