@@ -1,10 +1,11 @@
 "use client";
 import { Navbar } from '@/app/(dashboard)/components/Navbar';
 import { Sidebar } from '@/app/(dashboard)/components/Sidebar';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Chat from '@/app/(dashboard)/components/Chat';
 import Alerts from '@/app/(dashboard)/components/Alerts';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
+import { useOnClickOutside } from '@/lib/hooks/useOnClickOutside';
 
 
 export default function DashboardLayout({ 
@@ -15,6 +16,8 @@ export default function DashboardLayout({
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setCollapsed] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
@@ -28,6 +31,12 @@ export default function DashboardLayout({
     setCurrentView(view);
   };
 
+  useOnClickOutside(sidebarRef, () => {
+    if (isSidebarOpen) {
+      setSidebarOpen(false);
+    }
+  });
+
   const views: { [key: string]: React.ReactNode } = {
     chat: <Chat />,
     alerts: <Alerts />,
@@ -37,13 +46,16 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-dark-100 dark:bg-dark-900">
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        isCollapsed={isCollapsed} 
-        toggleCollapse={toggleCollapse} 
-        currentView={currentView}
-        onViewChange={handleViewChange}
-      />
+      <div ref={sidebarRef}>
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          isCollapsed={isCollapsed} 
+          toggleCollapse={toggleCollapse} 
+          toggleSidebar={toggleSidebar} // Add this line
+          currentView={currentView}
+          onViewChange={handleViewChange}
+        />
+      </div>
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 p-2 md:px-4">

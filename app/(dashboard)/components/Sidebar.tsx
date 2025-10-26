@@ -1,13 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HomeIcon, MessageSquareIcon, BellIcon, CalendarIcon, UsersIcon, SettingsIcon, HeartPulseIcon, ClipboardListIcon, LogOutIcon, ChevronLeftIcon } from 'lucide-react';
+import { HomeIcon, MessageSquareIcon, BellIcon, CalendarIcon, UsersIcon, SettingsIcon, HeartPulseIcon, ClipboardListIcon, LogOutIcon, ChevronLeftIcon, XIcon } from 'lucide-react';
 import { useRole } from '@/components/auth/RoleProvider';
 
 interface SidebarProps {
   isOpen: boolean;
   isCollapsed: boolean;
   toggleCollapse: () => void;
+  toggleSidebar: () => void;
   currentView: string;
   onViewChange: (view: string) => void;
 }
@@ -23,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   isCollapsed,
   toggleCollapse,
+  toggleSidebar,
   currentView,
   onViewChange
 }) => {
@@ -103,6 +105,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <ChevronLeftIcon 
               size={18} 
               className={`text-muted-foreground group-hover:text-foreground transition-all duration-300 ${isCollapsed ? 'rotate-180' : ''}`} 
+            />
+          </button>
+          <button 
+            onClick={toggleSidebar} 
+            className="lg:hidden items-center justify-center p-2 rounded-xl hover:bg-accent/50 backdrop-blur-sm transition-all duration-200 group"
+          >
+            <XIcon 
+              size={18} 
+              className={`text-muted-foreground group-hover:text-foreground transition-all duration-300`} 
             />
           </button>
         </div>

@@ -227,9 +227,14 @@ export const useChat = (room: string) => {
                       const users = reactions[emoji] || [];
                       const userIndex = users.findIndex(u => u.userId === userId);
               
-                      const newUsers = userIndex > -1
-                        ? users.filter(u => u.userId !== userId)
-                        : [...users, { userId, userName }];
+                      let newUsers;
+                      if (userIndex > -1) {
+                        // User has already reacted with this emoji, so remove it
+                        newUsers = users.filter(u => u.userId !== userId);
+                      } else {
+                        // User is adding a new reaction
+                        newUsers = [...users, { userId, userName }];
+                      }
               
                       if (newUsers.length === 0) {
                         const { [emoji]: _, ...rest } = reactions;

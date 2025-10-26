@@ -105,7 +105,7 @@ export const FileAttachment = ({ file, message, onPreview, onOpenLightbox }: Fil
   }
 
   return (
-    <div className="group relative p-3 rounded-lg bg-background/50 border border-border/50 max-w-sm w-full overflow-hidden">
+    <div className="group relative p-4 rounded-lg bg-background/50 border border-border/50 max-w-xs sm:max-w-sm w-full overflow-hidden">
       {thumbnailUrl && (
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition-opacity duration-300"

@@ -17,6 +17,7 @@ import { startMeshCall } from "@/app/lib/simple-call-client";
 import { CallView } from './CallView';
 import { ReactionPicker } from './ReactionPicker';
 import { ReactionDetailsModal } from './ReactionDetailsModal';
+import { AnimatePresence } from "framer-motion";
 
 interface User {
   id: string;
@@ -131,7 +132,7 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
         </div>
 
         <div
-          className={`relative rounded-2xl px-4 py-3 shadow-sm border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] max-w-md lg:max-w-lg ${
+          className={`relative rounded-2xl px-3 md:px-4 py-3 shadow-sm border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] max-w-full sm:max-w-md lg:max-w-lg ${
             isSender
               ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30 text-foreground rounded-md"
               : "bg-card/95 border-border/40 text-foreground rounded-bl-md"
@@ -440,7 +441,7 @@ export default function Chat() {
 
     if (query) {
       const results = messages.reduce((acc, msg, index) => {
-        if ((msg.text || msg.content).toLowerCase().includes(query.toLowerCase())) {
+        if (msg.text.toLowerCase().includes(query.toLowerCase())) {
           acc.push(index);
         }
         return acc;
@@ -909,7 +910,7 @@ export default function Chat() {
           )}
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar">
             {messages.map((msg, index) => {
               const isSender = msg.userId === session?.user?._id;
               const user = users.find(u => u._id === msg.userId);
@@ -1143,13 +1144,13 @@ export default function Chat() {
                   Alert Recipients
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm flex items-center font-medium border border-primary/20">
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200">
                     Emergency Ward Team
                     <Button variant="ghost" size="sm" className="p-0.5 ml-2 rounded-full hover:bg-primary/20 transition-all duration-200">
                       <XIcon size={12} />
                     </Button>
                   </div>
-                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm flex items-center font-medium border border-primary/20">
+                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200">
                     Dr. John Miller
                     <Button variant="ghost" size="sm" className="p-0.5 ml-2 rounded-full hover:bg-primary/20 transition-all duration-200">
                       <XIcon size={12} />
@@ -1199,20 +1200,23 @@ export default function Chat() {
       )}
 
       {/* Reaction Details Modal */}
-      {activeReactionDetails && (
-        <ReactionDetailsModal
-          isOpen={!!activeReactionDetails}
-          onClose={() => setActiveReactionDetails(null)}
-          messageId={activeReactionDetails.messageId}
-          emoji={activeReactionDetails.emoji}
-          users={activeReactionDetails.users}
-          currentUserId={session?.user?.id}
-          onRemoveReaction={(messageId, emoji) => {
-            handleReaction(messageId, emoji);
-            setActiveReactionDetails(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+          {activeReactionDetails && (
+            <ReactionDetailsModal
+              isOpen={!!activeReactionDetails}
+              onClose={() => {
+                setActiveReactionDetails(null);
+              }}
+              messageId={activeReactionDetails.messageId}
+              emoji={activeReactionDetails.emoji}
+              users={activeReactionDetails.users}
+              allUsers={users}
+              currentUserId={session?.user?.id}
+              onRemoveReaction={handleReaction}
+              onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
+            />
+          )}
+        </AnimatePresence>
     </div>
   );
 }

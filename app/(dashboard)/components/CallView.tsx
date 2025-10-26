@@ -150,7 +150,7 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
     setIsPopupOpen(false);
   };
 
-  const buttonSize = variant === 'minimized' ? 'w-10 h-10' : 'w-16 h-16';
+  const buttonSize = variant === 'minimized' ? 'w-10 h-10' : 'w-14 h-14 sm:w-16 sm:h-16';
   const iconSize = variant === 'minimized' ? 18 : 24;
 
   return (
@@ -355,21 +355,21 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
         </div>
 
         {/* Controls */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-gray-900/70 backdrop-blur-md p-3 rounded-full border border-white/10 shadow-2xl">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 bg-gray-900/70 backdrop-blur-md p-2 sm:p-3 rounded-2xl sm:rounded-full border border-white/10 shadow-2xl">
           <TooltipButton tooltip={isMuted ? "Unmute" : "Mute"}>
-            <Button onClick={handleToggleMute} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+            <Button onClick={handleToggleMute} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-14 h-14 sm:w-16 sm:h-16 cursor-pointer">
               {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
             </Button>
           </TooltipButton>
           <TooltipButton tooltip={isVideoOff ? "Turn Camera On" : "Turn Camera Off"}>
-            <Button onClick={handleToggleVideo} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+            <Button onClick={handleToggleVideo} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-14 h-14 sm:w-16 sm:h-16 cursor-pointer">
               {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
             </Button>
           </TooltipButton>
           <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} />
           <div className="relative" ref={reactionPickerRef}>
             <TooltipButton tooltip="Send Reaction">
-              <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+              <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-14 h-14 sm:w-16 sm:h-16 cursor-pointer">
                 <Smile size={24} />
               </Button>
             </TooltipButton>
@@ -390,12 +390,12 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
             </AnimatePresence>
           </div>
           <TooltipButton tooltip="End Call">
-            <Button onClick={onEndCall} variant="destructive" size="lg" className="rounded-full w-20 h-16 cursor-pointer" title="">
-              <PhoneOff size={24} />
-            </Button>
-          </TooltipButton>
+              <Button onClick={onEndCall} variant="destructive" size="lg" className="rounded-full w-20 h-14 sm:w-20 sm:h-16 cursor-pointer" title="">
+                <PhoneOff size={24} />
+              </Button>
+            </TooltipButton>
           <TooltipButton tooltip={isChatOpen ? "Close Chat" : "Open Chat"}>
-            <Button onClick={() => setIsChatOpen(!isChatOpen)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-16 h-16 cursor-pointer">
+            <Button onClick={() => setIsChatOpen(!isChatOpen)} variant="outline" size="lg" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-14 h-14 sm:w-16 sm:h-16 cursor-pointer">
               <MessageSquare size={24} />
             </Button>
           </TooltipButton>
