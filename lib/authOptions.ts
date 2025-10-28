@@ -15,25 +15,39 @@ export const authOptions: NextAuthOptions = {
             async authorize(credentials) {
                 await dbConnect();
                 if (!credentials) {
-                  return null;
+                  throw new Error("Invalid credentials");
                 }
                 const user = await User.findOne({ email: credentials.email });
 
-                if (user && user.passwordHash && bcrypt.compareSync(credentials.password, user.passwordHash)) {
-                  if (!user.verified) {
-                    throw new Error("Your account is pending verification by an administrator.");
-                  }
-                  return {
-                    id: user._id.toString(),
-                    _id: user._id.toString(),
-                    email: user.email,
-                    fullName: user.fullName,
-                    role: user.role,
-                    organizationId: user.organizationId.toString(),
-                    token: "dummy-token",
-                  };
+                if (!user) {
+                  throw new Error("No user found with this email");
                 }
-                return null;
+
+                if (!user.passwordHash) {
+                  // This case can happen if the user signed up with an OAuth provider
+                  // and is now trying to sign in with credentials.
+                  throw new Error("Please sign in using your social account");
+                }
+
+                const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+
+                if (!isValid) {
+                  throw new Error("Incorrect password");
+                }
+
+                if (!user.verified) {
+                  throw new Error("Your account is pending verification by an administrator.");
+                }
+
+                return {
+                  id: user._id.toString(),
+                  _id: user._id.toString(),
+                  email: user.email,
+                  fullName: user.fullName,
+                  role: user.role,
+                  organizationId: user.organizationId.toString(),
+                  token: "dummy-token",
+                };
               }
         })
     ],

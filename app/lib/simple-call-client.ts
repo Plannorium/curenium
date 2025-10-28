@@ -12,6 +12,16 @@ type WSMessage = {
   token?: string;
 };
 
+type StartMeshCallParams = {
+  roomId: string;
+  localStream: MediaStream;
+  token: string;
+  userName: string;
+  onRemoteStream: (stream: MediaStream, peerId: string, peerName: string) => void;
+  onParticipantLeft: (peerId: string) => void;
+  startCall: () => void;
+};
+
 export async function startMeshCall({
   roomId,
   localStream,
@@ -19,14 +29,8 @@ export async function startMeshCall({
   userName,
   onRemoteStream,
   onParticipantLeft,
-}: {
-  roomId: string;
-  localStream: MediaStream;
-  token: string;
-  userName: string;
-  onRemoteStream: (stream: MediaStream, peerId: string, userName: string) => void;
-  onParticipantLeft: (peerId: string) => void;
-}) {
+  startCall,
+}: StartMeshCallParams) {
   const ws = new WebSocket(
     `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(
       roomId
@@ -35,6 +39,7 @@ export async function startMeshCall({
   const pcMap: Record<string, RTCPeerConnection> = {};
 
   ws.onopen = () => {
+    startCall();
     ws.send(JSON.stringify({ type: "auth", token, user: { name: userName } }));
     ws.send(JSON.stringify({ type: "join", room: roomId }));
   };

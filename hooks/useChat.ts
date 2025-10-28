@@ -73,7 +73,7 @@ export const uploadFile = (
     const formData = new FormData();
     formData.append('file', file);
 
-    xhr.open('POST', '/api/upload', true);
+    xhr.open('POST', '/api/upload-local', true);
     xhr.send(formData);
   });
 };
@@ -159,7 +159,16 @@ export const useChat = (room: string) => {
           retryCount.current = 0; // Reset retry count on successful connection
           
           if (session?.user && currentWs) {
-            currentWs.send(JSON.stringify({ type: 'auth', user: { ...session.user, image: session.user.image } }));
+            const authMessage = JSON.stringify({
+              type: 'auth',
+              token: session.user.token, // Send the token for validation
+              user: {
+                id: session.user.id,
+                name: session.user.name,
+                image: session.user.image,
+              },
+            });
+            currentWs.send(authMessage);
           }
         };
 
@@ -374,6 +383,16 @@ export const useChat = (room: string) => {
     }
   };
 
+  const startCall = () => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN && session?.user) {
+      const payload = {
+        type: 'call-start',
+        room,
+      };
+      ws.current.send(JSON.stringify(payload));
+    }
+  };
+
   return {
     messages,
     typingUsers,
@@ -382,5 +401,6 @@ export const useChat = (room: string) => {
     sendPayload,
     sendTyping,
     uploadFile,
+    startCall,
   };
 };

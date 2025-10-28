@@ -4,7 +4,13 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Calendar as CalendarIcon, Stethoscope, UserCheck, Clock, Shield, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Calendar as CalendarIcon, Stethoscope, UserCheck, Clock, Shield, Heart, StickyNote } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import AddShiftModal from './AddShiftModal';
@@ -27,6 +33,7 @@ interface Shift {
 
 const ShiftView = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [displayMonth, setDisplayMonth] = useState<Date>(selectedDate || new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
@@ -77,6 +84,12 @@ const ShiftView = () => {
     fetchShifts();
   }, []);
 
+  useEffect(() => {
+    if (selectedDate) {
+      setDisplayMonth(selectedDate);
+    }
+  }, [selectedDate]);
+
   const filteredShifts = useMemo(() => {
     return shifts?.filter(shift => {
       // include shifts that span the selected date
@@ -84,13 +97,12 @@ const ShiftView = () => {
       const start = new Date(shift.startTime);
       const end = new Date(shift.endTime);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
-  // Build dayStart/dayEnd from the actual selectedDate (local midnight) to avoid
-  // timezone parsing issues when comparing to UTC ISO shift times.
-  const targetDate = selectedDate ? new Date(selectedDate) : new Date();
-  const dayStart = new Date(targetDate);
-  dayStart.setHours(0,0,0,0);
-  const dayEnd = new Date(targetDate);
-  dayEnd.setHours(23,59,59,999);
+
+      const targetDate = selectedDate ? new Date(selectedDate) : new Date();
+      const dayStart = new Date(targetDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(targetDate);
+      dayEnd.setHours(23, 59, 59, 999);
 
       return (start <= dayEnd && end >= dayStart);
     });
@@ -186,30 +198,33 @@ const ShiftView = () => {
         </div>
       </div>
       
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Calendar Section */}
-        <div className="w-1/2 lg:w-2/5 border-r border-border p-6 overflow-y-auto">
+        <div className="w-full md:w-1/3 lg:w-2/5 border-b md:border-b-0 md:border-r border-border p-0 overflow-y-auto mt-3">
           <div className="shift-calendar">
             <DayPicker
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
+              month={displayMonth}
+              onMonthChange={setDisplayMonth}
               className="w-full"
+              showOutsideDays
               classNames={{
-                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                month: "space-y-4",
+                months: "flex flex-col sm:flex-row space-y-2 sm:space-x-1.5",
+                month: "space-y-2",
                 caption: "flex justify-center pt-1 relative items-center",
-                caption_label: "text-sm font-medium text-foreground",
-                nav: "space-x-1 flex items-center",
-                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-md transition-colors",
+                caption_label: "text-xs font-medium text-foreground",
+                nav: "hidden",
+                nav_button: "h-4 w-4 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-md transition-colors",
                 nav_button_previous: "absolute left-1",
                 nav_button_next: "absolute right-1",
                 table: "w-full border-collapse space-y-1",
                 head_row: "flex",
-                head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
-                row: "flex w-full mt-2",
-                cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary-50 dark:[&:has([aria-selected])]:bg-primary-950/30 [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
-                day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md transition-colors",
+                head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.6rem] justify-center",
+                row: "flex w-full mt-1",
+                cell: "relative p-0 text-center text-[0.7rem] focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary-50 dark:[&:has([aria-selected])]:bg-primary-950/30 [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
+                day: "h-2 w-2 p-0 font-normal aria-selected:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md transition-colors",
                 day_range_end: "day-range-end",
                 day_selected: "bg-primary-600 text-primary-foreground hover:bg-primary-600 hover:text-primary-foreground focus:bg-primary-600 focus:text-primary-foreground",
                 day_today: "bg-accent text-accent-foreground font-semibold",
@@ -219,11 +234,29 @@ const ShiftView = () => {
                 day_hidden: "invisible",
               }}
             />
+            <div className="w-full flex items-center justify-center gap-2 mt-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1))}
+                    className="w-fit h-7 px-2"
+                >
+                    <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1))}
+                    className="w-fit h-7 px-2"
+                >
+                    <ChevronRight className="h-3 w-3" />
+                </Button>
+            </div>
           </div>
         </div>
 
-        {/* Shifts List */}
-        <div className="w-1/2 lg:w-2/5 overflow-y-auto p-6">
+          {/* Shifts List */}
+        <div className="w-full md:w-2/3 lg:w-3/5 xl:w-1/2 border-b md:border-b-0 md:border-r border-border overflow-y-auto p-2">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">Today&apos;s Shifts</h2>
@@ -237,53 +270,68 @@ const ShiftView = () => {
                 {filteredShifts.map((shift: Shift) => (
                   <div
                     key={shift._id}
-                    onClick={() => setSelectedShift(shift)}
-                    className="group bg-card border border-border rounded-lg p-3 hover:shadow-md hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-200 cursor-pointer"
+                    className="group bg-card border border-border rounded-lg p-4 transition-all duration-200 hover:bg-muted/50 hover:border-primary/20"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <Avatar className="h-10 w-10 ring-2 ring-primary-100 dark:ring-primary-900/50">
+                        <Avatar className="h-10 w-10 ring-2 ring-primary-100 dark:ring-primary-900/50 group-hover:scale-105 transform transition-transform duration-200">
                           <AvatarImage src={(shift.user && shift.user.avatar) ? shift.user.avatar : ''} alt={(shift.user && shift.user.fullName) ? shift.user.fullName : ''} />
                           <AvatarFallback className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 font-medium">
                             {shift.initials}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2">
                             {getRoleIcon(shift.role)}
-                            <p className="font-medium text-foreground truncate">{shift.user.fullName}</p>
+                            <p className="font-semibold text-base text-foreground truncate">{shift.user.fullName}</p>
                             {shift._malformed && (
                               <Badge variant="destructive" className="ml-2 text-xs flex-shrink-0">!</Badge>
                             )}
                           </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {(shift.startTime ? new Date(shift.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')} - {(shift.endTime ? new Date(shift.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')}
-                            </span>
-                            <span className="text-xs px-2 py-0.5 bg-muted rounded-full hidden sm:inline-block">
-                              {shift.role}
+                          <div className="text-sm text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4" />
+                              <span>
+                                {(shift.startTime ? new Date(shift.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')} - {(shift.endTime ? new Date(shift.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')}
+                              </span>
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-4">
+                        {/* Desktop badge */}
                         <Badge
                           variant={getStatusBadgeVariant(shift.status)}
-                          className={`flex-shrink-0
-                            ${shift.status === 'on-shift' ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : ''}
+                          className={`inline-flex items-center flex-shrink-0
+                            ${
+                              shift.status === 'on-shift' ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : ''
+                            }
                             ${shift.status === 'on-call' ? 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300' : ''}
                             ${shift.status === 'upcoming' ? 'border-muted-foreground/30' : ''}
                           `}
                         >
-                          {shift.status === 'on-shift' && <div className="w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full mr-1" />}
-                          {shift.status === 'on-call' && <div className="w-2 h-2 bg-accent-600 dark:bg-accent-400 rounded-full mr-1" />}
-                          {shift.status === 'upcoming' && <div className="w-2 h-2 bg-muted-400 rounded-full mr-1" />}
-                          <span className="hidden sm:inline">{typeof shift.status === 'string' ? shift.status.replace('-', ' ') : 'unknown'}</span>
+                          {shift.status === 'on-shift' && <div className="w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full mr-1.5" />}
+                          {shift.status === 'on-call' && <div className="w-2 h-2 bg-accent-600 dark:bg-accent-400 rounded-full mr-1.5" />}
+                          {shift.status === 'upcoming' && <div className="w-2 h-2 bg-muted-400 rounded-full mr-1.5" />}
+                          <span className="capitalize">{typeof shift.status === 'string' ? shift.status.replace('-', ' ') : 'unknown'}</span>
                         </Badge>
+
+                        {/* Mobile icon */}
                         
-                        <MoreVertical className="h-4 w-4 text-muted-foreground opacity-50 group-hover:opacity-100" />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                              <MoreVertical className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedShift(shift)}>
+                              <StickyNote className="mr-2 h-4 w-4" />
+                              View Notes
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>
@@ -306,7 +354,7 @@ const ShiftView = () => {
         </div>
 
         {/* On-Call Team Panel */}
-        <div className="hidden lg:block w-1/5 border-l border-border bg-muted/20 overflow-y-auto">
+        <div className="hidden xl:block w-1/4 border-l border-border bg-muted/20 overflow-y-auto">
           <div className="p-6">
             <Card className="border-0 shadow-none bg-transparent">
               <CardHeader className="px-0 pb-4">

@@ -290,7 +290,8 @@ export default function Chat() {
     onlineUsers,
     typingUsers,
     sendTyping,
-    sendPayload
+    sendPayload,
+    startCall
   } = useChat(activeRoom);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -664,6 +665,7 @@ export default function Chat() {
       setIsCallActive(true);
       
       if (session?.user?.token) {
+        
         const call = await startMeshCall({
           roomId: activeRoom,
           localStream: stream,
@@ -678,7 +680,8 @@ export default function Chat() {
               delete newStreams[peerId];
               return newStreams;
             });
-          }
+          },
+          startCall: startCall
         });
         callRef.current = call;
       }

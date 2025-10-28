@@ -1,20 +1,42 @@
+import * as jose from 'jose';
+import mongoose from 'mongoose';
+import CallSession, { ICallSession } from '../models/CallSession';
+
 export interface Env {
     CHAT_ROOM: DurableObjectNamespace;
+    MONGODB_URI: string;
+    NEXTAUTH_SECRET: string;
 }
 
 export class ChatRoom {
     state: DurableObjectState;
     sessions: { socket: WebSocket, user: any }[] = [];
     messages: any[] = [];
+    env: Env;
+    callSessionId?: string;
 
-    constructor(state: DurableObjectState) {
+    constructor(state: DurableObjectState, env: Env) {
         this.state = state;
+        this.env = env;
         this.state.blockConcurrencyWhile(async () => {
             this.messages = await this.state.storage.get<any[]>("messages") || [];
+            this.callSessionId = await this.state.storage.get<string>("callSessionId");
         });
     }
 
+    async dbConnect() {
+        if (mongoose.connection.readyState >= 1) {
+            return;
+        }
+        return mongoose.connect(this.env.MONGODB_URI);
+    }
+
     async fetch(request: Request) {
+        const envHeader = request.headers.get('X-Env');
+        if (envHeader) {
+            this.env = JSON.parse(envHeader);
+        }
+
         const isWebSocketUpgrade = request.headers.get("Upgrade") === "websocket";
 
         if (isWebSocketUpgrade) {
@@ -41,8 +63,46 @@ export class ChatRoom {
             console.log("Received message:", data);
 
             if (data.type === 'auth') {
-                session.user = data.user;
-                console.log("Authenticated user:", session.user);
+                try {
+                    const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
+                    const { payload } = await jose.jwtVerify(data.token, secret);
+                    session.user = payload;
+                    console.log("Authenticated user:", session.user);
+                } catch (error) {
+                    console.error("Authentication failed:", error);
+                    webSocket.send(JSON.stringify({ error: 'Authentication failed' }));
+                    webSocket.close(1008, "Authentication failed");
+                }
+                return;
+            }
+
+            if (data.type === 'call-start') {
+                if (!session.user) {
+                    webSocket.send(JSON.stringify({ error: 'Not authenticated' }));
+                    return;
+                }
+
+                if (!this.callSessionId) {
+                    await this.dbConnect();
+                    const newCallSession = new CallSession({
+                        participants: [session.user.id],
+                        startTime: new Date(),
+                    });
+                    await newCallSession.save();
+                    this.callSessionId = newCallSession._id.toString();
+                    await this.state.storage.put("callSessionId", this.callSessionId);
+                    this.broadcast(JSON.stringify({ type: 'call-session-started', callSessionId: this.callSessionId }));
+                }
+                return;
+            }
+
+            if (data.type === 'call') {
+                if (!session.user) {
+                    console.log("Call message from unauthenticated user, sending error");
+                    webSocket.send(JSON.stringify({ error: 'Not authenticated' }));
+                    return;
+                }
+                this.broadcast(JSON.stringify(data));
                 return;
             }
 
@@ -109,9 +169,24 @@ export class ChatRoom {
             }
         });
 
-        webSocket.addEventListener("close", () => {
+        webSocket.addEventListener("close", async () => {
             console.log("WebSocket session closed");
             this.sessions = this.sessions.filter((s) => s.socket !== webSocket);
+
+            if (this.sessions.length === 0 && this.callSessionId) {
+                try {
+                    await this.dbConnect();
+                    const callSession = await CallSession.findById(this.callSessionId).exec() as ICallSession | null;
+                    if (callSession) {
+                        callSession.endTime = new Date();
+                        await callSession.save();
+                        this.callSessionId = undefined;
+                        await this.state.storage.delete("callSessionId");
+                    }
+                } catch (error) {
+                    console.error('Error updating call session:', error);
+                }
+            }
         });
 
         webSocket.addEventListener("error", (error) => {
@@ -144,6 +219,10 @@ export default <ExportedHandler<Env>>{
 
         let id = env.CHAT_ROOM.idFromName(room);
         let stub = env.CHAT_ROOM.get(id);
-        return stub.fetch(request);
+
+        const newRequest = new Request(request.url, request);
+        newRequest.headers.set('X-Env', JSON.stringify(env));
+
+        return stub.fetch(newRequest);
     },
 };

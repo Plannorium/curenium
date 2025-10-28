@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +34,7 @@ const NotesModal: React.FC<NotesModalProps> = ({ shift, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     if (!shift) return;
     setIsLoading(true);
     try {
@@ -46,11 +46,11 @@ const NotesModal: React.FC<NotesModalProps> = ({ shift, onClose }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [shift]);
 
   useEffect(() => {
     fetchNotes();
-  }, [shift, fetchNotes]);
+  }, [fetchNotes]);
 
   const handleSubmit = async () => {
     if (!newNote.trim()) return;
