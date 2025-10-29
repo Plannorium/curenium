@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const validation = alertSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ message: 'Invalid input', errors: validation.error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Invalid input', errors: validation.error.issues }, { status: 400 });
     }
 
     const { message, level } = validation.data;

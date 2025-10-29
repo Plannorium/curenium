@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, models, model } from 'mongoose';
+import mongoose, { Document, Model, Schema, models, model } from 'mongoose';
 
 export interface IAlert extends Document {
   message: string;
@@ -21,4 +21,4 @@ const AlertSchema = new Schema<IAlert>({
   timestamps: true,
 });
 
-export default models.Alert || model<IAlert>('Alert', AlertSchema);
+export default (models.Alert as Model<IAlert>) || model<IAlert>('Alert', AlertSchema);
