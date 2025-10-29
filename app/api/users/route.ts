@@ -14,10 +14,9 @@ export async function GET(_req: NextRequest) {
   await dbConnect();
 
   try {
-    // Find all users belonging to the same organization as the logged-in user.
     const users = await User.find({
       organizationId: session.user.organizationId,
-    }).select('fullName image');
+    }).select('fullName image id _id role');
 
     return NextResponse.json({ users }, { status: 200 });
   } catch (error) {

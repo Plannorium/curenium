@@ -273,14 +273,14 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-1 overflow-hidden">
       {/* custom scrollbar CSS injected for this component */}
       <style>{`
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.16) transparent; }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)); border-radius: 12px; border: 2px solid transparent; background-clip: padding-box; }
-        .resizable-handle { width: 8px; cursor: col-resize; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
+        .resizable-handle { width: 4px; cursor: col-resize; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
         .participant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
       `}</style>
 
@@ -289,13 +289,13 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
           {/* Screen share header */}
           {isScreenSharing && screenStream && (
-            <div className="w-full max-h-fit overflow-hidden p-4">
+            <div className="w-full max-h-fit overflow-hidden p-2 md:py-4 md:px-1.5">
               <VideoTile stream={screenStream} isMuted={true} userName={"Your Screen"} isLocal={true} isScreenShare={true} />
             </div>
           )}
 
           {/* participants area */}
-          <div className="p-4 ">
+          <div className="p-3 ">
             <div className="participant-grid">
               {/* local tile always first */}
               {localStream && (

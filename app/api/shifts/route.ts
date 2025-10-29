@@ -14,7 +14,10 @@ export async function GET() {
 
     await dbConnect();
 
-    const shifts = await Shift.find({ organization: session.user.organizationId }).populate('user', 'fullName');
+    const shifts = await Shift.find({ organization: session.user.organizationId }).populate(
+      'user',
+      'fullName image'
+    );
 
     return NextResponse.json(shifts);
   } catch (error) {
@@ -65,7 +68,10 @@ export async function POST(req: Request) {
 
     await newShift.save();
 
-    const populatedShift = await Shift.findById(newShift._id).populate('user', 'fullName');
+    const populatedShift = await Shift.findById(newShift._id).populate(
+      'user',
+      'fullName image'
+    );
     return NextResponse.json(populatedShift, { status: 201 });
   } catch (error) {
     console.error('Error creating shift:', error);

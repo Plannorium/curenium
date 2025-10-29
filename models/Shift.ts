@@ -9,7 +9,6 @@ export interface IShift extends Document {
   organization: mongoose.Types.ObjectId;
   status: 'on-shift' | 'on-call' | 'upcoming';
   initials: string;
-  avatar?: string;
 }
 
 const ShiftSchema: Schema = new Schema(
@@ -31,7 +30,6 @@ const ShiftSchema: Schema = new Schema(
       default: 'upcoming',
     },
     initials: { type: String, required: true },
-    avatar: { type: String },
   },
   { timestamps: true }
 );

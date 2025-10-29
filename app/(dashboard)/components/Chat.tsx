@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ImageLightbox } from "./ImageLightbox";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon } from 'lucide-react';
+import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
@@ -18,12 +18,17 @@ import { CallView } from './CallView';
 import { ReactionPicker } from './ReactionPicker';
 import { ReactionDetailsModal } from './ReactionDetailsModal';
 import { AnimatePresence } from "framer-motion";
+import { UserProfileCard } from './UserProfileCard';
+import { SendAlertModal } from './SendAlertModal';
 
 interface User {
   id: string;
   _id: string;
   fullName: string;
   image?: string;
+  role?: string;
+  email?: string;
+  isOnline?: boolean;
 }
 
 const formatFileSize = (bytes?: number) => {
@@ -94,6 +99,7 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
       console.error('openLightbox error', err);
     }
   };
+
   const messageDate = msg.createdAt ? new Date(msg.createdAt) : null;
   const timeString = messageDate
     ? messageDate.toLocaleTimeString([], {
@@ -283,6 +289,8 @@ export default function Chat() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const callRef = useRef<{ endCall: () => void; replaceTrack: (track: MediaStreamTrack) => void; } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
   const {
     messages,
     sendCombinedMessage,
@@ -293,6 +301,13 @@ export default function Chat() {
     sendPayload,
     startCall
   } = useChat(activeRoom);
+
+  const handleStartChat = (userId: string) => {
+    console.log(`Starting chat with user ${userId}`);
+    setSelectedUser(null);
+    // Here you would typically switch to a direct message room
+    // For now, we'll just log the action
+  };
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -314,6 +329,7 @@ export default function Chat() {
       }
     });
   };
+
 
   const handleReactionClick = (messageId: string, emoji: string, users: any[]) => {
     setActiveReactionDetails({ messageId, emoji, users });
@@ -877,11 +893,39 @@ export default function Chat() {
                 disabled={!session}
               >
                 <VideoIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                <span className="ml-2">Call</span>
+                <span className="ml-2">Sync</span>
               </Button>
-              <Button variant="ghost" size="sm" className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200">
-                <InfoIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-              </Button>
+              <div className="flex items-center -space-x-2 pr-2">
+            {users.slice(0, 5).map(user => {
+                const isOnline = onlineUsers.includes(user.fullName);
+                return (
+                <div key={user.id || user._id} className="relative group/avatar" onClick={() => setSelectedUser(user)}>
+                    <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
+                    <AvatarImage src={user.image || undefined} />
+                    <AvatarFallback className="text-xs font-semibold">
+                        {(user.fullName || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                    </AvatarFallback>
+                    </Avatar>
+                    {isOnline && (
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
+                    )}
+                </div>
+                );
+            })}
+            {users.length > 5 && (
+                <div className="relative group/avatar">
+                <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
+                    <AvatarFallback className="text-xs font-semibold bg-muted">
+                    +{users.length - 5}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
+                    <p className="font-semibold mb-1">More members:</p>
+                    <p className="font-normal">{users.slice(5).map(u => u.fullName).join(', ')}</p>
+                </div>
+                </div>
+            )}
+            </div>
             </div>
           </div>
 
@@ -1088,102 +1132,13 @@ export default function Chat() {
       </div>
 
       {/* Critical Alert Modal */}
-      {showAlertModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full backdrop-blur-xl bg-card/95 border-border/50 shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-primary/5 rounded-xl pointer-events-none"></div>
-            
-            <CardHeader className="relative pb-4">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl font-bold text-foreground flex items-center">
-                  <div className="p-2 bg-red-500/10 rounded-lg mr-3 border border-red-500/20">
-                    <BellIcon size={20} className="text-red-500" />
-                  </div>
-                  Send Critical Alert
-                </CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowAlertModal(false)} 
-                  className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
-                >
-                  <XIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                </Button>
-              </div>
-            </CardHeader>
-
-            <CardContent className="relative space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                Critical alerts notify all team members immediately via push
-                notifications and SMS. Use only for urgent situations requiring
-                immediate attention.
-              </p>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-foreground">
-                  Alert Type
-                </label>
-                <select className="backdrop-blur-sm bg-background/50 border border-border/60 rounded-xl px-4 py-3 w-full text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200">
-                  <option>Medical Emergency</option>
-                  <option>Code Blue</option>
-                  <option>Urgent Assistance</option>
-                  <option>Critical Information</option>
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-foreground">
-                  Message
-                </label>
-                <textarea 
-                  className="backdrop-blur-sm bg-background/50 border border-border/60 rounded-xl px-4 py-3 w-full text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 resize-none" 
-                  rows={3} 
-                  placeholder="Describe the emergency situation..."
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-foreground">
-                  Alert Recipients
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200">
-                    Emergency Ward Team
-                    <Button variant="ghost" size="sm" className="p-0.5 ml-2 rounded-full hover:bg-primary/20 transition-all duration-200">
-                      <XIcon size={12} />
-                    </Button>
-                  </div>
-                  <div className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200">
-                    Dr. John Miller
-                    <Button variant="ghost" size="sm" className="p-0.5 ml-2 rounded-full hover:bg-primary/20 transition-all duration-200">
-                      <XIcon size={12} />
-                    </Button>
-                  </div>
-                  <Button variant="outline" size="sm" className="rounded-full px-3 py-1.5 text-sm backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200">
-                    + Add more
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAlertModal(false)} 
-                  className="flex-1 backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-                >
-                  Send Critical Alert
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <SendAlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        onAlertSent={() => {
+          // Optional: show a success toast or notification
+        }}
+      />
 
       {/* Image Lightbox */}
       {lightbox && (
@@ -1219,7 +1174,23 @@ export default function Chat() {
               onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
             />
           )}
-        </AnimatePresence>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedUser && (
+            <UserProfileCard
+              user={{
+                ...selectedUser,
+                isOnline: onlineUsers.includes(selectedUser._id),
+                // Assuming email is fetched with user data. If not, this will be undefined.
+                email: selectedUser.email
+              }}
+              onClose={() => setSelectedUser(null)}
+              onStartChat={handleStartChat}
+              currentUserId={session?.user?._id}
+            />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

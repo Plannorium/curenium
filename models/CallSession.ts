@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model, Connection } from 'mongoose';
 
 export interface ICallSession extends Document {
   roomId: string;
@@ -14,8 +14,12 @@ const CallSessionSchema = new Schema<ICallSession>({
   endTime: { type: Date },
 });
 
-const CallSession: Model<ICallSession> =
-  mongoose.models.CallSession ||
-  mongoose.model<ICallSession>('CallSession', CallSessionSchema);
+let CallSessionModel: Model<ICallSession>;
 
-export default CallSession;
+// Export a function to get the model, ensuring it's only accessed after mongoose is connected
+export function getCallSessionModel(): Model<ICallSession> {
+  if (!CallSessionModel || mongoose.connection.readyState === 0) { // Re-initialize if not set or connection dropped
+    CallSessionModel = mongoose.models.CallSession as Model<ICallSession> || mongoose.model<ICallSession>('CallSession', CallSessionSchema);
+  }
+  return CallSessionModel;
+}

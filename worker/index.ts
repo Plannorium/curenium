@@ -1,6 +1,7 @@
 import * as jose from 'jose';
 import mongoose from 'mongoose';
-import CallSession, { ICallSession } from '../models/CallSession';
+import { ICallSession, getCallSessionModel } from '../models/CallSession';
+
 
 export interface Env {
     CHAT_ROOM: DurableObjectNamespace;
@@ -12,6 +13,7 @@ export class ChatRoom {
     state: DurableObjectState;
     sessions: { socket: WebSocket, user: any }[] = [];
     messages: any[] = [];
+    users: Map<string, { id: string; name: string; image?: string }> = new Map();
     env: Env;
     callSessionId?: string;
 
@@ -22,6 +24,11 @@ export class ChatRoom {
             this.messages = await this.state.storage.get<any[]>("messages") || [];
             this.callSessionId = await this.state.storage.get<string>("callSessionId");
         });
+    }
+
+    broadcastPresence() {
+        const online = Array.from(this.users.values());
+        this.broadcast(JSON.stringify({ type: 'presence', onlineUsers: online }));
     }
 
     async dbConnect() {
@@ -57,6 +64,7 @@ export class ChatRoom {
         console.log("New WebSocket session established");
 
         webSocket.send(JSON.stringify({ type: "messages", messages: this.messages }));
+        this.broadcastPresence();
 
         webSocket.addEventListener("message", async (event) => {
             const data = JSON.parse(event.data as string);
@@ -67,6 +75,8 @@ export class ChatRoom {
                     const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
                     const { payload } = await jose.jwtVerify(data.token, secret);
                     session.user = payload;
+                    this.users.set(payload.id as string, { id: payload.id as string, name: payload.name as string, image: payload.image as string });
+                    this.broadcastPresence();
                     console.log("Authenticated user:", session.user);
                 } catch (error) {
                     console.error("Authentication failed:", error);
@@ -84,6 +94,7 @@ export class ChatRoom {
 
                 if (!this.callSessionId) {
                     await this.dbConnect();
+                    const CallSession = getCallSessionModel(); // Get the model after connecting to the DB
                     const newCallSession = new CallSession({
                         participants: [session.user.id],
                         startTime: new Date(),
@@ -171,12 +182,18 @@ export class ChatRoom {
 
         webSocket.addEventListener("close", async () => {
             console.log("WebSocket session closed");
+            const session = this.sessions.find(s => s.socket === webSocket);
+            if (session && session.user) {
+                this.users.delete(session.user.id);
+            }
             this.sessions = this.sessions.filter((s) => s.socket !== webSocket);
+            this.broadcastPresence();
 
             if (this.sessions.length === 0 && this.callSessionId) {
                 try {
                     await this.dbConnect();
-                    const callSession = await CallSession.findById(this.callSessionId).exec() as ICallSession | null;
+                    const CallSession = getCallSessionModel(); // Get the model after connecting to the DB
+                    const callSession: ICallSession | null = await CallSession.findById(this.callSessionId).exec();
                     if (callSession) {
                         callSession.endTime = new Date();
                         await callSession.save();

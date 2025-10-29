@@ -27,14 +27,40 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 interface NavbarProps {
   toggleSidebar: () => void;
 }
 
+interface UserData {
+  fullName: string;
+  email: string;
+  image?: string;
+}
+
 export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
   const { data: session } = useSession();
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/users/current');
+        if (response.ok) {
+          const data = (await response.json()) as { user: UserData };
+          setUserData(data.user);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    if (session) {
+      fetchUserData();
+    }
+  }, [session]);
 
   return (
     <header className="relative backdrop-blur-xl bg-background/95 border-b border-border/50 py-4 px-6 flex items-center justify-between shadow-lg">
@@ -103,12 +129,12 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             >
               <Avatar className="h-9 w-9 ring-2 ring-border/20 transition-all duration-200 hover:ring-primary/30">
                 <AvatarImage 
-                  src={session?.user?.image ?? ''} 
-                  alt={session?.user?.name ?? session?.user?.email ?? ''} 
+                  src={userData?.image ?? session?.user?.image ?? ''} 
+                  alt={userData?.fullName ?? session?.user?.name ?? session?.user?.email ?? ''} 
                   className="object-cover"
                 />
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm border border-primary/20">
-                  {session?.user?.name?.[0] || session?.user?.email?.[0]}
+                  {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -123,20 +149,20 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
               <div className="flex items-center space-x-3">
                 <Avatar className="h-10 w-10 ring-2 ring-border/20">
                   <AvatarImage 
-                    src={session?.user?.image ?? ''} 
+                    src={userData?.image ?? session?.user?.image ?? ''} 
                     className="object-cover"
                   />
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                    {session?.user?.name?.[0] || session?.user?.email?.[0]}
+                    {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col space-y-1 min-w-0">
                   <p className="text-sm font-semibold leading-none text-foreground truncate">
-                    {session?.user?.name || session?.user?.email}
+                    {userData?.fullName || session?.user?.name || session?.user?.email}
                   </p>
                   {session?.user?.name && (
                     <p className="text-xs leading-none text-muted-foreground truncate">
-                      {session?.user?.email}
+                      {userData?.email || session?.user?.email}
                     </p>
                   )}
                   <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20 w-fit">

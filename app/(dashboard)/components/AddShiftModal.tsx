@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -10,10 +11,16 @@ import { Plus, Calendar, Clock, User, Briefcase, Loader2 } from 'lucide-react';
 interface User {
   _id: string;
   fullName: string;
+  image?: string;
+}
+
+interface UsersApiResponse {
+  users: User[];
 }
 
 interface AddShiftModalProps {
   onShiftAdded: () => void;
+  children: React.ReactNode;
 }
 
 const roles = {
@@ -25,7 +32,7 @@ const roles = {
   reception: 'Reception',
 };
 
-const AddShiftModal: React.FC<AddShiftModalProps> = ({ onShiftAdded }) => {
+const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
@@ -41,8 +48,8 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ onShiftAdded }) => {
       setIsLoading(true);
       try {
         const res = await fetch('/api/users');
-        const data: User[] = await res.json();
-        setUsers(data);
+        const data: UsersApiResponse = await res.json();
+        setUsers(data.users || []);
       } catch (error) {
         console.error('Failed to fetch users:', error);
       } finally {
@@ -94,15 +101,9 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ onShiftAdded }) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          size="sm"
-          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Shift
-        </Button>
+        {children}
       </DialogTrigger>
-      <DialogContent className="backdrop-blur-xl bg-background/95 border-border/50 shadow-2xl max-w-md">
+      <DialogContent className="backdrop-blur-xl bg-background/95 border-border/50 shadow-2xl max-w-lg">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-lg pointer-events-none"></div>
         
@@ -133,7 +134,15 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ onShiftAdded }) => {
                     value={user._id}
                     className="hover:bg-accent/50 focus:bg-accent/50 transition-colors duration-150"
                   >
-                    {user.fullName}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={user.image} />
+                        <AvatarFallback className="text-xs">
+                          {user.fullName.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      {user.fullName}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -245,6 +254,6 @@ const AddShiftModal: React.FC<AddShiftModalProps> = ({ onShiftAdded }) => {
       </DialogContent>
     </Dialog>
   );
-};
+});
 
 export default AddShiftModal;

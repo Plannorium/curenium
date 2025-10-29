@@ -25,7 +25,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: 'Shift ID is required' }, { status: 400 });
     }
 
-    const notes = await Note.find({ shift: shiftId }).populate('author', 'fullName avatar initials');
+    const notes = await Note.find({ shift: shiftId }).populate('author', 'fullName image initials');
     return NextResponse.json(notes);
   } catch (error) {
     console.error('Error fetching notes:', error);
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     });
 
     await newNote.save();
-    const populatedNote = await Note.findById(newNote._id).populate('author', 'fullName avatar initials');
+    const populatedNote = await Note.findById(newNote._id).populate('author', 'fullName image initials');
 
     return NextResponse.json(populatedNote, { status: 201 });
   } catch (error: any) {

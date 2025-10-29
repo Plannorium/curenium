@@ -12,7 +12,7 @@ interface Note {
   author: {
     _id: string;
     fullName: string;
-    avatar?: string;
+    image?: string;
     initials?: string;
   };
   createdAt?: string;
@@ -28,7 +28,7 @@ interface NotesModalProps {
   onClose: () => void;
 }
 
-const NotesModal: React.FC<NotesModalProps> = ({ shift, onClose }) => {
+const NotesModal: React.FC<NotesModalProps> = React.memo(function NotesModal({ shift, onClose }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -125,7 +125,7 @@ const NotesModal: React.FC<NotesModalProps> = ({ shift, onClose }) => {
                     className="group flex items-start gap-3 p-4 rounded-xl backdrop-blur-sm bg-card/50 border border-border/30 hover:bg-card/70 hover:border-border/50 transition-all duration-300 hover:shadow-md"
                   >
                     <Avatar className="h-9 w-9 ring-2 ring-border/20 transition-all duration-200 group-hover:ring-primary/30">
-                      <AvatarImage src={note.author.avatar} className="object-cover" />
+                      <AvatarImage src={note.author.image} className="object-cover" />
                       <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
                         {note.author.initials || note.author.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </AvatarFallback>
@@ -198,6 +198,6 @@ const NotesModal: React.FC<NotesModalProps> = ({ shift, onClose }) => {
       </DialogContent>
     </Dialog>
   );
-};
+});
 
 export default NotesModal;

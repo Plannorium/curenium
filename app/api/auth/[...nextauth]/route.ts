@@ -4,7 +4,9 @@ import GitHubProvider from "next-auth/providers/github";
 import { NextAuthOptions } from "next-auth";
 import User from "@/models/User";
 import dbConnect from "@/lib/dbConnect";
-import { authOptions as credentialsAuthOptions } from "@/lib/authOptions";
+
+import { authOptions as credentialsAuthOptions } from "@/lib/authOptions"; 
+import { SignJWT } from 'jose';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -43,23 +45,36 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
+        // On sign-in, copy user data to the token
         token.id = user.id;
         token._id = (user as any)._id;
-        token.name = (user as any).fullName;
+        token.name = (user as any).fullName || user.name;
         token.role = (user as any).role;
         token.organizationId = (user as any).organizationId;
-        token.token = (user as any).token;
       }
+
+      // Create a *new*, signed JWS token for the Cloudflare Worker
+      // This is separate from NextAuth's own session token.
+      const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+      const customToken = await new SignJWT({
+        id: token.id,
+        name: token.name,
+        image: token.picture,
+      }).setProtectedHeader({ alg: 'HS256' }).sign(secret);
+
+      token.accessToken = customToken; // Attach our new signed token to the NextAuth token
       return token;
     },
     async session({ session, token }) {
+      // The session callback receives the token from the jwt callback.
+      // Now, we can add the data to the client-side session object.
       if (session.user) {
         session.user.id = token.id as string;
         session.user._id = token._id as string;
         session.user.role = token.role as string;
         session.user.organizationId = token.organizationId as string;
-        session.user.name = token.name || null;
-        session.user.token = token.token as string;
+        session.user.name = token.name;
+        session.user.token = token.accessToken as string; // Pass the full encoded JWT to the client
 
         if (!session.user.name && session.user.id) {
           try {

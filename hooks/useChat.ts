@@ -262,6 +262,10 @@ export const useChat = (room: string) => {
                   })
                 );
               }
+            } else if (message.type === 'presence') {
+              if (message.onlineUsers) {
+                setOnlineUsers(message.onlineUsers);
+              }
             } else if (message.error) {
               console.error('WebSocket error:', message.error);
             }

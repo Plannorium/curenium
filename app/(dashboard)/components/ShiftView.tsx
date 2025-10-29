@@ -19,10 +19,10 @@ import NotesModal from './NotesModal'; // Import NotesModal
 interface Shift {
   _id: string;
   role: string;
-  user: { 
+  user: {
     _id: string;
     fullName: string;
-    avatar?: string;
+    image?: string;
   };
   startTime: string | null;
   endTime: string | null;
@@ -164,7 +164,15 @@ const ShiftView = () => {
               <p className="text-sm text-muted-foreground">Manage team schedules and on-call assignments</p>
             </div>
           </div>
-          <AddShiftModal onShiftAdded={fetchShifts} />
+          <AddShiftModal onShiftAdded={fetchShifts}>
+            <Button 
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Shift
+            </Button>
+          </AddShiftModal>
         </div>
       </div>
 
@@ -200,7 +208,7 @@ const ShiftView = () => {
       
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Calendar Section */}
-        <div className="w-full md:w-1/3 lg:w-2/5 border-b md:border-b-0 md:border-r border-border p-0 overflow-y-auto mt-3">
+        <div className="w-full md:w-1/3 lg:w-2/5 border-b md:border-b-0 md:border-r border-border p-0 overflow-y-auto mt-3 flex justify-center">
           <div className="shift-calendar">
             <DayPicker
               mode="single"
@@ -211,7 +219,7 @@ const ShiftView = () => {
               className="w-full"
               showOutsideDays
               classNames={{
-                months: "flex flex-col sm:flex-row space-y-2 sm:space-x-1.5",
+                months: "flex md:space-y-2 space-x-1.5",
                 month: "space-y-2",
                 caption: "flex justify-center pt-1 relative items-center",
                 caption_label: "text-xs font-medium text-foreground",
@@ -275,7 +283,7 @@ const ShiftView = () => {
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         <Avatar className="h-10 w-10 ring-2 ring-primary-100 dark:ring-primary-900/50 group-hover:scale-105 transform transition-transform duration-200">
-                          <AvatarImage src={(shift.user && shift.user.avatar) ? shift.user.avatar : ''} alt={(shift.user && shift.user.fullName) ? shift.user.fullName : ''} />
+                          <AvatarImage src={shift.user?.image || ''} alt={shift.user?.fullName || ''} />
                           <AvatarFallback className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 font-medium">
                             {shift.initials}
                           </AvatarFallback>
@@ -344,10 +352,12 @@ const ShiftView = () => {
                 </div>
                 <h3 className="text-lg font-medium text-foreground mb-2">No shifts scheduled</h3>
                 <p className="text-muted-foreground mb-6">No shifts are scheduled for this day.</p>
-                <Button variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Schedule Shift
-                </Button>
+                <AddShiftModal onShiftAdded={fetchShifts}>
+                  <Button variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Schedule Shift
+                  </Button>
+                </AddShiftModal>
               </div>
             )}
           </div>
@@ -369,7 +379,7 @@ const ShiftView = () => {
                     <div key={shift._id} className="bg-card border border-border rounded-lg p-3 hover:shadow-sm transition-shadow">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={(shift.user && shift.user.avatar) ? shift.user.avatar : ""} alt={(shift.user && shift.user.fullName) ? shift.user.fullName : ''} />
+                          <AvatarImage src={shift.user?.image || ""} alt={shift.user?.fullName || ''} />
                           <AvatarFallback className="bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400 text-xs">
                             {shift.initials}
                           </AvatarFallback>
