@@ -265,7 +265,7 @@ const MessageBubble = ({
       </Avatar>
 
       <div
-        className="flex flex-col gap-1 items-start"
+        className="flex flex-col gap-0.5 items-start"
       >
         <div className="flex items-center gap-2">
           <span className="font-semibold text-foreground text-sm">
@@ -306,7 +306,7 @@ const MessageBubble = ({
 
             {/* TEXT */}
             {(msg.text || msg.content) && (
-              <p className="text-[0.75rem] leading-relaxed break-words px-2">{msg.text || msg.content}</p>
+              <p className="text-[1rem] leading-relaxed break-words px-2">{msg.text || msg.content}</p>
             )}
 
             {/* IMAGES */}
@@ -330,12 +330,12 @@ const MessageBubble = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 mt-2 min-h-[24px]">
+        <div className="flex items-center gap-1.5 mt-1 min-h-[24px]">
           {msg.reactions && Object.keys(msg.reactions).length > 0 && (
             <>
               {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
                 <div key={emoji} className="relative group">
-                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-[0.625rem] hover:bg-primary/20 transition-colors duration-200">
+                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200">
                     <span>{emoji}</span>
                     <span className="font-medium text-primary text-[0.6rem]">{Array.isArray(users) ? users.length : 0}</span>
                   </button>
