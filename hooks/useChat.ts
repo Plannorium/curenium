@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { playSound } from '@/lib/sound/soundGenerator';
 
 export interface UploadResponse {
   url: string;
@@ -19,6 +20,8 @@ export interface Message {
   file?: MessageFile;
   content?: any;
   createdAt?: string;
+  type?: 'message' | 'alert_notification';
+  alert?: any;
   reactions?: { [emoji: string]: { userId: string; userName: string }[] };
 }
 
@@ -26,7 +29,7 @@ export interface Message {
 export type MessageFile = UploadResponse | UploadResponse[] | undefined;
 
 interface WebSocketMessage {
-  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction';
+  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction' | 'alert_notification';
   isTyping?: boolean;
   userName?: string;
   messages?: Message[];
@@ -36,6 +39,7 @@ interface WebSocketMessage {
     _id: string;
     image?: string;
   };
+  alert?: any;
   error?: string;
 }
 
@@ -103,6 +107,7 @@ export const useChat = (room: string) => {
   const sendPayload = useCallback((payload: any) => {
     // wrapper that exposes raw payload sending to callers
     _sendMessage(payload);
+    playSound('messageSent');
   }, [_sendMessage]);
 
   useEffect(() => {
@@ -202,6 +207,7 @@ export const useChat = (room: string) => {
                     console.log('Message already exists, skipping');
                     return prevMessages;
                   }
+                  playSound('notification');
                   return [...(prevMessages || []), newMessage];
                 });
                 
@@ -209,6 +215,16 @@ export const useChat = (room: string) => {
                 if (message.sender.fullName) {
                   setTypingUsers(prev => prev.filter(user => user !== message.sender.fullName));
                 }
+              } else if (message.type === 'alert_notification' && message.alert) {
+                const alertMessage: Message = {
+                  id: message.alert._id || crypto.randomUUID(),
+                  type: 'alert_notification',
+                  alert: message.alert,
+                  text: message.alert.message,
+                  userId: message.alert.createdBy._id, // Not strictly needed but good for consistency
+                  userName: message.alert.createdBy.fullName,
+                };
+                setMessages(prev => [...(prev || []), alertMessage]);
               } else {
                 console.warn('Received incomplete message:', message);
               }

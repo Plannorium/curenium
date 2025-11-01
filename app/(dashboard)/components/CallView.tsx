@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ResizableBox } from 'react-resizable';
 import 'react-resizable/css/styles.css';
+import { playSound, initAudio } from '@/lib/sound/soundGenerator';
 
 interface CallViewProps {
   localStream: MediaStream | null;
@@ -184,6 +185,12 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   const minChatWidth = 240;
   const maxChatWidth = 640;
 
+  const handleEndCall = () => {
+    initAudio(); // Ensure audio context is started
+    playSound('callEnd');
+    onEndCall();
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (reactionPickerRef.current && !reactionPickerRef.current.contains(event.target as Node)) {
@@ -202,16 +209,21 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   }, []);
 
   const handleToggleMute = () => {
+    initAudio(); // Ensure audio context is started
     if (localStream) {
-      localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled);
-      setIsMuted(!isMuted);
+      const newMuted = !isMuted;
+      localStream.getAudioTracks().forEach(track => track.enabled = !newMuted);
+      setIsMuted(newMuted);
+      playSound(newMuted ? 'mute' : 'unmute');
     }
   };
 
   const handleToggleVideo = () => {
+    initAudio(); // Ensure audio context is started
     if (localStream) {
       localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
       setIsVideoOff(!isVideoOff);
+      playSound('mute'); // Using 'mute' as a generic 'tick' sound
     }
   };
 
@@ -264,7 +276,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
             </TooltipButton>
             <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" />
             <TooltipButton tooltip="End call">
-              <Button onClick={onEndCall} variant="destructive" size="icon" className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white cursor-pointer"><PhoneOff size={18} /></Button>
+              <Button onClick={handleEndCall} variant="destructive" size="icon" className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white cursor-pointer"><PhoneOff size={18} /></Button>
             </TooltipButton>
           </div>
         </div>
@@ -352,7 +364,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           </div>
 
           <TooltipButton tooltip="End Call">
-            <Button onClick={onEndCall} variant="destructive" size="icon" className="rounded-full w-16 h-12 sm:w-20 sm:h-14"><PhoneOff size={20} /></Button>
+            <Button onClick={handleEndCall} variant="destructive" size="icon" className="rounded-full w-16 h-12 sm:w-20 sm:h-14"><PhoneOff size={20} /></Button>
           </TooltipButton>
 
           <TooltipButton tooltip={isChatOpen ? 'Close Chat' : 'Open Chat'}>

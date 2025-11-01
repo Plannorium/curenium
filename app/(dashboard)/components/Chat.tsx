@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ImageLightbox } from "./ImageLightbox";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon, Loader2 } from 'lucide-react';
+import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
@@ -19,7 +19,16 @@ import { ReactionPicker } from './ReactionPicker';
 import { ReactionDetailsModal } from './ReactionDetailsModal';
 import { AnimatePresence } from "framer-motion";
 import { UserProfileCard } from './UserProfileCard';
+import { AlertDetailsModal } from './AlertDetailsModal';
 import { SendAlertModal } from './SendAlertModal';
+import { IMessage } from '@/types/models';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { initAudio, playSound } from '@/lib/sound/soundGenerator';
+import { CreateChannelModal } from './CreateChannelModal';
+import { ManageChannelModal } from './ManageChannelModal';
+import SoundPalette from './SoundPalette';
 
 interface User {
   id: string;
@@ -31,6 +40,24 @@ interface User {
   isOnline?: boolean;
 }
 
+interface AlertMessage {
+  _id: string;
+  level: 'critical' | 'urgent' | 'info';
+  message: string;
+  createdBy: {
+    _id: string;
+    fullName: string;
+    image?: string;
+  };
+  createdAt: string;
+}
+
+interface Channel {
+  _id: string;
+  id: string; // for compatibility if used elsewhere
+  name: string;
+  members: string[];
+}
 const formatFileSize = (bytes?: number) => {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;
@@ -47,6 +74,7 @@ interface MessageBubbleProps {
   openDocPreview: (file: any) => void;
   openLightbox: (images: Array<{ url: string; name: string }>, initialIndex: number) => void;
   handleReaction: (messageId: string, emoji: string) => void;
+  onAlertClick: (alert: AlertMessage) => void;
   onReactionClick: (messageId: string, emoji: string, users: any[]) => void;
 }
 
@@ -59,6 +87,7 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
     openDocPreview,
     openLightbox,
     handleReaction,
+    onAlertClick,
     onReactionClick,
   } = props;
   const { data: session } = useSession();
@@ -108,6 +137,37 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
       })
     : "";
 
+  if (msg.type === 'alert_notification' && msg.alert) {
+    const alert: AlertMessage = msg.alert;
+    const alertColors = {
+      critical: 'red',
+      urgent: 'amber',
+      info: 'blue',
+    };
+    const color = alertColors[alert.level];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="w-full flex justify-center"
+      >
+        <button
+          onClick={() => onAlertClick(alert)}
+          className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40`}
+        >
+          <div className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20`}>
+            <BellIcon size={24} className={`text-${color}-500 animate-pulse`} />
+          </div>
+          <div className="flex-1">
+            <p className={`font-bold text-sm text-${color}-500 uppercase`}>{alert.level} Alert</p>
+            <p className="font-medium text-foreground">{alert.message}</p>
+          </div>
+        </button>
+      </motion.div>
+    );
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -222,7 +282,8 @@ const MessageBubble = React.memo(MessageBubbleComponent, (prevProps, nextProps) 
     prevProps.openDocPreview !== nextProps.openDocPreview ||
     prevProps.openLightbox !== nextProps.openLightbox ||
     prevProps.handleReaction !== nextProps.handleReaction ||
-    prevProps.onReactionClick !== nextProps.onReactionClick
+    prevProps.onReactionClick !== nextProps.onReactionClick ||
+    prevProps.onAlertClick !== nextProps.onAlertClick
   ) {
     return false;
   }
@@ -231,7 +292,8 @@ const MessageBubble = React.memo(MessageBubbleComponent, (prevProps, nextProps) 
   if (
     prevProps.msg.id !== nextProps.msg.id ||
     prevProps.msg.text !== nextProps.msg.text ||
-    prevProps.msg.content !== nextProps.msg.content
+    prevProps.msg.content !== nextProps.msg.content ||
+    prevProps.msg.type !== nextProps.msg.type
   ) {
     return false;
   }
@@ -273,7 +335,13 @@ export default function Chat() {
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [recentDms, setRecentDms] = useState<any[]>([]); // Add this line
   const [lightbox, setLightbox] = useState<{ images: Array<{ url: string; name: string }>, initialIndex: number } | null>(null);
+  const [isCreateChannelModalOpen, setCreateChannelModalOpen] = useState(false);
+  const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
+  const [isChannelsOpen, setIsChannelsOpen] = useState(true);
+  const [isDmsOpen, setIsDmsOpen] = useState(true);
 
   const openLightbox = (images: Array<{ url: string; name: string }>, initialIndex: number) => {
     setLightbox({ images, initialIndex });
@@ -290,7 +358,7 @@ export default function Chat() {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const callRef = useRef<{ endCall: () => void; replaceTrack: (track: MediaStreamTrack) => void; } | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
+  const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
   const {
     messages,
     sendCombinedMessage,
@@ -302,12 +370,32 @@ export default function Chat() {
     startCall
   } = useChat(activeRoom);
 
+  const prevMessagesLengthRef = useRef(messages.length);
+
+  // Play sound on new message received
+  useEffect(() => {
+    const wasMessageAdded = messages.length > prevMessagesLengthRef.current;
+    if (wasMessageAdded) {
+      const newMessage = messages[messages.length - 1];
+      const isFromAnotherUser = newMessage && newMessage.userId !== session?.user?._id;
+      if (isFromAnotherUser) {
+      playSound('notification');
+      }
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, session?.user?._id]);
+
   const handleStartChat = (userId: string) => {
     console.log(`Starting chat with user ${userId}`);
     setSelectedUser(null);
     // Here you would typically switch to a direct message room
     // For now, we'll just log the action
   };
+
+  const handleAlertClick = (alert: AlertMessage) => {
+    setSelectedAlert(alert);
+  };
+
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -440,6 +528,38 @@ export default function Chat() {
     fetchUsers();
   }, []);
 
+  const fetchChannels = async () => {
+      try {
+        interface ChannelsApiResponse {
+          channels: Channel[];
+        }
+        const response = await fetch('/api/channels');
+        if (response.ok) {
+          const data = await response.json() as ChannelsApiResponse;
+          setChannels(data.channels || []);
+        }
+      } catch (error) { console.error('Failed to fetch channels:', error); }
+    };
+
+  useEffect(() => {
+    fetchChannels();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecentDms = async () => {
+      try {
+        const response = await fetch('/api/messages/recent');
+        if (response.ok) {
+          const data: IMessage[] = await response.json();
+          setRecentDms(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch recent DMs:', error);
+      }
+    };
+
+    fetchRecentDms();
+  }, []);
 
 
   const openDocPreview = (file: any) => {
@@ -602,6 +722,7 @@ export default function Chat() {
 
   const handleSendMessage = async () => {
     if ((text.trim() || stagedFiles.length > 0) && session?.user) {
+      initAudio(); // Ensure audio is ready
       setIsUploading(true);
       try {
         if (stagedFiles.length > 0) {
@@ -626,6 +747,7 @@ export default function Chat() {
         } else if (text.trim()) {
           await sendCombinedMessage(text.trim(), []);
         }
+        playSound('messageSent');
         setText("");
       } catch (error) {
         console.error("Error sending message or file:", error);
@@ -664,6 +786,7 @@ export default function Chat() {
   };
 
   const handleStartCall = async () => {
+    initAudio(); // Ensure audio is ready
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const hasVideo = devices.some(device => device.kind === 'videoinput');
@@ -678,6 +801,7 @@ export default function Chat() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: hasVideo, audio: hasAudio });
       
       setLocalStream(stream);
+      playSound('callStart');
       setIsCallActive(true);
       
       if (session?.user?.token) {
@@ -739,458 +863,555 @@ export default function Chat() {
     return sortedIds.join('-');
   };
 
-  const departments = [
-    { name: 'Emergency Ward', id: 'emergency' },
-    { name: 'Cardiology', id: 'cardiology' },
-    { name: 'Pediatrics', id: 'pediatrics' },
-    { name: 'Oncology', id: 'oncology' },
-  ];
-
+  const currentUser = users.find(u => u._id === session?.user?._id);
 
 
   return (
-    <div className="h-full flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl">
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
-      
-      <div className="relative flex-1 flex min-h-0">
-        {/* Channel List Sidebar */}
-        <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 border-r border-border/50 flex-shrink-0">
-          <div className="p-4">
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search conversations" 
-                className="backdrop-blur-sm bg-background/50 border border-border/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon size={16} className="text-muted-foreground" />
+    <>
+      <div className="h-full flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl">
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
+        
+        <div className="relative flex-1 flex min-h-0">
+          {/* Channel List Sidebar */}
+          <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 border-r border-border/50 flex-shrink-0">
+            <div className="p-4">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search conversations" 
+                  className="backdrop-blur-sm bg-background/50 border border-border/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon size={16} className="text-muted-foreground" />
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="px-3 pb-2">
-            <h3 className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center">
-              Channels
-            </h3>
-            <div className="mt-2 space-y-1">
-              <button
-                onClick={() => handleRoomChange('general')}
-                className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-                  activeRoom === 'general'
-                    ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                    : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
-                }`}>
-                <span className="text-muted-foreground mr-3 font-bold">#</span>
-                General
+            
+            <div className="px-3 pb-2">
+            <button
+                onClick={() => setIsChannelsOpen(!isChannelsOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+              >
+                <h3 className="flex items-center">
+                  <Users className="h-3 w-3 mr-2" />
+                  Channels
+                </h3>
+                <ChevronDownIcon
+                  size={16}
+                  className={`transform transition-transform duration-200 ${
+                    isChannelsOpen ? "rotate-180" : ""
+                  }`}
+                />
               </button>
-            </div>
-          </div>
-          
-          {/* Departments Section */}
-          <div className="px-3 pb-2">
-            <h3 className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center">
-              <Users className="h-3 w-3 mr-2" />
-              Departments
-            </h3>
-            <div className="mt-2 space-y-1">
-              {departments
-                .filter((dept) => dept.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((dept) => (
+              {isChannelsOpen && (
+              <div className="mt-2 space-y-1">
+                {channels
+                  .filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map((channel) => (
+                  <div
+                    key={channel._id}
+                    className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 ${
+                      activeRoom === channel.name.toLowerCase().replace(/ /g, '-')
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <button className="flex items-center flex-1 text-left" onClick={() => handleRoomChange(channel.name.toLowerCase().replace(/ /g, '-'))}>
+                      <span className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
+                        activeRoom === channel.name.toLowerCase().replace(/ /g, '-') ? 'bg-primary' : 'bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity'
+                      }`}></span>
+                      {channel.name}
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setManagingChannel(channel);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded-md"
+                    >
+                      <Users size={14} />
+                    </button>
+                  </div>
+                ))}
+                  <div className="px-3">
                 <button 
-                  key={dept.id}
-                  onClick={() => handleRoomChange(dept.id)}
-                  className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-                    activeRoom === dept.id
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                      : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
-                  }`}>
-                  <span className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
-                    activeRoom === dept.id ? 'bg-primary' : 'bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity'
-                  }`}></span>
-                  {dept.name}
+                  onClick={() => setCreateChannelModalOpen(true)}
+                  className="group cursor-pointer flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                >
+                  <Plus size={16} className="mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                  Add Channel
                 </button>
-              ))}
+              </div>
+              </div>
+              )}
             </div>
-          </div>
-          
-          {/* Direct Messages Section */}
-          <div className="px-3 pb-2 mt-6">
-            <h3 className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center">
-              <MessageCircle className="h-3 w-3 mr-2" />
-              Direct Messages
-            </h3>
-            <div className="mt-2 space-y-1">
-              {users
-                .filter((user) => user.fullName.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((user) => {
-                const isSelf = user._id === session?.user?._id;
-                const room = createDirectRoom(session?.user?._id || '', user._id);
-
-                return (
-                  <button 
-                    key={user._id}
-                    onClick={() => handleRoomChange(room)}
-                    className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${                    activeRoom === room
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                      : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
+            
+            {/* Direct Messages Section */}
+            <div className="px-3 pb-2 mt-6">
+            <button
+                onClick={() => setIsDmsOpen(!isDmsOpen)}
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+              >
+                <h3 className="flex items-center">
+                <MessageCircle className="h-3 w-3 mr-2" />
+                Direct Messages
+                </h3>
+                <ChevronDownIcon
+                  size={16}
+                  className={`transform transition-transform duration-200 ${
+                    isDmsOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDmsOpen && (
+              <div className="mt-2 space-y-1">
+                {/* Self-chat / Notes to self */}
+                {currentUser && (
+                  <button
+                    onClick={() => handleRoomChange(createDirectRoom(currentUser._id, currentUser._id))}
+                    className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                      activeRoom === createDirectRoom(currentUser._id, currentUser._id)
+                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
+                        : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <div className="relative mr-3">
                       <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
-                        <AvatarImage src={user.image || undefined} />
+                        <AvatarImage src={currentUser.image || undefined} />
                         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                          {user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                          {currentUser.fullName?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      {onlineUsers.includes(user._id) && !isSelf && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
-                      )}
                     </div>
-                    {isSelf ? 'You (Notes to self)' : user.fullName}
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs text-muted-foreground -mt-1">Notes to self</span>
+                    </div>
                   </button>
-                );
-              })}            </div>
-          </div>
-        </div>
+                )}
+                {recentDms
+                  .map(dm => {
+                    const otherUserId = dm.room.split('-').find(id => id !== session?.user?._id);
+                    const user = users.find(u => u._id === otherUserId);
+                    return { ...dm, user };
+                  })
+                  .filter(dm => dm.user && dm.room.includes('-'))
+                  .filter(dm => !searchQuery || (dm.user && dm.user.fullName.toLowerCase().includes(searchQuery.toLowerCase())))
+                  .map(dm => {
+                    if (!dm.user) return null;
+                    const room = dm.room;
+                    const user = dm.user;
 
-
-
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {isCallActive && localStream && (
-            <CallView
-            localStream={localStream}
-            remoteStreams={remoteStreams}
-            onEndCall={handleEndCall}
-            userName={userName}
-            onToggleScreenShare={handleToggleScreenShare}
-            isScreenSharing={isScreenSharing}
-            screenStream={screenStream}
-          />
-          )}
-          {/* Chat Header */}
-          <div className="backdrop-blur-sm bg-card/50 border-b border-border/50 p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <h2 className="text-lg font-bold text-foreground">
-                {activeRoom === 'general' ? 'General' : departments.find(d => d.id === activeRoom)?.name || (users && users.find(u => createDirectRoom(session?.user?._id || '', u._id) === activeRoom)?.fullName) || 'Chat'}
-              </h2>
-              <div className="ml-3 bg-green-500/10 text-green-600 dark:text-green-400 text-xs px-3 py-1 rounded-full font-semibold border border-green-500/20">
-                 {onlineUsers.length} online
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm" className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowSearch(true)}>
-                <SearchIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" 
-                onClick={handleStartCall}
-                disabled={!session}
-              >
-                <VideoIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                <span className="ml-2">Sync</span>
-              </Button>
-              <div className="flex items-center -space-x-2 pr-2">
-            {users.slice(0, 5).map(user => {
-                const isOnline = onlineUsers.includes(user.fullName);
-                return (
-                <div key={user.id || user._id} className="relative group/avatar" onClick={() => setSelectedUser(user)}>
-                    <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
-                    <AvatarImage src={user.image || undefined} />
-                    <AvatarFallback className="text-xs font-semibold">
-                        {(user.fullName || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
-                    </AvatarFallback>
-                    </Avatar>
-                    {isOnline && (
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
-                    )}
-                </div>
-                );
-            })}
-            {users.length > 5 && (
-                <div className="relative group/avatar">
-                <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
-                    <AvatarFallback className="text-xs font-semibold bg-muted">
-                    +{users.length - 5}
-                    </AvatarFallback>
-                </Avatar>
-                <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
-                    <p className="font-semibold mb-1">More members:</p>
-                    <p className="font-normal">{users.slice(5).map(u => u.fullName).join(', ')}</p>
-                </div>
-                </div>
-            )}
-            </div>
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          {showSearch && (
-            <div className="border-b border-border/50 p-2 flex items-center gap-2 bg-card/50 animate-in fade-in-0 slide-in-from-top-2 duration-300">
-              <input
-                type="text"
-                placeholder="Search in chat..."
-                className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 py-1"
-                value={chatSearchQuery}
-                onChange={handleChatSearch}
-              />
-              {searchResults.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {currentResultIndex + 1} of {searchResults.length}
-                </span>
-              )}
-              <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handlePrevResult} disabled={searchResults.length === 0}>
-                <ChevronDownIcon size={16} className="transform rotate-90" />
-              </Button>
-              <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handleNextResult} disabled={searchResults.length === 0}>
-                <ChevronDownIcon size={16} className="transform -rotate-90" />
-              </Button>
-              <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handleCloseSearch}>
-                <XIcon size={16} />
-              </Button>
-            </div>
-          )}
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar">
-            {messages.map((msg, index) => {
-              const isSender = msg.userId === session?.user?._id;
-              const user = users.find(u => u._id === msg.userId);
-              const prevMsg = messages[index - 1];
-              const showTimeSeparator = index === 0 ||
-                (prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString());
-
-
-
-              return (
-                <div
-                  key={msg.id}
-                  ref={(el) => { messageRefs.current[index] = el; }}
-                  className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? 'bg-primary/10 rounded-lg' : '') : ''}`}>
-                  {showTimeSeparator && (
-                    <div className="flex items-center justify-center my-4">
-                      <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
-                        {new Date(msg.createdAt).toLocaleDateString([], {
-                          weekday: 'long',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  <MessageBubble
-                    msg={msg}
-                    isSender={isSender}
-                    user={user}
-
-                    showTime={true}
-                    openDocPreview={openDocPreview}
-                    openLightbox={openLightbox}
-                    handleReaction={handleReaction}
-                    onReactionClick={handleReactionClick}
-                  />
-                </div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Typing Indicator */}
-          <div className="h-6 px-4 pb-2 flex items-center">
-            {typingUsers.length > 0 && (
-              <div className="text-xs text-muted-foreground italic animate-pulse">
-                {typingUsers.map((user) => user).join(', ')}
-                {typingUsers.length === 1 ? ' is' : ' are'} typing...
-              </div>
-            )}
-          </div>
-
-          {/* Message Input */}
-          <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4">
-            {stagedFiles.length > 0 && (
-              <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50">
-                <p className="text-sm font-semibold mb-2 px-2">Attached Files</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {stagedFiles.map((file, index) => (
-                    <div key={index} className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2">
-                      <div className="flex items-center gap-2 w-full">
-                        <FileIcon className="h-6 w-6 text-primary flex-shrink-0" />
-                        <div className="flex-1 overflow-hidden">
-                          <p className="text-xs font-medium truncate">{file.name}</p>
-                          <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                        </div>
-                        {!isUploading && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute top-1 right-1 h-6 w-6 p-1 opacity-50 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleRemoveStagedFile(index)}
-                          >
-                            <XIcon size={14} />
-                          </Button>
-                        )}
-                      </div>
-                      {isUploading && uploadProgress[file.name] !== undefined && (
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative">
-                          <Progress value={uploadProgress[file.name] > 100 ? 100 : uploadProgress[file.name]} className="h-2" />
-                          {uploadProgress[file.name] > 100 && (
-                            <div className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
-                              PROCESSING
-                            </div>
+                    return (
+                      <button
+                        key={dm._id}
+                        onClick={() => handleRoomChange(room)}
+                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                          activeRoom === room
+                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
+                            : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
+                        }`}>
+                        <div className="relative mr-3">
+                          <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
+                            <AvatarImage src={user.image || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                              {user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {onlineUsers.includes(user._id) && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
                           )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {user.fullName}
+                      </button>
+                    );
+                  })
+                }
+              </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {isCallActive && localStream && (
+              <CallView
+              localStream={localStream}
+              remoteStreams={remoteStreams}
+              onEndCall={handleEndCall}
+              userName={userName}
+              onToggleScreenShare={handleToggleScreenShare}
+              isScreenSharing={isScreenSharing}
+              screenStream={screenStream}
+            />
+            )}
+            {/* Chat Header */}
+            <div className="backdrop-blur-sm bg-card/50 border-b border-border/50 p-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <h2 className="text-lg font-bold text-foreground">
+                  {activeRoom === 'general' ? 'General' : channels.find(c => c.name.toLowerCase().replace(/ /g, '-') === activeRoom)?.name || (users && users.find(u => createDirectRoom(session?.user?._id || '', u._id) === activeRoom)?.fullName) || 'Chat'}
+                </h2>
+                <div className="ml-3 bg-green-500/10 text-green-600 dark:text-green-400 text-xs px-3 py-1 rounded-full font-semibold border border-green-500/20">
+                  {onlineUsers.length} online
                 </div>
               </div>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm" className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowSearch(true)}>
+                  <SearchIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" 
+                  onClick={handleStartCall}
+                  disabled={!session}
+                >
+                  <VideoIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                  <span className="ml-2">Sync</span>
+                </Button>
+                <div className="flex items-center -space-x-2 pr-2">
+              {users.slice(0, 5).map(user => {
+                  const isOnline = onlineUsers.includes(user.fullName);
+                  return (
+                  <div key={user.id || user._id} className="relative group/avatar" onClick={() => setSelectedUser(user)}>
+                      <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
+                      <AvatarImage src={user.image || undefined} />
+                      <AvatarFallback className="text-xs font-semibold">
+                          {(user.fullName || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </AvatarFallback>
+                      </Avatar>
+                      {isOnline && (
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
+                      )}
+                  </div>
+                  );
+              })}
+              {users.length > 5 && (
+                  <div className="relative group/avatar">
+                  <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
+                      <AvatarFallback className="text-xs font-semibold bg-muted">
+                      +{users.length - 5}
+                      </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
+                      <p className="font-semibold mb-1">More members:</p>
+                      <p className="font-normal">{users.slice(5).map(u => u.fullName).join(', ')}</p>
+                  </div>
+                  </div>
+              )}
+              </div>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            {showSearch && (
+              <div className="border-b border-border/50 p-2 flex items-center gap-2 bg-card/50 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+                <input
+                  type="text"
+                  placeholder="Search in chat..."
+                  className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 py-1"
+                  value={chatSearchQuery}
+                  onChange={handleChatSearch}
+                />
+                {searchResults.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {currentResultIndex + 1} of {searchResults.length}
+                  </span>
+                )}
+                <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handlePrevResult} disabled={searchResults.length === 0}>
+                  <ChevronDownIcon size={16} className="transform rotate-90" />
+                </Button>
+                <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handleNextResult} disabled={searchResults.length === 0}>
+                  <ChevronDownIcon size={16} className="transform -rotate-90" />
+                </Button>
+                <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handleCloseSearch}>
+                  <XIcon size={16} />
+                </Button>
+              </div>
             )}
-            <div className="relative">
-              <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
-                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
-                 <textarea
-                   value={text}
-                   onChange={handleTyping}
-                   onKeyDown={handleKeyDown}
-                   placeholder="Type your message..."
-                   className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32"
-                   rows={1}
-                 />
-                 <div className="flex items-center space-x-1 ml-3">
-                   <div ref={emojiPickerRef}>
-                     <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                       <SmileIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                     </Button>
-                   </div>
-                   <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => fileInputRef.current?.click()}>
-                     <PaperclipIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
-                   </Button>
-                   <Button
-                     variant="ghost"
-                     size="sm"
-                     className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group"
-                     onClick={() => setShowAlertModal(true)}
-                   >
-                     <BellIcon size={18} className="text-red-500 group-hover:text-red-600 transition-colors" />
-                   </Button>
-                   <Button
-                     onClick={handleSendMessage}
-                     disabled={(!text.trim() && stagedFiles.length === 0) || isUploading}
-                     size="sm"
-                     className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                   >
-                     <SendIcon size={18} />
-                   </Button>
-                 </div>
-               </div>
-               {showEmojiPicker && (
-                 <div className="absolute bottom-full left-0 mb-2 z-10">
-                   <EmojiPicker
-                     onEmojiClick={handleEmojiClick}
-                     />
-                 </div>
-               )}
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar">
+              {messages.map((msg, index) => {
+                const isSender = msg.userId === session?.user?._id;
+                const user = users.find(u => u._id === msg.userId);
+                const prevMsg = messages[index - 1];
+                const showTimeSeparator = index === 0 ||
+                  (prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString());
+
+
+
+                return (
+                  <div
+                    key={msg.id}
+                    ref={(el) => { messageRefs.current[index] = el; }}
+                    className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? 'bg-primary/10 rounded-lg' : '') : ''}`}>
+                    {showTimeSeparator && (
+                      <div className="flex items-center justify-center my-4">
+                        <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
+                          {new Date(msg.createdAt).toLocaleDateString([], {
+                            weekday: 'long',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <MessageBubble
+                      msg={msg}
+                      isSender={isSender}
+                      user={user}
+
+                      showTime={true}
+                      openDocPreview={openDocPreview}
+                      openLightbox={openLightbox}
+                      handleReaction={handleReaction}
+                      onAlertClick={handleAlertClick}
+                      onReactionClick={handleReactionClick}
+                    />
+                  </div>
+                );
+              })}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Typing Indicator */}
+            <div className="h-6 px-4 pb-2 flex items-center">
+              {typingUsers.length > 0 && (
+                <div className="text-xs text-muted-foreground italic animate-pulse">
+                  {typingUsers.map((user) => user).join(', ')}
+                  {typingUsers.length === 1 ? ' is' : ' are'} typing...
+                </div>
+              )}
+            </div>
+
+            {/* Message Input */}
+            <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4">
+              {stagedFiles.length > 0 && (
+                <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50">
+                  <p className="text-sm font-semibold mb-2 px-2">Attached Files</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {stagedFiles.map((file, index) => (
+                      <div key={index} className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2">
+                        <div className="flex items-center gap-2 w-full">
+                          <FileIcon className="h-6 w-6 text-primary flex-shrink-0" />
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-xs font-medium truncate">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                          </div>
+                          {!isUploading && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-1 right-1 h-6 w-6 p-1 opacity-50 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleRemoveStagedFile(index)}
+                            >
+                              <XIcon size={14} />
+                            </Button>
+                          )}
+                        </div>
+                        {isUploading && uploadProgress[file.name] !== undefined && (
+                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative">
+                            <Progress value={uploadProgress[file.name] > 100 ? 100 : uploadProgress[file.name]} className="h-2" />
+                            {uploadProgress[file.name] > 100 && (
+                              <div className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
+                                PROCESSING
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="relative">
+                <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
+                  <textarea
+                    value={text}
+                    onChange={handleTyping}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type your message..."
+                    className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32"
+                    rows={1}
+                  />
+                  <div className="flex items-center space-x-1 ml-3">
+                    <div ref={emojiPickerRef}>
+                      <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                        <SmileIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                      </Button>
+                    </div>
+                    <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => fileInputRef.current?.click()}>
+                      <PaperclipIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group"
+                      onClick={() => setShowAlertModal(true)}
+                    >
+                      <BellIcon size={18} className="text-red-500 group-hover:text-red-600 transition-colors" />
+                    </Button>
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={(!text.trim() && stagedFiles.length === 0) || isUploading}
+                      size="sm"
+                      className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                      <SendIcon size={18} />
+                    </Button>
+                  </div>
+                </div>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-full left-0 mb-2 z-10">
+                    <EmojiPicker
+                      onEmojiClick={handleEmojiClick}
+                      />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* AI Summary Panel */}
+          <div className="hidden lg:block w-72 backdrop-blur-lg bg-card/80 border-l border-border/50 overflow-y-auto">
+            <div className="p-4 border-b border-border/30">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-foreground flex items-center">
+                  <div className="p-1.5 bg-primary/10 rounded-lg mr-2 border border-primary/20">
+                    <BellIcon className="h-4 w-4 text-primary" />
+                  </div>
+                  AI Assistant
+                </h3>
+                <Button variant="ghost" size="sm" className="p-1.5 rounded-xl hover:bg-accent/50 transition-all duration-200">
+                  <ChevronDownIcon size={16} className="text-muted-foreground hover:text-foreground transition-colors" />
+                </Button>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="backdrop-blur-sm bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 shadow-sm">
+                <h4 className="font-semibold text-foreground mb-3 flex items-center">
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></div>
+                  Conversation Summary
+                </h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Patient in Room 302 (Mohammed Al-Farsi, 58) experienced a
+                  cardiac event with dropping blood pressure and irregular
+                  heartbeat. Emergency response team stabilized the patient.
+                  Current plan is to transfer to ICU for monitoring.
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* AI Summary Panel */}
-        <div className="hidden lg:block w-72 backdrop-blur-lg bg-card/80 border-l border-border/50 overflow-y-auto">
-          <div className="p-4 border-b border-border/30">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-foreground flex items-center">
-                <div className="p-1.5 bg-primary/10 rounded-lg mr-2 border border-primary/20">
-                  <BellIcon className="h-4 w-4 text-primary" />
-                </div>
-                AI Assistant
-              </h3>
-              <Button variant="ghost" size="sm" className="p-1.5 rounded-xl hover:bg-accent/50 transition-all duration-200">
-                <ChevronDownIcon size={16} className="text-muted-foreground hover:text-foreground transition-colors" />
-              </Button>
-            </div>
-          </div>
-          <div className="p-4">
-            <div className="backdrop-blur-sm bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 shadow-sm">
-              <h4 className="font-semibold text-foreground mb-3 flex items-center">
-                <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></div>
-                Conversation Summary
-              </h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Patient in Room 302 (Mohammed Al-Farsi, 58) experienced a
-                cardiac event with dropping blood pressure and irregular
-                heartbeat. Emergency response team stabilized the patient.
-                Current plan is to transfer to ICU for monitoring.
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Critical Alert Modal */}
+        <SendAlertModal 
+          isOpen={showAlertModal}
+          onClose={() => setShowAlertModal(false)}
+          onAlertSent={() => {
+            // Optional: show a success toast or notification
+          }}
+          allUsers={users}
+          allChannels={channels.map(c => ({ id: c.name.toLowerCase().replace(/ /g, '-'), name: c.name }))}
+          channelMembers={
+            activeRoom.includes('-') // This is a DM room
+              ? users.filter(u => activeRoom.split('-').includes(u._id))
+              // This is a placeholder. In a real app, you'd get actual channel members.
+              // For now, sending to a "channel" from chat sends to all users.
+              : activeRoom !== 'general' ? users : undefined
+          }
+        />
+
+        {/* Alert Details Modal */}
+        {selectedAlert && (
+          <AlertDetailsModal
+            alert={selectedAlert}
+            onClose={() => setSelectedAlert(null)}
+          />
+        )}
+        {/* Alert Details Modal */}
+        {selectedAlert && (
+          <AlertDetailsModal
+            alert={selectedAlert}
+            onClose={() => setSelectedAlert(null)}
+          />
+        )}
+
+        <CreateChannelModal
+          isOpen={isCreateChannelModalOpen}
+          onClose={() => setCreateChannelModalOpen(false)}
+          onChannelCreated={fetchChannels}
+        />
+
+        <ManageChannelModal
+          isOpen={!!managingChannel}
+          onClose={() => setManagingChannel(null)}
+          channel={managingChannel}
+          allUsers={users}
+          onChannelUpdated={fetchChannels}
+        />
+        {/* Image Lightbox */}
+        {lightbox && (
+          <ImageLightbox
+            images={lightbox.images}
+            initialIndex={lightbox.initialIndex}
+            onClose={() => setLightbox(null)}
+          />
+        )}
+
+        {/* PDF Modal */}
+        {isDocModalOpen && selectedDoc && (
+          <DocumentPreview
+            file={selectedDoc}
+            onClose={closeDocPreview}
+          />
+        )}
+
+        {/* Reaction Details Modal */}
+        <AnimatePresence>
+            {activeReactionDetails && (
+              <ReactionDetailsModal
+                isOpen={!!activeReactionDetails}
+                onClose={() => {
+                  setActiveReactionDetails(null);
+                }}
+                messageId={activeReactionDetails.messageId}
+                emoji={activeReactionDetails.emoji}
+                users={activeReactionDetails.users}
+                allUsers={users}
+                currentUserId={session?.user?.id}
+                onRemoveReaction={handleReaction}
+                onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
+              />
+            )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {selectedUser && (
+              <UserProfileCard
+                user={{
+                  ...selectedUser,
+                  isOnline: onlineUsers.includes(selectedUser._id),
+                  // Assuming email is fetched with user data. If not, this will be undefined.
+                  email: selectedUser.email
+                }}
+                onClose={() => setSelectedUser(null)}
+                onStartChat={handleStartChat}
+                currentUserId={session?.user?._id}
+              />
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Critical Alert Modal */}
-      <SendAlertModal
-        isOpen={showAlertModal}
-        onClose={() => setShowAlertModal(false)}
-        onAlertSent={() => {
-          // Optional: show a success toast or notification
-        }}
-      />
-
-      {/* Image Lightbox */}
-      {lightbox && (
-        <ImageLightbox
-          images={lightbox.images}
-          initialIndex={lightbox.initialIndex}
-          onClose={() => setLightbox(null)}
-        />
-      )}
-
-      {/* PDF Modal */}
-      {isDocModalOpen && selectedDoc && (
-        <DocumentPreview
-          file={selectedDoc}
-          onClose={closeDocPreview}
-        />
-      )}
-
-      {/* Reaction Details Modal */}
-      <AnimatePresence>
-          {activeReactionDetails && (
-            <ReactionDetailsModal
-              isOpen={!!activeReactionDetails}
-              onClose={() => {
-                setActiveReactionDetails(null);
-              }}
-              messageId={activeReactionDetails.messageId}
-              emoji={activeReactionDetails.emoji}
-              users={activeReactionDetails.users}
-              allUsers={users}
-              currentUserId={session?.user?.id}
-              onRemoveReaction={handleReaction}
-              onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
-            />
-          )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {selectedUser && (
-            <UserProfileCard
-              user={{
-                ...selectedUser,
-                isOnline: onlineUsers.includes(selectedUser._id),
-                // Assuming email is fetched with user data. If not, this will be undefined.
-                email: selectedUser.email
-              }}
-              onClose={() => setSelectedUser(null)}
-              onStartChat={handleStartChat}
-              currentUserId={session?.user?._id}
-            />
-        )}
-      </AnimatePresence>
-    </div>
+      {/* --- Sound Palette for Development/Testing --- */}
+      {/* In a real app, might conditionally render this based on user role */}
+      {/* <div className="absolute bottom-0 left-0 p-4 z-50">
+        <SoundPalette />
+      </div> */}
+    </>
   );
 }

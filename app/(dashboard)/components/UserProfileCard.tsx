@@ -1,10 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { XIcon, MessageSquare } from 'lucide-react';
-import { motion } from "framer-motion";
+import { XIcon, MessageSquare, Loader2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -16,6 +15,11 @@ interface User {
   isOnline?: boolean;
 }
 
+interface Channel {
+  _id: string;
+  name: string;
+}
+
 interface UserProfileCardProps {
   user: User;
   onClose: () => void;
@@ -24,6 +28,28 @@ interface UserProfileCardProps {
 }
 
 export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onClose, onStartChat, currentUserId }) => {
+  const [userChannels, setUserChannels] = useState<Channel[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchUserChannels = async () => {
+      if (!user?._id) return;
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/users/${user._id}/channels`);
+        if (response.ok) {
+          const data: { channels: Channel[] } = await response.json();
+          setUserChannels(data.channels || []);
+        }
+      } catch (error) { 
+        console.error("Failed to fetch user's channels", error); 
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUserChannels();
+  }, [user?._id]);
+
   if (!user) return null;
 
   return (
@@ -47,13 +73,18 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onClose,
 
             <div className="mt-6 w-full text-left">
               <h4 className="font-semibold text-foreground mb-2">Channels</h4>
-            <div className="flex flex-wrap gap-2">
-              {/* Placeholder for channels */}
-              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full"># general</span>
-              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full"># design</span>
-              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full"># engineering</span>
+              <div className="flex flex-wrap gap-2">
+                {isLoading ? (
+                  <div className="flex items-center justify-center w-full">
+                    <Loader2 className="animate-spin text-primary" size={24} />
+                  </div>
+                ) : userChannels.length > 0 ? userChannels.map(channel => (
+                  <span key={channel._id} className="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full"># {channel.name}</span>
+                )) : (
+                  <p className="text-xs text-muted-foreground">Not a member of any channels yet.</p>
+                )}
+              </div>
             </div>
-          </div>
 
           {user._id !== currentUserId && (
             <div className="mt-8">

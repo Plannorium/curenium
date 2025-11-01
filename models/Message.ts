@@ -7,6 +7,9 @@ const MessageSchema = new Schema<IMessage>(
     userName: String,
     userImage: String,
     text: { type: String, required: true },
+    to: { type: String },
+    file: { type: Object },
+    type: { type: String },
     room: { type: String, default: "general" },
     reactions: {
       type: Map,

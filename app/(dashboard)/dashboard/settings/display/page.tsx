@@ -42,6 +42,9 @@ const items = [
 export default function DisplayForm() {
   const form = useForm<DisplayFormValues>({
     resolver: zodResolver(displayFormSchema),
+    defaultValues: {
+      items: [],
+    },
   })
 
   useEffect(() => {
@@ -151,32 +154,27 @@ export default function DisplayForm() {
                   key={item.id}
                   control={form.control}
                   name="items"
-                  render={({ field }) => {
-                    return (
-                      <FormItem
-                        key={item.id}
-                        className="flex flex-row items-start space-x-3 space-y-0"
-                      >
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value?.includes(item.id)}
-                            onCheckedChange={(checked) => {
-                              return checked
-                                ? field.onChange([...(field.value || []), item.id])
-                                : field.onChange(
-                                    field.value?.filter(
-                                      (value) => value !== item.id
-                                    )
-                                  )
-                            }}
-                          />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          {item.label}
-                        </FormLabel>
-                      </FormItem>
-                    )
-                  }}
+                  render={({ field }) => (
+                    <FormItem
+                      key={item.id}
+                      className="flex flex-row items-start space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value?.includes(item.id)}
+                          onCheckedChange={(checked) => {
+                            const newValue = checked
+                              ? [...(field.value || []), item.id]
+                              : field.value?.filter((value) => value !== item.id);
+                            field.onChange(newValue);
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        {item.label}
+                      </FormLabel>
+                    </FormItem>
+                  )}
                 />
               ))}
               <FormMessage />

@@ -17,3 +17,6 @@ bindings = [
 [[migrations]]
 tag = "v1"
 new_classes = ["ChatRoom"]
+
+[vars]
+WORKER_INTERNAL_AUTH_KEY = "58vZ7T4yt8zZSiTJAgZZnoGWwFNgCFp1tgA/nY/jr5U="

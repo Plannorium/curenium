@@ -7,6 +7,7 @@ export interface Env {
     CHAT_ROOM: DurableObjectNamespace;
     MONGODB_URI: string;
     NEXTAUTH_SECRET: string;
+    WORKER_INTERNAL_AUTH_KEY: string;
 }
 
 export class ChatRoom {
@@ -39,9 +40,19 @@ export class ChatRoom {
     }
 
     async fetch(request: Request) {
+        const url = new URL(request.url);
         const envHeader = request.headers.get('X-Env');
         if (envHeader) {
             this.env = JSON.parse(envHeader);
+        }
+
+        if (url.pathname === '/api/broadcast') {
+            if (request.method === 'POST') {
+                const { alert } = await request.json<{ alert: any }>();
+                this.broadcastAlert(alert);
+                return new Response('Alert broadcasted in room', { status: 200 });
+            }
+            return new Response('Method not allowed', { status: 405 });
         }
 
         const isWebSocketUpgrade = request.headers.get("Upgrade") === "websocket";
@@ -223,23 +234,82 @@ export class ChatRoom {
             }
         });
     }
+
+    broadcastAlert(alert: any) {
+        const payload = {
+            type: 'alert_notification',
+            alert: alert,
+        };
+        this.broadcast(JSON.stringify(payload));
+    }
 }
+
+const createDirectRoom = (userId1: string, userId2: string) => {
+    const sortedIds = [userId1, userId2].sort();
+    return sortedIds.join('-');
+};
 
 export default <ExportedHandler<Env>>{
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
-        const room = url.searchParams.get('room');
 
-        if (!room) {
-            return new Response('Missing room query parameter', { status: 400 });
+        // Route for broadcasting alerts from the Next.js backend
+        if (url.pathname === '/api/broadcast-alert') {
+            if (request.method !== 'POST') {
+                return new Response('Method not allowed', { status: 405 });
+            }
+
+            // Authenticate the internal request
+            const authKey = request.headers.get('X-Internal-Auth-Key');
+            if (authKey !== env.WORKER_INTERNAL_AUTH_KEY) {
+                return new Response('Unauthorized', { status: 401 });
+            }
+
+            try {
+                const { alert, recipients } = await request.json<{ alert: any; recipients: string[] }>();
+                const roomsToNotify = new Set<string>();
+
+                for (const recipient of recipients) {
+                    if (recipient.startsWith('channel:')) {
+                        // It's a channel, add the channel name as a room to notify
+                        roomsToNotify.add(recipient.replace('channel:', ''));
+                    } else {
+                        // It's a user ID. Send the alert to their "self-chat" room.
+                        // This ensures the user gets a notification regardless of their active room.
+                        roomsToNotify.add(createDirectRoom(recipient, recipient));
+                    }
+                }
+
+                // Dispatch the broadcast to all unique rooms
+                const promises = Array.from(roomsToNotify).map(roomName => {
+                    const id = env.CHAT_ROOM.idFromName(roomName);
+                    const stub = env.CHAT_ROOM.get(id);
+                    // Forward the alert to the specific ChatRoom instance to broadcast internally
+                    return stub.fetch(new Request(`${url.origin}/api/broadcast`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ alert }),
+                    }));
+                });
+
+                await Promise.all(promises);
+                return new Response('Alert broadcast initiated', { status: 202 });
+            } catch (error) {
+                console.error('Error in /api/broadcast-alert:', error);
+                return new Response('Internal Server Error', { status: 500 });
+            }
         }
 
-        let id = env.CHAT_ROOM.idFromName(room);
-        let stub = env.CHAT_ROOM.get(id);
+        // Default route for WebSocket connections
+        const room = url.searchParams.get('room');
+        if (room) {
+            const id = env.CHAT_ROOM.idFromName(room);
+            const stub = env.CHAT_ROOM.get(id);
+            const newRequest = new Request(request.url, request);
+            newRequest.headers.set('X-Env', JSON.stringify(env));
+            return stub.fetch(newRequest);
+        }
 
-        const newRequest = new Request(request.url, request);
-        newRequest.headers.set('X-Env', JSON.stringify(env));
-
-        return stub.fetch(newRequest);
+        return new Response('Not found', { status: 404 });
     },
 };

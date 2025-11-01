@@ -4,6 +4,7 @@ export interface IAlert extends Document {
   message: string;
   level: 'critical' | 'urgent' | 'info';
   organizationId: mongoose.Schema.Types.ObjectId;
+  recipients: mongoose.Schema.Types.ObjectId[];
   createdBy: mongoose.Schema.Types.ObjectId;
   createdAt: Date;
 }
@@ -16,6 +17,7 @@ const AlertSchema = new Schema<IAlert>({
     required: true,
   },
   organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+  recipients: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 }, {
   timestamps: true,

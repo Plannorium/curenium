@@ -256,4 +256,6 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
   );
 });
 
+AddShiftModal.displayName = 'AddShiftModal';
+
 export default AddShiftModal;
