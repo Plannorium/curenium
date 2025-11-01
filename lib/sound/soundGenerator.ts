@@ -7,13 +7,22 @@ import * as Tone from 'tone';
  * to ensure all sounds are cohesive and volume-normalized.
  */
 class SoundManager {
-  private masterReverb: Tone.Reverb;
-  private masterCompressor: Tone.Compressor;
+  private masterReverb: Tone.Reverb | null = null;
+  private masterCompressor: Tone.Compressor | null = null;
   private isInitialized = false;
 
   constructor() {
-    // These are initialized immediately but will only be connected
-    // to the destination after the user gesture.
+    // The constructor is kept empty to prevent server-side execution of Tone.js code.
+    // Initialization is deferred to the initAudio method, which is called on the client.
+  }
+
+  async initAudio() {
+    if (typeof window === 'undefined' || this.isInitialized || Tone.context.state === 'running') {
+      return;
+    }
+    
+    await Tone.start();
+
     this.masterReverb = new Tone.Reverb({
       decay: 0.6,
       preDelay: 0.03,
@@ -26,28 +35,28 @@ class SoundManager {
       attack: 0.01,
       release: 0.1,
     });
-  }
 
-  async initAudio() {
-    if (this.isInitialized || Tone.context.state === 'running') return;
-    await Tone.start();
-    this.masterReverb.connect(this.masterCompressor);
-    this.masterCompressor.toDestination();
+    if (this.masterReverb && this.masterCompressor) {
+      this.masterReverb.connect(this.masterCompressor);
+      this.masterCompressor.toDestination();
+    }
     this.isInitialized = true;
     console.log('Curenium SoundManager Initialized');
   }
 
-  private get masterChannel(): Tone.Reverb {
-    if (!this.isInitialized) {
-      // Fallback to direct destination if not initialized, though initAudio should be called first.
-      return Tone.getDestination() as any;
+  private get masterChannel(): Tone.ToneAudioNode {
+    if (!this.isInitialized || !this.masterReverb) {
+      // Fallback to direct destination if not initialized.
+      return Tone.getDestination();
     }
     return this.masterReverb;
   }
 
   public play(presetName: string) {
-    if (!this.isInitialized) {
-      console.warn('SoundManager not initialized. Call initAudio() on a user gesture.');
+    if (typeof window === 'undefined' || !this.isInitialized) {
+      if (typeof window !== 'undefined' && !this.isInitialized) {
+        console.warn('SoundManager not initialized. Call initAudio() on a user gesture.');
+      }
       return;
     }
     

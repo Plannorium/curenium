@@ -3,11 +3,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ImageLightbox } from "./ImageLightbox";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon, Loader2, Plus } from 'lucide-react';
+import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon, Loader2, Plus, Eye, Copy, Download, ExternalLink, ReplyIcon, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { useChat } from '@/hooks/useChat';
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
@@ -76,12 +77,13 @@ interface MessageBubbleProps {
   handleReaction: (messageId: string, emoji: string) => void;
   onAlertClick: (alert: AlertMessage) => void;
   onReactionClick: (messageId: string, emoji: string, users: any[]) => void;
+  onReply: (message: any) => void;
+  sendReadReceipt: (messageId: string) => void;
 }
 
-const MessageBubbleComponent = (props: MessageBubbleProps) => {
-  const {
-    msg,
-    isSender,
+const MessageBubble = ({
+  msg,
+  isSender,
     user,
     showTime,
     openDocPreview,
@@ -89,10 +91,33 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
     handleReaction,
     onAlertClick,
     onReactionClick,
-  } = props;
+    onReply,
+    sendReadReceipt,
+}: MessageBubbleProps) => {
   const { data: session } = useSession();
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!messageRef.current || isSender || msg.status === 'read') return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          sendReadReceipt(msg.id);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.8 }
+    );
+
+    observer.observe(messageRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [msg.id, isSender, msg.status, sendReadReceipt]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,35 +132,85 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
     };
   }, []);
 
-  const handleOpenLightbox = (clickedUrl: string) => {
-    try {
-      const filesList = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
-      const images = filesList
-        .filter((file: any) => {
-          if (!file) return false;
-          return (file.resource_type && file.resource_type.toString().startsWith('image')) || (file.type && file.type.toString().startsWith('image')) || (file.url && /\.(jpe?g|png|webp|gif)$/i.test(file.url));
-        })
-        .map((file: any) => ({ url: file.url, name: file.name }));
+  const renderRepliedMessage = () => {
+    if (!msg.replyTo) return null;
 
-      if (images.length === 0) {
-        console.warn('No image files found to open in lightbox', msg.file);
-        return;
-      }
+    return (
+      <div className="mb-2 p-2 rounded-md bg-background/30 border-l-2 border-primary/50 text-xs">
+        <p className="font-semibold text-primary/80 text-xs">
+          Replying to {msg.replyTo.userName}
+        </p>
+        <p className="text-muted-foreground truncate">
+          {msg.replyTo.text}
+        </p>
+      </div>
+    );
+  };
+  const timeString = msg.createdAt
+    ? new Date(msg.createdAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    : "";
 
-      const initialIndex = clickedUrl ? Math.max(0, images.findIndex((img: any) => img.url === clickedUrl)) : 0;
-      openLightbox(images, initialIndex);
-    } catch (err) {
-      console.error('openLightbox error', err);
-    }
+  // ---------- IMAGE GALLERY ----------
+  const renderImages = () => {
+    const files = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
+    const images = files.filter(
+      (f: any) =>
+        f?.resource_type?.startsWith?.("image") ||
+        f?.type?.startsWith?.("image") ||
+        /\.(jpe?g|png|webp|gif)$/i.test(f?.url)
+    );
+
+    if (!images.length) return null;
+
+    return (
+      <div className={images.length > 1 ? "grid grid-cols-2 gap-1 mt-1" : "mt-1 "}>
+        {images.map((img: any, i: number) => (
+          <button
+            key={i}
+            onClick={() => openLightbox(images.map((f: any) => ({ url: f.url, name: f.name })), i)}
+            className="relative overflow-hidden rounded-lg group cursor-pointer"
+          >
+            <img
+              src={img.url}
+              alt={img.name}
+              className="h-auto max-h-28 max-w-[330px] object-cover rounded-lg transition-transform group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+              <Eye className="w-5 h-5" />
+            </div>
+          </button>
+        ))}
+      </div>
+    );
   };
 
-  const messageDate = msg.createdAt ? new Date(msg.createdAt) : null;
-  const timeString = messageDate
-    ? messageDate.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "";
+  // ---------- NON‑IMAGE FILES ----------
+  const renderFiles = () => {
+    const files = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
+    const nonImages = files.filter(
+      (f: any) =>
+        !f?.resource_type?.startsWith?.("image") &&
+        !f?.type?.startsWith?.("image") &&
+        !/\.(jpe?g|png|webp|gif)$/i.test(f?.url)
+    );
+
+    if (!nonImages.length) return null;
+
+    return (
+      <div className="space-y-2">
+        {nonImages.map((f: any, i: number) => (
+          <FileAttachment
+            key={i}
+            file={f}
+            onPreview={() => openDocPreview(f)}
+          />
+        ))}
+      </div>
+    );
+  };
 
   if (msg.type === 'alert_notification' && msg.alert) {
     const alert: AlertMessage = msg.alert;
@@ -168,8 +243,10 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
       </motion.div>
     );
   }
+  // ---------- MAIN RENDER ----------
   return (
     <motion.div
+      ref={messageRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -179,7 +256,7 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
       <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-background/50 shadow-sm">
         <AvatarImage src={user?.image || undefined} />
         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-          {(msg.userName || "")
+          {(msg.userName ?? "")
             .split(" ")
             .map((n: string) => n[0] || "")
             .join("")
@@ -188,7 +265,7 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
       </Avatar>
 
       <div
-        className={`flex flex-col gap-1 items-start`}
+        className="flex flex-col gap-1 items-start"
       >
         <div className="flex items-center gap-2">
           <span className="font-semibold text-foreground text-sm">
@@ -197,128 +274,80 @@ const MessageBubbleComponent = (props: MessageBubbleProps) => {
           {showTime && <span className="text-xs text-muted-foreground">{timeString}</span>}
         </div>
 
-        <div
-          className={`relative rounded-2xl px-3 md:px-4 py-3 shadow-sm border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] max-w-full sm:max-w-md lg:max-w-lg ${
-            isSender
-              ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30 text-foreground rounded-md"
-              : "bg-card/95 border-border/40 text-foreground rounded-bl-md"
-          }`}
-        >
+        <div className="flex items-center gap-2">
           <div
-            className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 left-full pl-2`}
+            className={`relative rounded-2xl px-0.5 md:px-1 py-1.5 cursor-pointer shadow-sm border transition-all hover:shadow-lg hover:scale-[1.01] max-w-full sm:max-w-md lg:max-w-lg ${
+              isSender
+                ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30"
+                : "bg-card/95 border-border/40"
+            }`}
           >
-            {/* {onHoverActions} */}
-          </div>
-          {msg.file ? (
-              <div className="space-y-2">
-                {/* Support array of files or single file */}
-                {Array.isArray(msg.file) ? (
-                  msg.file.map((f, i) => (
-                    <FileAttachment key={i} file={f} message={msg} onPreview={() => openDocPreview(f)} onOpenLightbox={handleOpenLightbox} />
-                  ))
-                ) : (
-                  <FileAttachment file={msg.file} message={msg} onPreview={() => openDocPreview(msg.file)} onOpenLightbox={handleOpenLightbox} />
-                )}
-
-                {msg.text && msg.text.trim() && msg.text !== `File: ${(Array.isArray(msg.file) ? msg.file[0]?.name : (msg.file as any)?.name)}` && (
-                  <p className="text-sm leading-relaxed break-words pt-2 border-t border-border/20 mt-2">
-                    {msg.text}
-                  </p>
+            <div className="absolute top-0 right-0 mt-[-12px] mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10">
+              <div className="relative" ref={reactionPickerRef}>
+                <button onClick={() => setReactionPickerOpen(p => !p)} className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors">
+                  <SmileIcon size={15} className="text-muted-foreground" />
+                </button>
+                {isReactionPickerOpen && (
+                  <div className="absolute z-20 bottom-full right-0 mb-2">
+                    <ReactionPicker onEmojiClick={(emoji) => { handleReaction(msg.id, emoji); setReactionPickerOpen(false); }} onClose={() => setReactionPickerOpen(false)} />
+                  </div>
                 )}
               </div>
-            ) : (
-              <p className="text-sm leading-relaxed break-words">
-                {msg.text || msg.content}
-              </p>
-            )}
-          {isSender && !msg.file && (
-            <div className="absolute bottom-1 right-2 text-xs text-muted-foreground opacity-70">
-              ✓
+              <button onClick={() => onReply(msg)} className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors">
+                <ReplyIcon size={15} className="text-muted-foreground" />
+              </button>
+              <button className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors">
+                <MoreHorizontal size={15} className="text-muted-foreground" />
+              </button>
             </div>
-          )}
+
+            {/* REPLIED TO MESSAGE */}
+            {renderRepliedMessage()}
+
+            {/* TEXT */}
+            {(msg.text || msg.content) && (
+              <p className="text-[0.75rem] leading-relaxed break-words px-2">{msg.text || msg.content}</p>
+            )}
+
+            {/* IMAGES */}
+            {renderImages()}
+
+            {/* FILES */}
+            {renderFiles()}
+
+            {/* SENT CHECK */}
+            {isSender && !msg.file && (
+              <div className="absolute bottom-1 right-0 text-[0.78rem] text-muted-foreground opacity-70">
+                {msg.status === 'read' ? (
+                  <span className="text-blue-500">✓✓</span>
+                ) : msg.status === 'delivered' ? (
+                  <span>✓✓</span>
+                ) : (
+                  <span>✓</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2 mt-2 min-h-[28px]">
+
+        <div className="flex items-center gap-1.5 mt-2 min-h-[24px]">
           {msg.reactions && Object.keys(msg.reactions).length > 0 && (
             <>
               {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
                 <div key={emoji} className="relative group">
-                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-xs hover:bg-primary/20 transition-colors duration-200">
+                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-[0.625rem] hover:bg-primary/20 transition-colors duration-200">
                     <span>{emoji}</span>
-                    <span className="font-medium text-primary">{Array.isArray(users) ? users.length : 0}</span>
+                    <span className="font-medium text-primary text-[0.6rem]">{Array.isArray(users) ? users.length : 0}</span>
                   </button>
                 </div>
               ))}
             </>
           )}
-          <div className="relative opacity-0 group-hover:opacity-100 transition-opacity" ref={reactionPickerRef}>
-            <button 
-              onClick={() => setReactionPickerOpen(p => !p)} 
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-card hover:bg-accent transition-colors border shadow-sm"
-            >
-              <SmileIcon size={16} className="text-muted-foreground" />
-            </button>
-            {isReactionPickerOpen && (
-              <ReactionPicker
-                onEmojiClick={(emoji) => {
-                  handleReaction(msg.id, emoji);
-                  setReactionPickerOpen(false);
-                }}
-                onClose={() => setReactionPickerOpen(false)}
-              />
-            )}
-          </div>
         </div>
       </div>
     </motion.div>
   );
 }
-
-const MessageBubble = React.memo(MessageBubbleComponent, (prevProps, nextProps) => {
-  // Shallow compare all props except msg and onHoverActions
-  if (
-    prevProps.isSender !== nextProps.isSender ||
-    prevProps.user?.id !== nextProps.user?.id ||
-    prevProps.showTime !== nextProps.showTime ||
-    prevProps.openDocPreview !== nextProps.openDocPreview ||
-    prevProps.openLightbox !== nextProps.openLightbox ||
-    prevProps.handleReaction !== nextProps.handleReaction ||
-    prevProps.onReactionClick !== nextProps.onReactionClick ||
-    prevProps.onAlertClick !== nextProps.onAlertClick
-  ) {
-    return false;
-  }
-
-  // Compare msg object, but skip reactions for now
-  if (
-    prevProps.msg.id !== nextProps.msg.id ||
-    prevProps.msg.text !== nextProps.msg.text ||
-    prevProps.msg.content !== nextProps.msg.content ||
-    prevProps.msg.type !== nextProps.msg.type
-  ) {
-    return false;
-  }
-
-  // Deep compare reactions
-  const prevReactions = prevProps.msg.reactions || {};
-  const nextReactions = nextProps.msg.reactions || {};
-
-  const prevReactionKeys = Object.keys(prevReactions);
-  const nextReactionKeys = Object.keys(nextReactions);
-
-  if (prevReactionKeys.length !== nextReactionKeys.length) {
-    return false;
-  }
-
-  for (const emoji of prevReactionKeys) {
-    const prevUsers = prevReactions[emoji];
-    const nextUsers = nextReactions[emoji];
-    if (!nextUsers || (Array.isArray(prevUsers) ? prevUsers.length : 0) !== (Array.isArray(nextUsers) ? nextUsers.length : 0)) {
-      return false;
-    }
-  }
-
-  return true; // Props are equal
-});
 
 export default function Chat() {
   const { data: session } = useSession();
@@ -342,7 +371,9 @@ export default function Chat() {
   const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
   const [isDmsOpen, setIsDmsOpen] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<any | null>(null);
 
+  const [stagedFilePreviews, setStagedFilePreviews] = useState<string[]>([]);
   const openLightbox = (images: Array<{ url: string; name: string }>, initialIndex: number) => {
     setLightbox({ images, initialIndex });
   };
@@ -350,7 +381,7 @@ export default function Chat() {
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [isCallActive, setIsCallActive] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, name: string }>>({});
@@ -367,7 +398,8 @@ export default function Chat() {
     typingUsers,
     sendTyping,
     sendPayload,
-    startCall
+    startCall,
+    sendReadReceipt,
   } = useChat(activeRoom);
 
   const prevMessagesLengthRef = useRef(messages.length);
@@ -379,7 +411,7 @@ export default function Chat() {
       const newMessage = messages[messages.length - 1];
       const isFromAnotherUser = newMessage && newMessage.userId !== session?.user?._id;
       if (isFromAnotherUser) {
-      playSound('notification');
+        playSound('notification');
       }
     }
     prevMessagesLengthRef.current = messages.length;
@@ -399,8 +431,9 @@ export default function Chat() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const lastMessageRef = useRef<HTMLDivElement>(null);
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
   const [activeReactionDetails, setActiveReactionDetails] = useState<{ messageId: string; emoji: string; users: any[] } | null>(null);
@@ -529,17 +562,17 @@ export default function Chat() {
   }, []);
 
   const fetchChannels = async () => {
-      try {
-        interface ChannelsApiResponse {
-          channels: Channel[];
-        }
-        const response = await fetch('/api/channels');
-        if (response.ok) {
-          const data = await response.json() as ChannelsApiResponse;
-          setChannels(data.channels || []);
-        }
-      } catch (error) { console.error('Failed to fetch channels:', error); }
-    };
+    try {
+      interface ChannelsApiResponse {
+        channels: Channel[];
+      }
+      const response = await fetch('/api/channels');
+      if (response.ok) {
+        const data = await response.json() as ChannelsApiResponse;
+        setChannels(data.channels || []);
+      }
+    } catch (error) { console.error('Failed to fetch channels:', error); }
+  };
 
   useEffect(() => {
     fetchChannels();
@@ -612,10 +645,43 @@ export default function Chat() {
     setCurrentResultIndex(-1);
   };
 
-  const handleEmojiClick = (emojiData: EmojiClickData) => {
-    setText((prevText) => prevText + emojiData.emoji);
-    setShowEmojiPicker(false);
+  const handleEmojiClick = (emojiData: EmojiClickData, event: MouseEvent) => {
+    console.log('Emoji clicked:', emojiData.emoji);
+    console.log('Current text before:', text);
+    setText(prevText => {
+      const newText = prevText + emojiData.emoji;
+      console.log('New text after:', newText);
+      return newText;
+    });
+    textareaRef.current?.focus();
   };
+
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   interface ConversionProgress {
     status: 'queued' | 'converting' | 'uploading' | 'completed' | 'failed';
@@ -713,12 +779,27 @@ export default function Chat() {
       );
 
       setStagedFiles(prev => [...prev, ...processedFiles]);
+
+      // Generate previews for image files
+      const newPreviews = await Promise.all(
+        processedFiles.map(file => {
+          if (file.type.startsWith('image/')) {
+            return URL.createObjectURL(file);
+          }
+          return Promise.resolve(''); // No preview for non-images
+        })
+      );
+      setStagedFilePreviews(prev => [...prev, ...newPreviews]);
     }
   };
 
   const handleRemoveStagedFile = (index: number) => {
     setStagedFiles(prev => prev.filter((_, i) => i !== index));
   };
+
+  useEffect(() => {
+    return () => stagedFilePreviews.forEach(url => URL.revokeObjectURL(url));
+  }, [stagedFilePreviews]);
 
   const handleSendMessage = async () => {
     if ((text.trim() || stagedFiles.length > 0) && session?.user) {
@@ -741,12 +822,15 @@ export default function Chat() {
 
           // Use sendCombinedMessage to send text and files together
           await sendCombinedMessage(text.trim(), uploadedFiles);
+          setReplyingTo(null);
 
           setStagedFiles([]);
           setUploadProgress({});
+          setStagedFilePreviews([]);
         } else if (text.trim()) {
           await sendCombinedMessage(text.trim(), []);
         }
+        setReplyingTo(null);
         playSound('messageSent');
         setText("");
       } catch (error) {
@@ -761,6 +845,11 @@ export default function Chat() {
         sendTyping(false);
       }
     }
+  };
+
+  const handleReply = (message: any) => {
+    setReplyingTo(message);
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -799,13 +888,13 @@ export default function Chat() {
 
       // Request a stream with the devices that are available.
       const stream = await navigator.mediaDevices.getUserMedia({ video: hasVideo, audio: hasAudio });
-      
+
       setLocalStream(stream);
       playSound('callStart');
       setIsCallActive(true);
-      
+
       if (session?.user?.token) {
-        
+
         const call = await startMeshCall({
           roomId: activeRoom,
           localStream: stream,
@@ -871,15 +960,15 @@ export default function Chat() {
       <div className="h-full flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
-        
+
         <div className="relative flex-1 flex min-h-0">
           {/* Channel List Sidebar */}
           <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 border-r border-border/50 flex-shrink-0">
             <div className="p-4">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Search conversations" 
+              <div className="relative" ref={emojiPickerRef}>
+                <input
+                  type="text"
+                  placeholder="Search conversations"
                   className="backdrop-blur-sm bg-background/50 border border-border/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -889,9 +978,9 @@ export default function Chat() {
                 </div>
               </div>
             </div>
-            
+
             <div className="px-3 pb-2">
-            <button
+              <button
                 onClick={() => setIsChannelsOpen(!isChannelsOpen)}
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
               >
@@ -901,135 +990,129 @@ export default function Chat() {
                 </h3>
                 <ChevronDownIcon
                   size={16}
-                  className={`transform transition-transform duration-200 ${
-                    isChannelsOpen ? "rotate-180" : ""
-                  }`}
+                  className={`transform transition-transform duration-200 ${isChannelsOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
               {isChannelsOpen && (
-              <div className="mt-2 space-y-1">
-                {channels
-                  .filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map((channel) => (
-                  <div
-                    key={channel._id}
-                    className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 ${
-                      activeRoom === channel.name.toLowerCase().replace(/ /g, '-')
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <button className="flex items-center flex-1 text-left" onClick={() => handleRoomChange(channel.name.toLowerCase().replace(/ /g, '-'))}>
-                      <span className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
-                        activeRoom === channel.name.toLowerCase().replace(/ /g, '-') ? 'bg-primary' : 'bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity'
-                      }`}></span>
-                      {channel.name}
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setManagingChannel(channel);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded-md"
+                <div className="mt-2 space-y-1">
+                  {channels
+                    .filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((channel) => (
+                      <div
+                        key={channel._id}
+                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 ${activeRoom === channel.name.toLowerCase().replace(/ /g, '-')
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                      >
+                        <button className="flex items-center flex-1 text-left" onClick={() => handleRoomChange(channel.name.toLowerCase().replace(/ /g, '-'))}>
+                          <span className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${activeRoom === channel.name.toLowerCase().replace(/ /g, '-') ? 'bg-primary' : 'bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity'
+                            }`}></span>
+                          {channel.name}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setManagingChannel(channel);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded-md"
+                        >
+                          <Users size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  <div className="px-3">
+                    <button
+                      onClick={() => setCreateChannelModalOpen(true)}
+                      className="group cursor-pointer flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                     >
-                      <Users size={14} />
+                      <Plus size={16} className="mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                      Add Channel
                     </button>
                   </div>
-                ))}
-                  <div className="px-3">
-                <button 
-                  onClick={() => setCreateChannelModalOpen(true)}
-                  className="group cursor-pointer flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
-                >
-                  <Plus size={16} className="mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
-                  Add Channel
-                </button>
-              </div>
-              </div>
+                </div>
               )}
             </div>
-            
+
             {/* Direct Messages Section */}
             <div className="px-3 pb-2 mt-6">
-            <button
+              <button
                 onClick={() => setIsDmsOpen(!isDmsOpen)}
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
               >
                 <h3 className="flex items-center">
-                <MessageCircle className="h-3 w-3 mr-2" />
-                Direct Messages
+                  <MessageCircle className="h-3 w-3 mr-2" />
+                  Direct Messages
                 </h3>
                 <ChevronDownIcon
                   size={16}
-                  className={`transform transition-transform duration-200 ${
-                    isDmsOpen ? "rotate-180" : ""
-                  }`}
+                  className={`transform transition-transform duration-200 ${isDmsOpen ? "rotate-180" : ""
+                    }`}
                 />
               </button>
               {isDmsOpen && (
-              <div className="mt-2 space-y-1">
-                {/* Self-chat / Notes to self */}
-                {currentUser && (
-                  <button
-                    onClick={() => handleRoomChange(createDirectRoom(currentUser._id, currentUser._id))}
-                    className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-                      activeRoom === createDirectRoom(currentUser._id, currentUser._id)
-                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                        : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <div className="relative mr-3">
-                      <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
-                        <AvatarImage src={currentUser.image || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                          {currentUser.fullName?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-xs text-muted-foreground -mt-1">Notes to self</span>
-                    </div>
-                  </button>
-                )}
-                {recentDms
-                  .map(dm => {
-                    const otherUserId = dm.room.split('-').find(id => id !== session?.user?._id);
-                    const user = users.find(u => u._id === otherUserId);
-                    return { ...dm, user };
-                  })
-                  .filter(dm => dm.user && dm.room.includes('-'))
-                  .filter(dm => !searchQuery || (dm.user && dm.user.fullName.toLowerCase().includes(searchQuery.toLowerCase())))
-                  .map(dm => {
-                    if (!dm.user) return null;
-                    const room = dm.room;
-                    const user = dm.user;
+                <div className="mt-2 space-y-1">
+                  {/* Self-chat / Notes to self */}
+                  {currentUser && (
+                    <button
+                      onClick={() => handleRoomChange(createDirectRoom(currentUser._id, currentUser._id))}
+                      className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${activeRoom === createDirectRoom(currentUser._id, currentUser._id)
+                          ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
+                          : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                      <div className="relative mr-3">
+                        <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
+                          <AvatarImage src={currentUser.image || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                            {currentUser.fullName?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="text-xs text-muted-foreground -mt-1">Notes to self</span>
+                      </div>
+                    </button>
+                  )}
+                  {recentDms
+                    .map(dm => {
+                      const otherUserId = dm.room.split('-').find(id => id !== session?.user?._id);
+                      const user = users.find(u => u._id === otherUserId);
+                      return { ...dm, user };
+                    })
+                    .filter(dm => dm.user && dm.room.includes('-'))
+                    .filter(dm => !searchQuery || (dm.user && dm.user.fullName.toLowerCase().includes(searchQuery.toLowerCase())))
+                    .map(dm => {
+                      if (!dm.user) return null;
+                      const room = dm.room;
+                      const user = dm.user;
 
-                    return (
-                      <button
-                        key={dm._id}
-                        onClick={() => handleRoomChange(room)}
-                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-                          activeRoom === room
-                            ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                            : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
-                        }`}>
-                        <div className="relative mr-3">
-                          <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
-                            <AvatarImage src={user.image || undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                              {user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {onlineUsers.includes(user._id) && (
-                            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
-                          )}
-                        </div>
-                        {user.fullName}
-                      </button>
-                    );
-                  })
-                }
-              </div>
+                      return (
+                        <button
+                          key={dm._id}
+                          onClick={() => handleRoomChange(room)}
+                          className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${activeRoom === room
+                              ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
+                              : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
+                            }`}>
+                          <div className="relative mr-3">
+                            <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
+                              <AvatarImage src={user.image || undefined} />
+                              <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                                {user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {onlineUsers.includes(user._id) && (
+                              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
+                            )}
+                          </div>
+                          {user.fullName}
+                        </button>
+                      );
+                    })
+                  }
+                </div>
               )}
             </div>
           </div>
@@ -1038,14 +1121,14 @@ export default function Chat() {
           <div className="flex-1 flex flex-col overflow-hidden">
             {isCallActive && localStream && (
               <CallView
-              localStream={localStream}
-              remoteStreams={remoteStreams}
-              onEndCall={handleEndCall}
-              userName={userName}
-              onToggleScreenShare={handleToggleScreenShare}
-              isScreenSharing={isScreenSharing}
-              screenStream={screenStream}
-            />
+                localStream={localStream}
+                remoteStreams={remoteStreams}
+                onEndCall={handleEndCall}
+                userName={userName}
+                onToggleScreenShare={handleToggleScreenShare}
+                isScreenSharing={isScreenSharing}
+                screenStream={screenStream}
+              />
             )}
             {/* Chat Header */}
             <div className="backdrop-blur-sm bg-card/50 border-b border-border/50 p-4 flex items-center justify-between">
@@ -1061,10 +1144,10 @@ export default function Chat() {
                 <Button variant="ghost" size="sm" className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowSearch(true)}>
                   <SearchIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
                   onClick={handleStartCall}
                   disabled={!session}
                 >
@@ -1072,36 +1155,36 @@ export default function Chat() {
                   <span className="ml-2">Sync</span>
                 </Button>
                 <div className="flex items-center -space-x-2 pr-2">
-              {users.slice(0, 5).map(user => {
-                  const isOnline = onlineUsers.includes(user.fullName);
-                  return (
-                  <div key={user.id || user._id} className="relative group/avatar" onClick={() => setSelectedUser(user)}>
-                      <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
-                      <AvatarImage src={user.image || undefined} />
-                      <AvatarFallback className="text-xs font-semibold">
-                          {(user.fullName || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
-                      </AvatarFallback>
+                  {users.slice(0, 5).map(user => {
+                    const isOnline = onlineUsers.includes(user.fullName);
+                    return (
+                      <div key={user.id || user._id} className="relative group/avatar" onClick={() => setSelectedUser(user)}>
+                        <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
+                          <AvatarImage src={user.image || undefined} />
+                          <AvatarFallback className="text-xs font-semibold">
+                            {(user.fullName || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isOnline && (
+                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
+                        )}
+                      </div>
+                    );
+                  })}
+                  {users.length > 5 && (
+                    <div className="relative group/avatar">
+                      <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
+                        <AvatarFallback className="text-xs font-semibold bg-muted">
+                          +{users.length - 5}
+                        </AvatarFallback>
                       </Avatar>
-                      {isOnline && (
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
-                      )}
-                  </div>
-                  );
-              })}
-              {users.length > 5 && (
-                  <div className="relative group/avatar">
-                  <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
-                      <AvatarFallback className="text-xs font-semibold bg-muted">
-                      +{users.length - 5}
-                      </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
-                      <p className="font-semibold mb-1">More members:</p>
-                      <p className="font-normal">{users.slice(5).map(u => u.fullName).join(', ')}</p>
-                  </div>
-                  </div>
-              )}
-              </div>
+                      <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
+                        <p className="font-semibold mb-1">More members:</p>
+                        <p className="font-normal">{users.slice(5).map(u => u.fullName).join(', ')}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1163,13 +1246,14 @@ export default function Chat() {
                       msg={msg}
                       isSender={isSender}
                       user={user}
-
                       showTime={true}
                       openDocPreview={openDocPreview}
                       openLightbox={openLightbox}
                       handleReaction={handleReaction}
                       onAlertClick={handleAlertClick}
                       onReactionClick={handleReactionClick}
+                      onReply={handleReply}
+                      sendReadReceipt={sendReadReceipt}
                     />
                   </div>
                 );
@@ -1189,18 +1273,41 @@ export default function Chat() {
 
             {/* Message Input */}
             <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4">
+              {replyingTo && (
+                <div className="mb-2 p-2 border-l-2 border-primary bg-background/50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-semibold text-primary">
+                        Replying to {replyingTo.userName}
+                      </p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {replyingTo.text}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => setReplyingTo(null)}>
+                      <XIcon size={14} />
+                    </Button>
+                  </div>
+                </div>
+              )}
               {stagedFiles.length > 0 && (
                 <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50">
                   <p className="text-sm font-semibold mb-2 px-2">Attached Files</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {stagedFiles.map((file, index) => (
-                      <div key={index} className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2">
-                        <div className="flex items-center gap-2 w-full">
-                          <FileIcon className="h-6 w-6 text-primary flex-shrink-0" />
-                          <div className="flex-1 overflow-hidden">
-                            <p className="text-xs font-medium truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                          </div>
+                      <div key={index} className="flex flex-col gap-2">
+                        <div className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2 h-24 justify-between">
+                          {stagedFilePreviews[index] ? (
+                            <img src={stagedFilePreviews[index]} alt={file.name} className="w-full h-16 object-cover rounded-md" />
+                          ) : (
+                            <div className="flex items-center gap-2 w-full h-16">
+                              <FileIcon className="h-8 w-8 text-primary flex-shrink-0" />
+                              <div className="flex-1 overflow-hidden">
+                                <p className="text-xs font-medium truncate">{file.name}</p>
+                                <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                              </div>
+                            </div>
+                          )}
                           {!isUploading && (
                             <Button
                               variant="ghost"
@@ -1211,26 +1318,28 @@ export default function Chat() {
                               <XIcon size={14} />
                             </Button>
                           )}
+                          {isUploading && uploadProgress[file.name] !== undefined && (
+                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative mt-auto">
+                              <Progress value={uploadProgress[file.name] > 100 ? 100 : uploadProgress[file.name]} className="h-2" />
+                              {uploadProgress[file.name] > 100 && (
+                                <div className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
+                                  PROCESSING
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        {isUploading && uploadProgress[file.name] !== undefined && (
-                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative">
-                            <Progress value={uploadProgress[file.name] > 100 ? 100 : uploadProgress[file.name]} className="h-2" />
-                            {uploadProgress[file.name] > 100 && (
-                              <div className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
-                                PROCESSING
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+
               <div className="relative">
                 <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
                   <textarea
+                    ref={textareaRef}
                     value={text}
                     onChange={handleTyping}
                     onKeyDown={handleKeyDown}
@@ -1239,11 +1348,35 @@ export default function Chat() {
                     rows={1}
                   />
                   <div className="flex items-center space-x-1 ml-3">
-                    <div ref={emojiPickerRef}>
-                      <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                    {/* EMOJI BUTTON - Fixed */}
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      >
                         <SmileIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
                       </Button>
+
+                      {/* FIXED EMOJI PICKER POSITIONING */}
+                      {showEmojiPicker && (
+                        <div
+                          ref={emojiPickerRef}
+                          className="absolute bottom-full right-0 mb-2 z-1000 shadow-xl border border-border/50 rounded-2xl overflow-hidden"
+                          style={{ width: 'min(320px, 90vw)' }}
+                        >
+                          <EmojiPicker
+                            onEmojiClick={handleEmojiClick}
+                            height={350}
+                            width="100%"
+                            theme={Theme.AUTO}
+                          />
+                        </div>
+                      )}
                     </div>
+
+                    {/* Rest of your buttons */}
                     <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => fileInputRef.current?.click()}>
                       <PaperclipIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
                     </Button>
@@ -1265,13 +1398,6 @@ export default function Chat() {
                     </Button>
                   </div>
                 </div>
-                {showEmojiPicker && (
-                  <div className="absolute bottom-full left-0 mb-2 z-10">
-                    <EmojiPicker
-                      onEmojiClick={handleEmojiClick}
-                      />
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -1309,7 +1435,7 @@ export default function Chat() {
         </div>
 
         {/* Critical Alert Modal */}
-        <SendAlertModal 
+        <SendAlertModal
           isOpen={showAlertModal}
           onClose={() => setShowAlertModal(false)}
           onAlertSent={() => {
@@ -1373,36 +1499,36 @@ export default function Chat() {
 
         {/* Reaction Details Modal */}
         <AnimatePresence>
-            {activeReactionDetails && (
-              <ReactionDetailsModal
-                isOpen={!!activeReactionDetails}
-                onClose={() => {
-                  setActiveReactionDetails(null);
-                }}
-                messageId={activeReactionDetails.messageId}
-                emoji={activeReactionDetails.emoji}
-                users={activeReactionDetails.users}
-                allUsers={users}
-                currentUserId={session?.user?.id}
-                onRemoveReaction={handleReaction}
-                onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
-              />
-            )}
+          {activeReactionDetails && (
+            <ReactionDetailsModal
+              isOpen={!!activeReactionDetails}
+              onClose={() => {
+                setActiveReactionDetails(null);
+              }}
+              messageId={activeReactionDetails.messageId}
+              emoji={activeReactionDetails.emoji}
+              users={activeReactionDetails.users}
+              allUsers={users}
+              currentUserId={session?.user?.id}
+              onRemoveReaction={handleReaction}
+              onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
+            />
+          )}
         </AnimatePresence>
 
         <AnimatePresence>
           {selectedUser && (
-              <UserProfileCard
-                user={{
-                  ...selectedUser,
-                  isOnline: onlineUsers.includes(selectedUser._id),
-                  // Assuming email is fetched with user data. If not, this will be undefined.
-                  email: selectedUser.email
-                }}
-                onClose={() => setSelectedUser(null)}
-                onStartChat={handleStartChat}
-                currentUserId={session?.user?._id}
-              />
+            <UserProfileCard
+              user={{
+                ...selectedUser,
+                isOnline: onlineUsers.includes(selectedUser._id),
+                // Assuming email is fetched with user data. If not, this will be undefined.
+                email: selectedUser.email
+              }}
+              onClose={() => setSelectedUser(null)}
+              onStartChat={handleStartChat}
+              currentUserId={session?.user?._id}
+            />
           )}
         </AnimatePresence>
       </div>

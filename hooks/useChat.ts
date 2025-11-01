@@ -23,13 +23,19 @@ export interface Message {
   type?: 'message' | 'alert_notification';
   alert?: any;
   reactions?: { [emoji: string]: { userId: string; userName: string }[] };
+  replyTo?: {
+    id: string;
+    userName: string;
+    text: string;
+  };
+  status?: 'sent' | 'delivered' | 'read';
 }
 
 // Allow messages to carry a single file or multiple files
 export type MessageFile = UploadResponse | UploadResponse[] | undefined;
 
 interface WebSocketMessage {
-  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction' | 'alert_notification';
+  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction' | 'alert_notification' | 'message_status_update';
   isTyping?: boolean;
   userName?: string;
   messages?: Message[];
@@ -41,6 +47,7 @@ interface WebSocketMessage {
   };
   alert?: any;
   error?: string;
+  payload?: any;
 }
 
 export const uploadFile = (
@@ -197,6 +204,7 @@ export const useChat = (room: string) => {
                   userImage: message.sender.image || undefined,
                   text: message.content || '', // Use content from the message
                   file: message.files || message.file, // support files[] or file
+                  replyTo: message.replyTo,
                   createdAt: message.timestamp || new Date().toISOString(),
                 };
                 console.log('Adding new message:', newMessage);
@@ -278,6 +286,13 @@ export const useChat = (room: string) => {
                   })
                 );
               }
+              } else if (message.type === 'message_status_update') {
+              const { messageId, status } = message.payload;
+              setMessages(prevMessages =>
+                prevMessages.map(msg =>
+                  msg.id === messageId ? { ...msg, status } : msg
+                )
+              );
             } else if (message.type === 'presence') {
               if (message.onlineUsers) {
                 setOnlineUsers(message.onlineUsers);
@@ -352,7 +367,7 @@ export const useChat = (room: string) => {
   }, [session, room, _sendMessage]);
 
   const sendCombinedMessage = useCallback(
-    async (text: string, uploadedFiles?: UploadResponse[]) => {
+    async (text: string, uploadedFiles?: UploadResponse[], replyTo?: Message['replyTo']) => {
     if (!session?.user) {
       console.error('Cannot send message: user not authenticated');
       return;
@@ -378,6 +393,7 @@ export const useChat = (room: string) => {
       type: 'message',
       content: text || '', // may be empty if just files
       files: filesWithThumbnails?.length ? filesWithThumbnails : undefined,
+      replyTo,
       room,
       timestamp: new Date().toISOString()
     };
@@ -413,6 +429,17 @@ export const useChat = (room: string) => {
     }
   };
 
+  const sendReadReceipt = useCallback((messageId: string) => {
+    _sendMessage({
+      type: 'message_status_update',
+      payload: {
+        messageId,
+        status: 'read',
+        room,
+      }
+    });
+  }, [room, _sendMessage]);
+
   return {
     messages,
     typingUsers,
@@ -422,5 +449,6 @@ export const useChat = (room: string) => {
     sendTyping,
     uploadFile,
     startCall,
+    sendReadReceipt,
   };
 };

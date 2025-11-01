@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { stat } from 'fs/promises';
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +16,18 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(bytes);
 
     const uploadsDir = join(process.cwd(), 'public', 'uploads');
+    
+    // Ensure the uploads directory exists
+    try {
+      await stat(uploadsDir);
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        await mkdir(uploadsDir, { recursive: true });
+      } else {
+        throw error;
+      }
+    }
+
     const filePath = join(uploadsDir, file.name);
 
     await writeFile(filePath, buffer);
@@ -25,10 +38,11 @@ export async function POST(request: Request) {
       name: file.name,
       type: file.type,
       size: file.size,
-      resource_type: 'raw',
+      resource_type: file.type.startsWith('image') ? 'image' : 'raw',
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ success: false, error: 'Upload failed' });
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Upload error:', errorMessage);
+    return NextResponse.json({ success: false, error: `Upload failed: ${errorMessage}` });
   }
 }

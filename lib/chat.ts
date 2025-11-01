@@ -19,22 +19,23 @@ export class ChatRoom {
     return new Response("This endpoint is for WebSocket connections.", { status: 400 });
   }
 
-  async broadcastAlert(alert: any, recipients: string[]) {
-    // This is a simplified broadcast. A real implementation might check
-    // which room the recipients are in. For now, we broadcast to all
-    // sessions connected to this Durable Object's room.
-    const payload = {
-      type: 'alert_notification',
-      alert: alert,
-    };
-    const message = JSON.stringify(payload);
+  async handleMessageStatusUpdate(message: any) {
+    const { messageId, status, room } = message.payload;
 
-    // Get all connected sessions for this room
-    const sessions = this.state.getWebSockets();
+    // Find the original message and update its status
+    const originalMessageIndex = this.messages.findIndex(m => m.id === messageId);
+    if (originalMessageIndex !== -1) {
+      this.messages[originalMessageIndex].status = status;
+      await this.state.storage.put("messages", this.messages);
 
-    // Iterate over the sessions and send the message
-    for (const session of sessions) {
-      session.send(message);
+      // Notify the sender about the status update
+      const senderSession = this.sessions.find(s => s.id === this.messages[originalMessageIndex].userId);
+      if (senderSession) {
+        senderSession.webSocket.send(JSON.stringify({
+          type: 'message_status_update',
+          payload: { messageId, status },
+        }));
+      }
     }
   }
 }

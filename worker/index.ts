@@ -145,6 +145,7 @@ export class ChatRoom {
                         fullName: session.user.name,
                         image: session.user.image || null,
                     },
+                    status: 'sent',
                 };
 
                 this.messages.push(finalMessage);
@@ -154,6 +155,15 @@ export class ChatRoom {
                 
                 this.broadcast(JSON.stringify(finalMessage));
                 await this.state.storage.put("messages", this.messages);
+            } else if (data.type === 'message_status_update') {
+                const { messageId, status } = data.payload;
+                const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
+
+                if (messageIndex > -1) {
+                    this.messages[messageIndex].status = status;
+                    await this.state.storage.put("messages", this.messages);
+                    this.broadcast(JSON.stringify({ type: 'message_status_update', payload: { messageId, status } }));
+                }
             } else if (data.type === 'reaction') {
                 const { messageId, emoji, userId, userName } = data.payload;
                 const messageIndex = this.messages.findIndex(msg => msg.id === messageId);

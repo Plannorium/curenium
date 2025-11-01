@@ -14,7 +14,8 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
   const { url, name: fileName, type: fileType } = file;
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const isPdf = fileType === 'application/pdf';
-  const isMicrosoftOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].some(ext => url.endsWith(ext));
+    const isImage = fileType && fileType.startsWith('image/');
+  const isMicrosoftOffice = typeof url === 'string' && ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].some(ext => url.endsWith(ext));
 
   useEffect(() => {
     setSignedUrl(url);
@@ -70,12 +71,22 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
               >
                 This is an embedded PDF document.
               </iframe>
+            ) : isImage ? (
+              <div className="flex justify-center items-center w-full h-full bg-black">
+                <img src={signedUrl} alt={fileName} className="max-w-full max-h-full object-contain" />
+              </div>
             ) : isMicrosoftOffice ? (
               <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(signedUrl)}`} width='100%' height='600px' frameBorder='0' className="rounded-lg shadow-md">
                 This is an embedded <a target='_blank' href='http://office.com'>Microsoft Office</a> document, powered by <a target='_blank' href='http://office.com/webapps'>Office Online</a>.
               </iframe>
             ) : (
-              <p className="text-gray-600">Unsupported file type for preview.</p>
+              <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
+                <p className="text-lg text-gray-700 font-medium">Unsupported File Type</p>
+                <p className="text-gray-500 mt-2">Preview is not available for this file type.</p>
+                <button onClick={handleDownload} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  Download File
+                </button>
+              </div>
             )
           ) : (
             <p className="text-gray-600">Loading document...</p>
