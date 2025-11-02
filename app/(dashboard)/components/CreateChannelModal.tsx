@@ -145,7 +145,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               border-border/30 
               hover:bg-background/60 
               transition-all duration-200 
-              rounded-xl shadow-sm
+              rounded-xl shadow-sm cursor-pointer
             "
           >
             Cancel
@@ -159,7 +159,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               text-primary-foreground 
               rounded-xl 
               shadow-[0_4px_16px_-4px_var(--primary)]
-              transition-all duration-200
+              transition-all duration-200 cursor-pointer
             "
           >
             {isCreating ? (

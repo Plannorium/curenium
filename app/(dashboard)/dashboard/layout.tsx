@@ -14,7 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode 
 }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isCollapsed, setCollapsed] = useState(false);
+  const [isCollapsed, setCollapsed] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
   const sidebarRef = useRef<HTMLDivElement>(null);
 

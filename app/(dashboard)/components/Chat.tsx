@@ -59,6 +59,32 @@ interface Channel {
   name: string;
   members: string[];
 }
+
+const isSingleEmoji = (str: string): boolean => {
+    if (!str) return false;
+    const trimmed = str.trim();
+
+    // Use Intl.Segmenter to count grapheme clusters. This is the most reliable way to count "characters" as perceived by users.
+    // It correctly handles emojis with skin tones, ZWJ sequences, etc.
+    try {
+        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+        const segments = [...segmenter.segment(trimmed)];
+
+        if (segments.length !== 1) {
+            return false;
+        }
+
+        // Now check if that single grapheme is an emoji.
+        const emojiRegex = /\p{Emoji}/u;
+        return emojiRegex.test(segments[0].segment);
+    } catch (e) {
+        // Fallback for environments where Intl.Segmenter is not supported
+        console.warn("Intl.Segmenter not supported, falling back to regex for emoji detection.");
+        const emojiRegex = /^\p{Extended_Pictographic}$/u;
+        return emojiRegex.test(trimmed);
+    }
+};
+
 const formatFileSize = (bytes?: number) => {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;
@@ -98,6 +124,8 @@ const MessageBubble = ({
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
+  const messageText = msg.text || msg.content;
+  const isEmoji = isSingleEmoji(messageText);
 
   useEffect(() => {
     if (!messageRef.current || isSender || msg.status === 'read') return;
@@ -276,11 +304,12 @@ const MessageBubble = ({
 
         <div className="flex items-center gap-2">
           <div
-            className={`relative rounded-2xl px-0.5 md:px-1 py-1.5 cursor-pointer shadow-sm border transition-all hover:shadow-lg hover:scale-[1.01] max-w-full sm:max-w-md lg:max-w-lg ${
-              isSender
-                ? "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/30"
-                : "bg-card/95 border-border/40"
-            }`}
+            className={`relative cursor-pointer transition-all hover:scale-[1.01] max-w-full sm:max-w-md lg:max-w-lg ${
+              !isEmoji &&
+              `px-0.5 md:px-1 py-0 ${
+                isSender ? "from-primary/20 to-primary/10 border-primary/30" : "border-border/40"
+              }`
+            } `}
           >
             <div className="absolute top-0 right-0 mt-[-12px] mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10">
               <div className="relative" ref={reactionPickerRef}>
@@ -305,8 +334,16 @@ const MessageBubble = ({
             {renderRepliedMessage()}
 
             {/* TEXT */}
-            {(msg.text || msg.content) && (
-              <p className="text-[1rem] leading-relaxed break-words px-2">{msg.text || msg.content}</p>
+            {messageText && (
+              <p
+                className={`text-[1rem] leading-relaxed break-words px-1.5 mr-1 ${isEmoji ? 'text-[4rem]' : 'whitespace-pre-wrap'}`}
+                dangerouslySetInnerHTML={{ // The user is requesting to make the emoji bigger, so I'm increasing the size from 6xl to 7xl.
+                  __html: messageText.replace(
+                    /(https?:\/\/[^\s]+)/g,
+                    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>'
+                  ),
+                }}
+              />
             )}
 
             {/* IMAGES */}
@@ -330,12 +367,12 @@ const MessageBubble = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 mt-1 min-h-[24px]">
+        <div className="flex items-center gap-1.5 mt-0 min-h-[24px]">
           {msg.reactions && Object.keys(msg.reactions).length > 0 && (
             <>
               {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
                 <div key={emoji} className="relative group">
-                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200">
+                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer">
                     <span>{emoji}</span>
                     <span className="font-medium text-primary text-[0.6rem]">{Array.isArray(users) ? users.length : 0}</span>
                   </button>
@@ -1147,7 +1184,7 @@ export default function Chat() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200 cursor-pointer"
                   onClick={handleStartCall}
                   disabled={!session}
                 >
