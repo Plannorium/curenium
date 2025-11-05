@@ -30,6 +30,7 @@ import { initAudio, playSound } from '@/lib/sound/soundGenerator';
 import { CreateChannelModal } from './CreateChannelModal';
 import { ManageChannelModal } from './ManageChannelModal';
 import SoundPalette from './SoundPalette';
+import PdfPreviewCard from './PdfPreviewCard';
 
 interface User {
   id: string;
@@ -220,22 +221,35 @@ const MessageBubble = ({
     const files = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
     const nonImages = files.filter(
       (f: any) =>
+        f?.url &&
         !f?.resource_type?.startsWith?.("image") &&
         !f?.type?.startsWith?.("image") &&
-        !/\.(jpe?g|png|webp|gif)$/i.test(f?.url)
+        !/\.(jpe?g|png|webp|gif)$/i.test(f.url)
     );
 
     if (!nonImages.length) return null;
 
     return (
       <div className="space-y-2">
-        {nonImages.map((f: any, i: number) => (
-          <FileAttachment
-            key={i}
-            file={f}
-            onPreview={() => openDocPreview(f)}
-          />
-        ))}
+        {nonImages.map((f: any, i: number) => {
+          if (!f || !f.url) return null;
+          if (f.type === 'application/pdf' || f.name?.endsWith('.pdf')) {
+            return (
+              <PdfPreviewCard
+                key={i}
+                file={f}
+                onPreview={() => openDocPreview(f)}
+              />
+            );
+          }
+          return (
+            <FileAttachment
+              key={i}
+              file={f}
+              onPreview={() => openDocPreview(f)}
+            />
+          );
+        })}
       </div>
     );
   };

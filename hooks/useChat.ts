@@ -4,11 +4,15 @@ import { playSound } from '@/lib/sound/soundGenerator';
 
 export interface UploadResponse {
   url: string;
+  public_id: string;
   name: string;
   type: string;
   size?: number;
   resource_type?: string;
   thumbnailUrl?: string;
+  pdfUrl?: string;
+  previewUrl?: string;
+  pageCount?: number;
 }
 
 export interface Message {
@@ -84,7 +88,8 @@ export const uploadFile = (
     const formData = new FormData();
     formData.append('file', file);
 
-    xhr.open('POST', '/api/upload-local', true);
+    const endpoint = file.type === 'application/pdf' ? '/api/upload-pdf' : '/api/upload';
+    xhr.open('POST', endpoint, true);
     xhr.send(formData);
   });
 };
@@ -306,33 +311,30 @@ export const useChat = (room: string) => {
         };
 
         currentWs.onerror = (event) => {
-          console.error("WebSocket error:", event);
-        };
-
-        currentWs.onclose = (event) => {
-          console.log(`WebSocket disconnected: ${event.code} ${event.reason}`);
-          retryCount.current++;
-          
-          if (retryTimeout.current) {
-            clearTimeout(retryTimeout.current);
-          }
-          
-          retryTimeout.current = setTimeout(() => {
-            connect();
-          }, Math.min(1000 * Math.pow(2, retryCount.current), 10000));
+          // Generic error events don't have much info, so we'll log the close event for details.
+          console.error("WebSocket error event. See close event for details.");
         };
 
         currentWs.onclose = (event) => {
           console.log(`WebSocket disconnected: code=${event.code}, reason='${event.reason}', wasClean=${event.wasClean}`);
-          // Only retry if the component is still mounted and this is the active socket.
-          if (ws.current === currentWs && retryCount.current < maxRetries) {
+          
+          // Don't retry on normal closure or if the component has unmounted.
+          if (event.code === 1000 || ws.current !== currentWs) {
+            return;
+          }
+
+          if (retryCount.current < maxRetries) {
+            retryCount.current++;
+            const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
+            console.log(`Connection failed. Retrying in ${delay}ms (attempt ${retryCount.current}/${maxRetries})...`);
+            
             if (retryTimeout.current) {
               clearTimeout(retryTimeout.current);
             }
             
-            retryTimeout.current = setTimeout(() => {
-              connect();
-            }, Math.min(1000 * Math.pow(2, retryCount.current), 10000));
+            retryTimeout.current = setTimeout(connect, delay);
+          } else {
+            console.error("Max retry attempts reached. Giving up.");
           }
         };
 

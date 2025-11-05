@@ -6,27 +6,72 @@ interface DocumentPreviewProps {
     url: string;
     name: string;
     type: string;
+    format?: string;
   };
   onClose: () => void;
 }
 
 const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
-  const { url, name: fileName, type: fileType } = file;
+  const { url, name: fileName, type: fileType, publicId } = file as any;
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const isPdf = fileType === 'application/pdf';
-    const isImage = fileType && fileType.startsWith('image/');
-  const isMicrosoftOffice = typeof url === 'string' && ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].some(ext => url.endsWith(ext));
+  const isImage = fileType && fileType.startsWith('image/');
+  const isMicrosoftOffice = typeof file.url === 'string' && ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].some(ext => file.url.endsWith(ext));
 
   useEffect(() => {
-    setSignedUrl(url);
-  }, [url]);
+    if (file) {
+      const fetchSignedUrl = async () => {
+        setIsLoading(true);
+        // If it's an image, we can use the URL directly.
+        if (isImage) {
+          setSignedUrl(file.url);
+          setIsLoading(false);
+          return;
+        }
+
+        // If publicId is missing, it might be a local file, so use the direct URL.
+        if (!publicId) {
+          setSignedUrl(file.url);
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/pdf/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicId, format: file.format || file.type.split('/')[1], attachment: false }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to get signed URL");
+          }
+
+          const { url: newSignedUrl } = (await response.json()) as { url: string };
+          setSignedUrl(newSignedUrl);
+        } catch (error) {
+          console.error("Failed to get signed URL:", error);
+          setSignedUrl(null);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchSignedUrl();
+    }
+  }, [file, publicId, isImage]);
 
   const handleDownload = async () => {
-    const match = url.match(/\/upload\/(?:v\d+\/)?(.*)/);
-    const publicId = match ? match[1] : null;
-
     if (!publicId) {
-      console.error("Could not extract publicId from URL");
+      console.error("publicId is missing, cannot download the file.");
+      // Fallback to direct download if publicId is not available
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       return;
     }
 
@@ -34,10 +79,14 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
       const response = await fetch('/api/pdf/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicId, attachment: true }),
+        body: JSON.stringify({ publicId, attachment: true, format: file.format || file.type.split('/')[1] }),
       });
-      if (!response.ok) throw new Error("Failed to get signed URL for download");
-      const { url: downloadUrl }: { url: string } = await response.json();
+
+      if (!response.ok) {
+        throw new Error("Failed to get signed URL for download");
+      }
+
+      const { url: downloadUrl } = (await response.json()) as { url: string };
       window.open(downloadUrl, '_self');
     } catch (error) {
       console.error("Failed to get signed URL for download:", error);
@@ -59,17 +108,22 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
           </div>
         </div>
         <div className="max-h-[80vh] overflow-y-auto border-t border-gray-200 pt-4">
-          {signedUrl ? (
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-gray-600">Loading document...</p>
+            </div>
+          ) : signedUrl ? (
             isPdf ? (
               <iframe
-                src={`https://docs.google.com/viewer?url=${encodeURIComponent(signedUrl)}&embedded=true`}
+                src={signedUrl}
                 width='100%'
                 height='600px'
                 frameBorder='0'
                 allowFullScreen
                 className="rounded-lg shadow-md"
+                title={fileName}
               >
-                This is an embedded PDF document.
+                This browser does not support embedded PDFs. Please download the file to view it.
               </iframe>
             ) : isImage ? (
               <div className="flex justify-center items-center w-full h-full bg-black">
@@ -89,7 +143,13 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
               </div>
             )
           ) : (
-            <p className="text-gray-600">Loading document...</p>
+            <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
+              <p className="text-lg text-gray-700 font-medium">Preview Unavailable</p>
+              <p className="text-gray-500 mt-2">Could not load the document preview.</p>
+              <button onClick={handleDownload} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                Download File
+              </button>
+            </div>
           )}
         </div>
       </div>

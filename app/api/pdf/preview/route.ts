@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { publicId, attachment }: { publicId: string, attachment?: boolean } = await request.json();
+    const { publicId, format, attachment }: { publicId: string, format: string, attachment?: boolean } = await request.json();
 
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -16,11 +16,11 @@ export async function POST(request: Request) {
     }
 
     // Generate a signed URL that is valid for 1 hour (3600 seconds)
-    const url = cloudinary.url(publicId, {
+    const url = cloudinary.url(`${publicId}.${format}`, {
       resource_type: 'raw',
       sign_url: true,
-      flags: attachment ? "attachment" : undefined,
       secure: true,
+      attachment: attachment,
       expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
       type: 'authenticated',
     });

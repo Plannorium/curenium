@@ -19,4 +19,6 @@ tag = "v1"
 new_classes = ["ChatRoom"]
 
 [vars]
+MONGODB_URI="mongodb+srv://almussanplanner12_db_user:Mplannorium%40020525@cluster0.laurh2a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+NEXTAUTH_SECRET="58vZ7T4yt8zZSiTJAgZZnoGWWFNgCFp1tgA/nY/jr5U="
 WORKER_INTERNAL_AUTH_KEY = "58vZ7T4yt8zZSiTJAgZZnoGWwFNgCFp1tgA/nY/jr5U="

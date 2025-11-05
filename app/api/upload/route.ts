@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       url: result.secure_url,
+      public_id: result.public_id, // Add this line
       name: file.name,
       type: file.type,
       size: result.bytes,
