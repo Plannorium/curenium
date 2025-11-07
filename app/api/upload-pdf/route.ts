@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
         resource_type: "auto", // Cloudinary detects PDF
         pages: true, // Request page count in the upload response
         folder: "qt-enum/docs",
+        type: "upload",
         // eager transformation to create first page JPG thumb (pg_1)
         eager: [
           {

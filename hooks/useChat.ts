@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from "sonner";
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { playSound } from '@/lib/sound/soundGenerator';
 
@@ -19,18 +20,25 @@ export interface Message {
   id: string;
   text: string;
   userId: string;
-  userName: string;
+  fullName: string;
   userImage?: string | null;
+  threadId?: string | null; // Add threadId to the Message interface
   file?: MessageFile;
   content?: any;
   createdAt?: string;
   type?: 'message' | 'alert_notification';
   alert?: any;
-  reactions?: { [emoji: string]: { userId: string; userName: string }[] };
+  reactions?: { [emoji: string]: { userId: string; fullName: string }[] };
+  sender?: {
+    _id: string;
+    fullName: string;
+    image?: string;
+  };
   replyTo?: {
     id: string;
-    userName: string;
+    fullName: string;
     text: string;
+    file?: MessageFile;
   };
   status?: 'sent' | 'delivered' | 'read';
 }
@@ -41,7 +49,7 @@ export type MessageFile = UploadResponse | UploadResponse[] | undefined;
 interface WebSocketMessage {
   type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction' | 'alert_notification' | 'message_status_update';
   isTyping?: boolean;
-  userName?: string;
+  fullName?: string;
   messages?: Message[];
   onlineUsers?: string[];
   sender?: {
@@ -102,6 +110,7 @@ export const useChat = (room: string) => {
   const ws = useRef<WebSocket | null>(null);
   const retryCount = useRef(0);
   const retryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMessageRef = useRef<Message | null>(null);
 
   const _sendMessage = useCallback((payload: any) => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
@@ -193,11 +202,31 @@ export const useChat = (room: string) => {
           try {
             const message = JSON.parse(event.data);
             console.log("Received message:", message);
+
+            if (
+              pendingMessageRef.current &&
+              message.type === "message" &&
+              message.sender?._id === (session?.user as any)?._id && // Compare IDs
+              !message.threadId && // Ensure it's not a thread message from another user
+              pendingMessageRef.current.text === message.content // Match content
+            ) {
+              const pendingMessage = pendingMessageRef.current;
+              setMessages((prevMessages) =>
+                prevMessages.map((m) =>
+                  m.id === pendingMessage.id
+                    ? { ...m, id: message.id, createdAt: message.createdAt }
+                    : m
+                )
+              );
+              pendingMessageRef.current = null; // Clear after handling
+              return; // Stop further processing for this message
+            }
+
             if (message.type === 'typing') {
               if (message.isTyping) {
-                setTypingUsers(prev => [...new Set([...prev, message.userName])]);
+                setTypingUsers(prev => [...new Set([...prev, message.fullName])]);
               } else {
-                setTypingUsers(prev => prev.filter(user => user !== message.userName));
+                setTypingUsers(prev => prev.filter(user => user !== message.fullName));
               }
             } else if (message.type === 'message') {
               // Ensure message has required fields before adding
@@ -205,11 +234,20 @@ export const useChat = (room: string) => {
                 const newMessage: Message = {
                   id: message.id || crypto.randomUUID(),
                   userId: message.sender._id,
-                  userName: message.sender.fullName,
+                  threadId: message.threadId || null, // Map threadId from incoming message
+                  fullName: message.sender.fullName,
                   userImage: message.sender.image || undefined,
                   text: message.content || '', // Use content from the message
                   file: message.files || message.file, // support files[] or file
-                  replyTo: message.replyTo,
+                  sender: message.sender, // Preserve the sender object
+                  replyTo: message.replyTo
+                    ? {
+                        id: message.replyTo.id,
+                        text: message.replyTo.text || message.replyTo.content || '',
+                        fullName: message.replyTo.fullName || message.replyTo.sender?.fullName || (message.replyTo as any).userName || 'Unknown',
+                        file: message.replyTo.file,
+                      }
+                    : undefined,
                   createdAt: message.timestamp || new Date().toISOString(),
                 };
                 console.log('Adding new message:', newMessage);
@@ -235,7 +273,7 @@ export const useChat = (room: string) => {
                   alert: message.alert,
                   text: message.alert.message,
                   userId: message.alert.createdBy._id, // Not strictly needed but good for consistency
-                  userName: message.alert.createdBy.fullName,
+                  fullName: message.alert.createdBy.fullName,
                 };
                 setMessages(prev => [...(prev || []), alertMessage]);
               } else {
@@ -247,17 +285,25 @@ export const useChat = (room: string) => {
                 .map((msg: any) => ({
                   id: msg.id || crypto.randomUUID(),
                   userId: msg.sender?._id,
-                  userName: msg.sender?.fullName,
+                  fullName: msg.sender?.fullName,
+                  threadId: msg.threadId || null, // Map threadId from historical messages
                   userImage: msg.sender?.image,
                   text: msg.content || '',
                   file: msg.files || msg.file,
+                  sender: msg.sender, // Preserve the sender object
                   createdAt: msg.createdAt || msg.timestamp,
                   reactions: msg.reactions,
+                  replyTo: msg.replyTo ? {
+                    id: msg.replyTo.id,
+                    text: msg.replyTo.text || msg.replyTo.content || '',
+                    fullName: msg.replyTo.fullName || (msg.replyTo as any).userName || 'Unknown',
+                    file: msg.replyTo.file,
+                  } : undefined,
                 }));
               setMessages(historicalMessages);
             } else if (message.type === 'reaction') {
               if (message.payload) {
-                const { messageId, emoji, userId, userName } = message.payload;
+                const { messageId, emoji, userId, fullName } = message.payload;
                 setMessages(prevMessages =>
                   prevMessages.map(msg => {
                     if (msg.id === messageId) {
@@ -271,7 +317,7 @@ export const useChat = (room: string) => {
                         newUsers = users.filter(u => u.userId !== userId);
                       } else {
                         // User is adding a new reaction
-                        newUsers = [...users, { userId, userName }];
+                        newUsers = [...users, { userId, fullName }];
                       }
               
                       if (newUsers.length === 0) {
@@ -312,7 +358,7 @@ export const useChat = (room: string) => {
 
         currentWs.onerror = (event) => {
           // Generic error events don't have much info, so we'll log the close event for details.
-          console.error("WebSocket error event. See close event for details.");
+          console.error("WebSocket error event. See close event for details.", event);
         };
 
         currentWs.onclose = (event) => {
@@ -365,44 +411,83 @@ export const useChat = (room: string) => {
           ws.current = null;
         }
       }
-    };
+    };``
   }, [session, room, _sendMessage]);
 
   const sendCombinedMessage = useCallback(
-    async (text: string, uploadedFiles?: UploadResponse[], replyTo?: Message['replyTo']) => {
-    if (!session?.user) {
-      console.error('Cannot send message: user not authenticated');
-      return;
-    }
-
-    const filesWithThumbnails = uploadedFiles ? await Promise.all(uploadedFiles.map(async (file) => {
-      if (file.type === 'application/pdf') {
-        try {
-          // Use the public URL directly for thumbnail generation
-          const res = await fetch(`/api/pdf/thumbnail?url=${encodeURIComponent(file.url)}`);
-          if (res.ok) {
-            const data: { thumbnailUrl: string } = await res.json();
-            return { ...file, thumbnailUrl: data.thumbnailUrl };
-          }
-        } catch (error) {
-          console.error("Failed to fetch PDF thumbnail:", error);
-        }
+    async (
+      text: string,
+      uploadedFiles?: UploadResponse[],
+      replyTo?: Message,
+      threadId?: string // Ensure threadId is accepted here
+    ) => {
+      if (!session?.user) {
+        console.error("Cannot send message: user not authenticated");
+        return;
       }
-      return file;
-    })) : undefined;
 
-    const payload = {
-      type: 'message',
-      content: text || '', // may be empty if just files
-      files: filesWithThumbnails?.length ? filesWithThumbnails : undefined,
-      replyTo,
-      room,
-      timestamp: new Date().toISOString()
-    };
+      // --- Optimistic Update ---
+      if (threadId) {
+        const optimisticMessage: Message = {
+          id: `temp-${crypto.randomUUID()}`,
+          text: text,
+          userId: (session.user as any)._id, // Correctly use _id
+          fullName: session.user.name || "You",
+          userImage: session.user.image,
+          threadId: threadId,
+          file: uploadedFiles,
+          replyTo: replyTo,
+          status: "sent",
+          createdAt: new Date().toISOString(),
+        };
+        pendingMessageRef.current = optimisticMessage;
+        setMessages((prev) => [...prev, optimisticMessage]);
+      }
+      // -------------------------
 
-    _sendMessage(payload);
+      const filesWithThumbnails = uploadedFiles
+        ? await Promise.all(
+            uploadedFiles.map(async (file) => {
+              if (file.type === "application/pdf") {
+                try {
+                  const res = await fetch(
+                    `/api/pdf/thumbnail?url=${encodeURIComponent(file.url)}`
+                  );
+                  if (res.ok) {
+                    const data: { thumbnailUrl: string } = await res.json();
+                    return { ...file, thumbnailUrl: data.thumbnailUrl };
+                  }
+                } catch (error) {
+                  console.error("Failed to fetch PDF thumbnail:", error);
+                }
+              }
+              return file;
+            })
+          )
+        : undefined;
+
+      const payload = {
+        type: "message",
+        content: text || "", // may be empty if just files
+        threadId: threadId, // Assign threadId to the payload
+        files: filesWithThumbnails?.length ? filesWithThumbnails : undefined,
+        replyTo: replyTo
+          ? {
+              id: replyTo.id,
+              text: replyTo.text || "",
+              fullName:
+                replyTo.sender?.fullName || replyTo.fullName || "Unknown",
+              file: replyTo.file,
+              userId: replyTo.userId,
+            }
+          : undefined,
+        room,
+        timestamp: new Date().toISOString(),
+      };
+
+      _sendMessage(payload);
     },
-    [session, room, _sendMessage]
+    [session, room, _sendMessage, setMessages]
   );
 
   // Deprecated: use sendCombinedMessage instead
@@ -414,7 +499,7 @@ export const useChat = (room: string) => {
       const payload = {
         type: 'typing',
         isTyping,
-        userName: session.user.fullName,
+        fullName: session.user.fullName,
         room,
       };
       ws.current.send(JSON.stringify(payload));
@@ -442,6 +527,55 @@ export const useChat = (room: string) => {
     });
   }, [room, _sendMessage]);
 
+  const deleteMessage = useCallback(async (messageId: string) => {
+    try {
+      const res = await fetch('/api/chat/messages', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageId }),
+      });
+
+      if (res.ok) {
+        // Optimistically update the message to show it's deleted.
+        setMessages(prevMessages => prevMessages.map(m => {
+          if (m.id === messageId) {
+            return {
+              ...m,
+              text: 'This message has been deleted.',
+              file: undefined,
+              deleted: {
+                by: 'user', // This will be updated by the websocket event later for admin deletions
+                at: new Date().toISOString()
+              }
+            };
+          }
+          return m;
+        }));
+      } else {
+        const errorData: any = await res.json();
+        console.error('Failed to delete message:', errorData.error);
+        toast.error('Failed to delete message');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('An error occurred while deleting the message');
+    }
+  }, []);
+
+  const startThread = useCallback((message: Message) => {
+    // This is a placeholder for your thread logic.
+    // You would typically open a new view or sidebar here.
+    console.log('Starting thread for message:', message.id);
+    // For now, let's just log it.
+    // You can later implement a separate state for the active thread,
+    // fetch its messages, and display them in a new component.
+    toast.info(`Replying in thread to ${message.fullName}`);
+  }, []);
+
+
+
   return {
     messages,
     typingUsers,
@@ -452,5 +586,6 @@ export const useChat = (room: string) => {
     uploadFile,
     startCall,
     sendReadReceipt,
+    deleteMessage,
   };
 };

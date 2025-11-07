@@ -137,8 +137,10 @@ export class ChatRoom {
                 const finalMessage = {
                     type: 'message',
                     id: crypto.randomUUID(),
+                    threadId: data.threadId,
                     content: data.content,
                     files: data.files,
+                    replyTo: data.replyTo, // This will now include the 'file' property
                     createdAt: new Date().toISOString(),
                     sender: {
                         _id: session.user.id,

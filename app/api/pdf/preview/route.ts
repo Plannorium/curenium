@@ -15,14 +15,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'publicId is required' }, { status: 400 });
     }
 
+    const isPdf = format === 'pdf' || publicId.endsWith('.pdf');
+
     // Generate a signed URL that is valid for 1 hour (3600 seconds)
-    const url = cloudinary.url(`${publicId}.${format}`, {
-      resource_type: 'raw',
+    const url = cloudinary.url(publicId, {
+      resource_type: isPdf ? 'raw' : 'image',
       sign_url: true,
       secure: true,
       attachment: attachment,
       expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-      type: 'authenticated',
+      format: format,
     });
 
     return NextResponse.json({ url });

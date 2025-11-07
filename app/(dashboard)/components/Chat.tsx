@@ -1,36 +1,69 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 import { ImageLightbox } from "./ImageLightbox";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SendIcon, PaperclipIcon, BellIcon, SmileIcon, InfoIcon, SearchIcon, ChevronDownIcon, XIcon, Users, MessageCircle, FileIcon, VideoIcon, Loader2, Plus, Eye, Copy, Download, ExternalLink, ReplyIcon, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
-import { useChat } from '@/hooks/useChat';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  SendIcon,
+  PaperclipIcon,
+  BellIcon,
+  SmileIcon,
+  InfoIcon,
+  SearchIcon,
+  ChevronDownIcon,
+  XIcon,
+  Users,
+  CornerUpLeft,
+  MessageCircle,
+  FileIcon,
+  VideoIcon,
+  Loader2,
+  Plus,
+  Eye,
+  Copy,
+  Download,
+  ExternalLink,
+  ReplyIcon,
+  MoreHorizontal,
+  Trash2,
+  MessageSquare,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import { useChat } from "@/hooks/useChat";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
-import { FileAttachment } from './FileAttachment';
-import DocumentPreview from './DocumentPreview';
+import { FileAttachment } from "./FileAttachment";
+import DocumentPreview from "./DocumentPreview";
 import { startMeshCall } from "@/app/lib/simple-call-client";
-import { CallView } from './CallView';
-import { ReactionPicker } from './ReactionPicker';
-import { ReactionDetailsModal } from './ReactionDetailsModal';
+import { CallView } from "./CallView";
+import { ReactionPicker } from "./ReactionPicker";
+import { ReactionDetailsModal } from "./ReactionDetailsModal";
 import { AnimatePresence } from "framer-motion";
-import { UserProfileCard } from './UserProfileCard';
-import { AlertDetailsModal } from './AlertDetailsModal';
-import { SendAlertModal } from './SendAlertModal';
-import { IMessage } from '@/types/models';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { initAudio, playSound } from '@/lib/sound/soundGenerator';
-import { CreateChannelModal } from './CreateChannelModal';
-import { ManageChannelModal } from './ManageChannelModal';
-import SoundPalette from './SoundPalette';
-import PdfPreviewCard from './PdfPreviewCard';
+import { UserProfileCard } from "./UserProfileCard";
+import { AlertDetailsModal } from "./AlertDetailsModal";
+import { SendAlertModal } from "./SendAlertModal";
+import { IMessage } from "@/types/models";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { initAudio, playSound } from "@/lib/sound/soundGenerator";
+import { CreateChannelModal } from "./CreateChannelModal";
+import { ManageChannelModal } from "./ManageChannelModal";
+import SoundPalette from "./SoundPalette";
+import { MessageSquareText } from "lucide-react"; // Import MessageSquareText
+import { ThreadView } from "./ThreadView";
+import PdfPreviewCard from "./PdfPreviewCard";
 
 interface User {
   id: string;
@@ -44,7 +77,7 @@ interface User {
 
 interface AlertMessage {
   _id: string;
-  level: 'critical' | 'urgent' | 'info';
+  level: "critical" | "urgent" | "info";
   message: string;
   createdBy: {
     _id: string;
@@ -62,37 +95,38 @@ interface Channel {
 }
 
 const isSingleEmoji = (str: string): boolean => {
-    if (!str) return false;
-    const trimmed = str.trim();
+  if (!str) return false;
+  const trimmed = str.trim();
 
-    // Use Intl.Segmenter to count grapheme clusters. This is the most reliable way to count "characters" as perceived by users.
-    // It correctly handles emojis with skin tones, ZWJ sequences, etc.
-    try {
-        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
-        const segments = [...segmenter.segment(trimmed)];
+  // Use Intl.Segmenter to count grapheme clusters. This is the most reliable way to count "characters" as perceived by users.
+  // It correctly handles emojis with skin tones, ZWJ sequences, etc.
+  try {
+    const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+    const segments = [...segmenter.segment(trimmed)];
 
-        if (segments.length !== 1) {
-            return false;
-        }
-
-        // Now check if that single grapheme is an emoji.
-        const emojiRegex = /\p{Emoji}/u;
-        return emojiRegex.test(segments[0].segment);
-    } catch (e) {
-        // Fallback for environments where Intl.Segmenter is not supported
-        console.warn("Intl.Segmenter not supported, falling back to regex for emoji detection.");
-        const emojiRegex = /^\p{Extended_Pictographic}$/u;
-        return emojiRegex.test(trimmed);
+    if (segments.length !== 1) {
+      return false;
     }
+
+    // Now check if that single grapheme is an emoji.
+    const emojiRegex = /\p{Emoji}/u;
+    return emojiRegex.test(segments[0].segment);
+  } catch (e) {
+    // Fallback for environments where Intl.Segmenter is not supported
+    console.warn(
+      "Intl.Segmenter not supported, falling back to regex for emoji detection."
+    );
+    const emojiRegex = /^\p{Extended_Pictographic}$/u;
+    return emojiRegex.test(trimmed);
+  }
 };
 
 const formatFileSize = (bytes?: number) => {
-  if (!bytes) return '';
+  if (!bytes) return "";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
-
 
 interface MessageBubbleProps {
   msg: any;
@@ -100,26 +134,35 @@ interface MessageBubbleProps {
   user: any;
   showTime: boolean;
   openDocPreview: (file: any) => void;
-  openLightbox: (images: Array<{ url: string; name: string }>, initialIndex: number) => void;
+  openLightbox: (
+    images: Array<{ url: string; name: string }>,
+    initialIndex: number
+  ) => void;
   handleReaction: (messageId: string, emoji: string) => void;
   onAlertClick: (alert: AlertMessage) => void;
   onReactionClick: (messageId: string, emoji: string, users: any[]) => void;
   onReply: (message: any) => void;
+  onDelete: (messageId: string) => void;
+  onStartThread: (message: any) => void;
+  onScrollToMessage: (messageId: string) => void;
   sendReadReceipt: (messageId: string) => void;
 }
 
 const MessageBubble = ({
   msg,
   isSender,
-    user,
-    showTime,
-    openDocPreview,
-    openLightbox,
-    handleReaction,
-    onAlertClick,
-    onReactionClick,
-    onReply,
-    sendReadReceipt,
+  user,
+  showTime,
+  openDocPreview,
+  openLightbox,
+  handleReaction,
+  onAlertClick,
+  onReactionClick,
+  onReply,
+  onDelete,
+  onStartThread,
+  onScrollToMessage,
+  sendReadReceipt,
 }: MessageBubbleProps) => {
   const { data: session } = useSession();
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
@@ -129,7 +172,7 @@ const MessageBubble = ({
   const isEmoji = isSingleEmoji(messageText);
 
   useEffect(() => {
-    if (!messageRef.current || isSender || msg.status === 'read') return;
+    if (!messageRef.current || isSender || msg.status === "read") return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -150,41 +193,34 @@ const MessageBubble = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (reactionPickerRef.current && !reactionPickerRef.current.contains(event.target as Node)) {
+      if (
+        reactionPickerRef.current &&
+        !reactionPickerRef.current.contains(event.target as Node)
+      ) {
         setReactionPickerOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  const renderRepliedMessage = () => {
-    if (!msg.replyTo) return null;
-
-    return (
-      <div className="mb-2 p-2 rounded-md bg-background/30 border-l-2 border-primary/50 text-xs">
-        <p className="font-semibold text-primary/80 text-xs">
-          Replying to {msg.replyTo.userName}
-        </p>
-        <p className="text-muted-foreground truncate">
-          {msg.replyTo.text}
-        </p>
-      </div>
-    );
-  };
   const timeString = msg.createdAt
     ? new Date(msg.createdAt).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "";
 
   // ---------- IMAGE GALLERY ----------
   const renderImages = () => {
-    const files = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
+    const files = Array.isArray(msg.file)
+      ? msg.file
+      : msg.file
+        ? [msg.file]
+        : [];
     const images = files.filter(
       (f: any) =>
         f?.resource_type?.startsWith?.("image") ||
@@ -195,11 +231,18 @@ const MessageBubble = ({
     if (!images.length) return null;
 
     return (
-      <div className={images.length > 1 ? "grid grid-cols-2 gap-1 mt-1" : "mt-1 "}>
+      <div
+        className={images.length > 1 ? "grid grid-cols-2 gap-1 mt-1" : "mt-1 "}
+      >
         {images.map((img: any, i: number) => (
           <button
             key={i}
-            onClick={() => openLightbox(images.map((f: any) => ({ url: f.url, name: f.name })), i)}
+            onClick={() =>
+              openLightbox(
+                images.map((f: any) => ({ url: f.url, name: f.name })),
+                i
+              )
+            }
             className="relative overflow-hidden rounded-lg group cursor-pointer"
           >
             <img
@@ -207,9 +250,6 @@ const MessageBubble = ({
               alt={img.name}
               className="h-auto max-h-28 max-w-[330px] object-cover rounded-lg transition-transform group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-              <Eye className="w-5 h-5" />
-            </div>
           </button>
         ))}
       </div>
@@ -218,7 +258,11 @@ const MessageBubble = ({
 
   // ---------- NON‑IMAGE FILES ----------
   const renderFiles = () => {
-    const files = Array.isArray(msg.file) ? msg.file : msg.file ? [msg.file] : [];
+    const files = Array.isArray(msg.file)
+      ? msg.file
+      : msg.file
+        ? [msg.file]
+        : [];
     const nonImages = files.filter(
       (f: any) =>
         f?.url &&
@@ -233,7 +277,7 @@ const MessageBubble = ({
       <div className="space-y-2">
         {nonImages.map((f: any, i: number) => {
           if (!f || !f.url) return null;
-          if (f.type === 'application/pdf' || f.name?.endsWith('.pdf')) {
+          if (f.type === "application/pdf" || f.name?.endsWith(".pdf")) {
             return (
               <PdfPreviewCard
                 key={i}
@@ -254,12 +298,12 @@ const MessageBubble = ({
     );
   };
 
-  if (msg.type === 'alert_notification' && msg.alert) {
+  if (msg.type === "alert_notification" && msg.alert) {
     const alert: AlertMessage = msg.alert;
     const alertColors = {
-      critical: 'red',
-      urgent: 'amber',
-      info: 'blue',
+      critical: "red",
+      urgent: "amber",
+      info: "blue",
     };
     const color = alertColors[alert.level];
 
@@ -274,11 +318,15 @@ const MessageBubble = ({
           onClick={() => onAlertClick(alert)}
           className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40`}
         >
-          <div className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20`}>
+          <div
+            className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20`}
+          >
             <BellIcon size={24} className={`text-${color}-500 animate-pulse`} />
           </div>
           <div className="flex-1">
-            <p className={`font-bold text-sm text-${color}-500 uppercase`}>{alert.level} Alert</p>
+            <p className={`font-bold text-sm text-${color}-500 uppercase`}>
+              {alert.level} Alert
+            </p>
             <p className="font-medium text-foreground">{alert.message}</p>
           </div>
         </button>
@@ -298,7 +346,7 @@ const MessageBubble = ({
       <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-background/50 shadow-sm">
         <AvatarImage src={user?.image || undefined} />
         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-          {(msg.userName ?? "")
+          {(msg.fullName ?? "")
             .split(" ")
             .map((n: string) => n[0] || "")
             .join("")
@@ -306,72 +354,152 @@ const MessageBubble = ({
         </AvatarFallback>
       </Avatar>
 
-      <div
-        className="flex flex-col gap-0.5 items-start"
-      >
+      <div className="flex flex-col gap-1 w-full max-w-[calc(100%-4rem)]">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-foreground text-sm">
-            {msg.userName}
+            {msg.fullName}
           </span>
-          {showTime && <span className="text-xs text-muted-foreground">{timeString}</span>}
+          {showTime && (
+            <span className="text-xs text-muted-foreground">{timeString}</span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={cn("flex flex-col relative items-start group")}>
           <div
-            className={`relative cursor-pointer transition-all hover:scale-[1.01] max-w-full sm:max-w-md lg:max-w-lg ${
+            className={cn(
+              "relative group rounded-xl bg-gradient-to-br p-2 transition-all duration-200 max-w-full sm:max-w-md lg:max-w-lg",
               !isEmoji &&
-              `px-0.5 md:px-1 py-0 ${
-                isSender ? "from-primary/20 to-primary/10 border-primary/30" : "border-border/40"
-              }`
-            } `}
+                `px-3 py-2 ${
+                  isSender
+                    ? "from-primary/20 to-primary/10 border-primary/30 bg-card"
+                    : "bg-card border-border/40"
+                }`
+            )}
           >
             <div className="absolute top-0 right-0 mt-[-12px] mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10">
               <div className="relative" ref={reactionPickerRef}>
-                <button onClick={() => setReactionPickerOpen(p => !p)} className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors">
+                <button
+                  onClick={() => setReactionPickerOpen((p) => !p)}
+                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+                >
                   <SmileIcon size={15} className="text-muted-foreground" />
                 </button>
                 {isReactionPickerOpen && (
                   <div className="absolute z-20 bottom-full right-0 mb-2">
-                    <ReactionPicker onEmojiClick={(emoji) => { handleReaction(msg.id, emoji); setReactionPickerOpen(false); }} onClose={() => setReactionPickerOpen(false)} />
+                    <ReactionPicker
+                      onEmojiClick={(emoji) => {
+                        handleReaction(msg.id, emoji);
+                        setReactionPickerOpen(false);
+                      }}
+                      onClose={() => setReactionPickerOpen(false)}
+                    />
                   </div>
                 )}
               </div>
-              <button onClick={() => onReply(msg)} className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors">
-                <ReplyIcon size={15} className="text-muted-foreground" />
+              <button
+                onClick={() => onReply(msg)}
+                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+              >
+                <CornerUpLeft size={15} className="text-muted-foreground" />
               </button>
-              <button className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors">
-                <MoreHorizontal size={15} className="text-muted-foreground" />
+              <button
+                onClick={() => onStartThread(msg)}
+                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+              >
+                <MessageSquareText size={15} className="text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => onDelete(msg.id)}
+                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+              >
+                <Trash2 size={15} className="text-muted-foreground" />
               </button>
             </div>
 
             {/* REPLIED TO MESSAGE */}
-            {renderRepliedMessage()}
+            {msg.replyTo && (
+              <div className="mb-2">
+                <div
+                  className="relative flex items-start gap-2 rounded-lg bg-background/30 p-2 cursor-pointer border-l-4 border-primary/60 shadow-inner"
+                  onClick={() => onScrollToMessage(msg.replyTo.id)}
+                >
+                  {(() => {
+                    const fileData = Array.isArray(msg.replyTo.file)
+                      ? msg.replyTo.file[0]
+                      : msg.replyTo.file;
+                    if (!fileData) return null;
 
-            {/* TEXT */}
-            {messageText && (
-              <p
-                className={`text-[1rem] leading-relaxed break-words px-1.5 mr-1 ${isEmoji ? 'text-[4rem]' : 'whitespace-pre-wrap'}`}
-                dangerouslySetInnerHTML={{ // The user is requesting to make the emoji bigger, so I'm increasing the size from 6xl to 7xl.
-                  __html: messageText.replace(
-                    /(https?:\/\/[^\s]+)/g,
-                    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>'
-                  ),
-                }}
-              />
+                    if (
+                      fileData.type?.startsWith("image") ||
+                      fileData.thumbnailUrl
+                    ) {
+                      const imageUrl = fileData.thumbnailUrl || fileData.url;
+                      return (
+                        <img
+                          src={imageUrl}
+                          alt="reply-thumbnail"
+                          className="h-10 w-10 rounded-md object-cover"
+                        />
+                      );
+                    }
+
+                    // Fallback for PDFs and other file types
+                    return (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                        <FileIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    );
+                  })()}
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-semibold text-foreground">
+                      {msg.replyTo?.fullName || "Someone"}
+                    </p>
+                    <p className="text-sm text-muted-foreground line-clamp-2 max-h-[40px] overflow-hidden">
+                      {msg.replyTo.text ||
+                        (Array.isArray(msg.replyTo.file)
+                          ? msg.replyTo.file[0]?.name
+                          : (msg.replyTo.file as any)?.name) ||
+                        "File"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
-            {/* IMAGES */}
-            {renderImages()}
+            {msg.deleted ? (
+              <p className="text-[1rem] leading-relaxed break-words text-muted-foreground italic">
+                This message was deleted
+              </p>
+            ) : (
+              <>
+                {/* TEXT */}
+                {messageText && (
+                  <p
+                    className={`text-[1rem] leading-relaxed break-words ${isEmoji ? "text-[4rem]" : "whitespace-pre-wrap"}`}
+                    dangerouslySetInnerHTML={{
+                      // The user is requesting to make the emoji bigger, so I'm increasing the size from 6xl to 7xl.
+                      __html: messageText.replace(
+                        /(https?:\/\/[^\s]+)/g,
+                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>'
+                      ),
+                    }}
+                  />
+                )}
 
-            {/* FILES */}
-            {renderFiles()}
+                {/* IMAGES */}
+                {renderImages()}
+
+                {/* FILES */}
+                {renderFiles()}
+              </>
+            )}
 
             {/* SENT CHECK */}
             {isSender && !msg.file && (
-              <div className="absolute bottom-1 right-0 text-[0.78rem] text-muted-foreground opacity-70">
-                {msg.status === 'read' ? (
+              <div className="absolute bottom-1 right-1 text-[0.78rem] text-muted-foreground opacity-70">
+                {msg.status === "read" ? (
                   <span className="text-blue-500">✓✓</span>
-                ) : msg.status === 'delivered' ? (
+                ) : msg.status === "delivered" ? (
                   <span>✓✓</span>
                 ) : (
                   <span>✓</span>
@@ -379,32 +507,39 @@ const MessageBubble = ({
               </div>
             )}
           </div>
-        </div>
 
-        <div className="flex items-center gap-1.5 mt-0 min-h-[24px]">
-          {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-            <>
-              {Object.entries(msg.reactions).map(([emoji, users]: [string, any]) => (
-                <div key={emoji} className="relative group">
-                  <button onClick={() => onReactionClick(msg.id, emoji, users)} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer">
-                    <span>{emoji}</span>
-                    <span className="font-medium text-primary text-[0.6rem]">{Array.isArray(users) ? users.length : 0}</span>
-                  </button>
-                </div>
-              ))}
-            </>
-          )}
+          <div className="flex items-center gap-1.5 mt-0 min-h-[24px]">
+            {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+              <>
+                {Object.entries(msg.reactions).map(
+                  ([emoji, users]: [string, any]) => (
+                    <div key={emoji} className="relative group">
+                      <button
+                        onClick={() => onReactionClick(msg.id, emoji, users)}
+                        className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer"
+                      >
+                        <span>{emoji}</span>
+                        <span className="font-medium text-primary text-[0.6rem]">
+                          {Array.isArray(users) ? users.length : 0}
+                        </span>
+                      </button>
+                    </div>
+                  )
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
   );
-}
+};
 
 export default function Chat() {
   const { data: session } = useSession();
-  const userName = session?.user?.name || 'Anonymous';
+  const fullName = session?.user?.name || "Anonymous";
   const [activeRoom, setActiveRoom] = useState("general");
-  // const { messages, sendMessage, sendFile, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
+  // const { messages, sendCombinedMessage, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
   const [text, setText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -417,28 +552,51 @@ export default function Chat() {
   const [users, setUsers] = useState<User[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [recentDms, setRecentDms] = useState<any[]>([]); // Add this line
-  const [lightbox, setLightbox] = useState<{ images: Array<{ url: string; name: string }>, initialIndex: number } | null>(null);
+  const [lightbox, setLightbox] = useState<{
+    images: Array<{ url: string; name: string }>;
+    initialIndex: number;
+  } | null>(null);
   const [isCreateChannelModalOpen, setCreateChannelModalOpen] = useState(false);
   const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
   const [isDmsOpen, setIsDmsOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<any | null>(null);
 
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+
+  const handleStartThread = (message: any) => {
+    setActiveThreadId(message.id);
+  };
+
+  const handleReplyInThread = (threadId: string, content: string) => {
+    sendCombinedMessage(content, undefined, undefined, threadId);
+  };
+
   const [stagedFilePreviews, setStagedFilePreviews] = useState<string[]>([]);
-  const openLightbox = (images: Array<{ url: string; name: string }>, initialIndex: number) => {
+  const openLightbox = (
+    images: Array<{ url: string; name: string }>,
+    initialIndex: number
+  ) => {
     setLightbox({ images, initialIndex });
   };
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [uploadProgress, setUploadProgress] = useState<{
+    [key: string]: number;
+  }>({});
   const [isCallActive, setIsCallActive] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, name: string }>>({});
+  const [remoteStreams, setRemoteStreams] = useState<
+    Record<string, { stream: MediaStream; name: string }>
+  >({});
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
-  const callRef = useRef<{ endCall: () => void; replaceTrack: (track: MediaStreamTrack) => void; } | null>(null);
+  const callRef = useRef<{
+    endCall: () => void;
+    replaceTrack: (track: MediaStreamTrack) => void;
+  } | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
   const {
@@ -451,6 +609,7 @@ export default function Chat() {
     sendPayload,
     startCall,
     sendReadReceipt,
+    deleteMessage,
   } = useChat(activeRoom);
 
   const prevMessagesLengthRef = useRef(messages.length);
@@ -460,9 +619,10 @@ export default function Chat() {
     const wasMessageAdded = messages.length > prevMessagesLengthRef.current;
     if (wasMessageAdded) {
       const newMessage = messages[messages.length - 1];
-      const isFromAnotherUser = newMessage && newMessage.userId !== session?.user?._id;
+      const isFromAnotherUser =
+        newMessage && newMessage.userId !== session?.user?._id;
       if (isFromAnotherUser) {
-        playSound('notification');
+        playSound("notification");
       }
     }
     prevMessagesLengthRef.current = messages.length;
@@ -479,32 +639,61 @@ export default function Chat() {
     setSelectedAlert(alert);
   };
 
+  const handleThreadReply = (threadId: string, content: string) => {
+    if (session?.user) {
+      sendCombinedMessage(content, [], undefined, threadId); // Pass threadId here
+    }
+  };
+
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
-  const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
+  const [activeReactionPicker, setActiveReactionPicker] = useState<
+    string | null
+  >(null);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
-  const [activeReactionDetails, setActiveReactionDetails] = useState<{ messageId: string; emoji: string; users: any[] } | null>(null);
+  const [activeReactionDetails, setActiveReactionDetails] = useState<{
+    messageId: string;
+    emoji: string;
+    users: any[];
+  } | null>(null);
 
   const handleReaction = (messageId: string, emoji: string) => {
     if (!session?.user) return;
     sendPayload({
-      type: 'reaction',
+      type: "reaction",
       payload: {
         messageId,
         emoji,
         userId: session.user.id,
         userName: session.user.name,
-      }
+      },
     });
   };
 
-
-  const handleReactionClick = (messageId: string, emoji: string, users: any[]) => {
+  const handleReactionClick = (
+    messageId: string,
+    emoji: string,
+    users: any[]
+  ) => {
     setActiveReactionDetails({ messageId, emoji, users });
+  };
+
+  const handleScrollToMessage = (messageId: string) => {
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex !== -1) {
+      messageRefs.current[messageIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    await deleteMessage(messageId);
   };
 
   const handleEndCall = () => {
@@ -513,10 +702,10 @@ export default function Chat() {
       callRef.current = null;
     }
     if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
+      localStream.getTracks().forEach((track) => track.stop());
     }
     if (screenStream) {
-      screenStream.getTracks().forEach(track => track.stop());
+      screenStream.getTracks().forEach((track) => track.stop());
     }
     setLocalStream(null);
     setRemoteStreams({});
@@ -529,7 +718,7 @@ export default function Chat() {
     if (isScreenSharing) {
       // Stop screen sharing
       if (screenStream) {
-        screenStream.getTracks().forEach(track => track.stop());
+        screenStream.getTracks().forEach((track) => track.stop());
       }
       if (localStream && callRef.current) {
         const videoTrack = localStream.getVideoTracks()[0];
@@ -542,7 +731,9 @@ export default function Chat() {
     } else {
       // Start screen sharing
       try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+        });
         const screenTrack = stream.getVideoTracks()[0];
 
         if (callRef.current) {
@@ -569,7 +760,6 @@ export default function Chat() {
     }
   };
 
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -578,15 +768,18 @@ export default function Chat() {
     if (currentResultIndex !== -1 && searchResults.length > 0) {
       const messageIndex = searchResults[currentResultIndex];
       messageRefs.current[messageIndex]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
+        behavior: "smooth",
+        block: "center",
       });
     }
   }, [currentResultIndex, searchResults]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
     }
@@ -599,13 +792,13 @@ export default function Chat() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch("/api/users");
         if (response.ok) {
-          const data = await response.json() as { users: User[] };
+          const data = (await response.json()) as { users: User[] };
           setUsers(Array.isArray(data) ? data : data.users || []);
         }
       } catch (_error) {
-        console.error('Failed to fetch users:', _error);
+        console.error("Failed to fetch users:", _error);
       }
     };
 
@@ -617,12 +810,14 @@ export default function Chat() {
       interface ChannelsApiResponse {
         channels: Channel[];
       }
-      const response = await fetch('/api/channels');
+      const response = await fetch("/api/channels");
       if (response.ok) {
-        const data = await response.json() as ChannelsApiResponse;
+        const data = (await response.json()) as ChannelsApiResponse;
         setChannels(data.channels || []);
       }
-    } catch (error) { console.error('Failed to fetch channels:', error); }
+    } catch (error) {
+      console.error("Failed to fetch channels:", error);
+    }
   };
 
   useEffect(() => {
@@ -632,19 +827,18 @@ export default function Chat() {
   useEffect(() => {
     const fetchRecentDms = async () => {
       try {
-        const response = await fetch('/api/messages/recent');
+        const response = await fetch("/api/messages/recent");
         if (response.ok) {
           const data: IMessage[] = await response.json();
           setRecentDms(data);
         }
       } catch (error) {
-        console.error('Failed to fetch recent DMs:', error);
+        console.error("Failed to fetch recent DMs:", error);
       }
     };
 
     fetchRecentDms();
   }, []);
-
 
   const openDocPreview = (file: any) => {
     setSelectedDoc(file);
@@ -684,7 +878,8 @@ export default function Chat() {
 
   const handlePrevResult = () => {
     if (searchResults.length > 0) {
-      const prevIndex = (currentResultIndex - 1 + searchResults.length) % searchResults.length;
+      const prevIndex =
+        (currentResultIndex - 1 + searchResults.length) % searchResults.length;
       setCurrentResultIndex(prevIndex);
     }
   };
@@ -697,45 +892,47 @@ export default function Chat() {
   };
 
   const handleEmojiClick = (emojiData: EmojiClickData, event: MouseEvent) => {
-    console.log('Emoji clicked:', emojiData.emoji);
-    console.log('Current text before:', text);
-    setText(prevText => {
+    setText((prevText) => {
       const newText = prevText + emojiData.emoji;
-      console.log('New text after:', newText);
       return newText;
     });
     textareaRef.current?.focus();
   };
 
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   interface ConversionProgress {
-    status: 'queued' | 'converting' | 'uploading' | 'completed' | 'failed';
+    status: "queued" | "converting" | "uploading" | "completed" | "failed";
     progress: number;
     pdfUrl?: string;
     error?: string;
@@ -753,24 +950,26 @@ export default function Chat() {
       const newFiles = Array.from(files);
       const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
       const ALLOWED_TYPES = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'audio/mpeg',
-        'audio/wav',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "audio/mpeg",
+        "audio/wav",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ];
 
-      const validFiles = newFiles.filter(file => {
+      const validFiles = newFiles.filter((file) => {
         if (file.size > MAX_FILE_SIZE) {
           alert(`File ${file.name} is too large. Max size is 5MB.`);
           return false;
         }
         if (!ALLOWED_TYPES.includes(file.type)) {
-          alert(`File ${file.name} has an invalid type. Allowed types: images, audio, PDF, Word documents.`);
+          alert(
+            `File ${file.name} has an invalid type. Allowed types: images, audio, PDF, Word documents.`
+          );
           return false;
         }
         return true;
@@ -780,48 +979,58 @@ export default function Chat() {
       const processedFiles = await Promise.all(
         validFiles.map(async (file) => {
           // Check if it's a Word document
-          if (file.type.includes('word')) {
+          if (file.type.includes("word")) {
             try {
               const formData = new FormData();
-              formData.append('file', file);
+              formData.append("file", file);
 
-              const response = await fetch('/api/convert', {
-                method: 'POST',
+              const response = await fetch("/api/convert", {
+                method: "POST",
                 body: formData,
               });
 
               if (!response.ok) {
-                throw new Error('Conversion failed');
+                throw new Error("Conversion failed");
               }
 
-              const { conversionId } = await response.json() as ConversionResponse;
+              const { conversionId } =
+                (await response.json()) as ConversionResponse;
 
               // Poll for conversion progress
               while (true) {
-                const progressResponse = await fetch(`/api/convert?id=${conversionId}`);
+                const progressResponse = await fetch(
+                  `/api/convert?id=${conversionId}`
+                );
                 if (!progressResponse.ok) break;
 
-                const progress = await progressResponse.json() as ConversionProgress;
-                setUploadProgress(prev => ({
+                const progress =
+                  (await progressResponse.json()) as ConversionProgress;
+                setUploadProgress((prev) => ({
                   ...prev,
                   [file.name]: progress.progress,
                 }));
 
-                if (progress.status === 'completed' && progress.pdfUrl) {
+                if (progress.status === "completed" && progress.pdfUrl) {
                   const response = await fetch(progress.pdfUrl);
                   const blob = await response.blob();
-                  return new File([blob], file.name.replace(/\.docx?$/, '.pdf'), { type: 'application/pdf' });
+                  return new File(
+                    [blob],
+                    file.name.replace(/\.docx?$/, ".pdf"),
+                    { type: "application/pdf" }
+                  );
                 }
 
-                if (progress.status === 'failed') {
-                  throw new Error(progress.error || 'Conversion failed');
+                if (progress.status === "failed") {
+                  throw new Error(progress.error || "Conversion failed");
                 }
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise((resolve) => setTimeout(resolve, 1000));
               }
             } catch (error) {
-              console.error('Failed to convert Word document:', error);
-              alert(`Failed to convert ${file.name} to PDF. The original file will be used.`);
+              console.error("Failed to convert Word document:", error);
+              alert(
+                `Failed to convert ${file.name} to PDF. The original file will be used.`
+              );
               return file;
             }
           }
@@ -829,60 +1038,73 @@ export default function Chat() {
         })
       );
 
-      setStagedFiles(prev => [...prev, ...processedFiles]);
+      setStagedFiles((prev) => [...prev, ...processedFiles]);
 
       // Generate previews for image files
       const newPreviews = await Promise.all(
-        processedFiles.map(file => {
-          if (file.type.startsWith('image/')) {
+        processedFiles.map((file) => {
+          if (file.type.startsWith("image/")) {
             return URL.createObjectURL(file);
           }
-          return Promise.resolve(''); // No preview for non-images
+          return Promise.resolve(""); // No preview for non-images
         })
       );
-      setStagedFilePreviews(prev => [...prev, ...newPreviews]);
+      setStagedFilePreviews((prev) => [...prev, ...newPreviews]);
     }
   };
 
   const handleRemoveStagedFile = (index: number) => {
-    setStagedFiles(prev => prev.filter((_, i) => i !== index));
+    setStagedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   useEffect(() => {
-    return () => stagedFilePreviews.forEach(url => URL.revokeObjectURL(url));
+    return () => stagedFilePreviews.forEach((url) => URL.revokeObjectURL(url));
   }, [stagedFilePreviews]);
 
   const handleSendMessage = async () => {
     if ((text.trim() || stagedFiles.length > 0) && session?.user) {
       initAudio(); // Ensure audio is ready
+
+      const replyToMessage = replyingTo
+        ? {
+            id: replyingTo.id,
+            text: replyingTo.text,
+            fullName:
+              replyingTo.sender?.fullName ||
+              replyingTo.sender?.fullName ||
+              replyingTo.fullName ||
+              replyingTo.userName ||
+              "Unknown",
+            userId: replyingTo.userId,
+            file: replyingTo.file, // Add file information to the reply payload
+          }
+        : undefined;
+
       setIsUploading(true);
       try {
         if (stagedFiles.length > 0) {
-          const uploadPromises = stagedFiles.map(file =>
+          const uploadPromises = stagedFiles.map((file) =>
             uploadFile(file, (progress) => {
-              setUploadProgress(prev => ({ ...prev, [file.name]: progress }));
+              setUploadProgress((prev) => ({ ...prev, [file.name]: progress }));
             })
           );
           const uploadedFiles = await Promise.all(uploadPromises);
-
           const newProgress = { ...uploadProgress };
-          stagedFiles.forEach(file => {
+          stagedFiles.forEach((file) => {
             newProgress[file.name] = 101; // Processing
           });
           setUploadProgress(newProgress);
 
           // Use sendCombinedMessage to send text and files together
-          await sendCombinedMessage(text.trim(), uploadedFiles);
-          setReplyingTo(null);
-
+          await sendCombinedMessage(text.trim(), uploadedFiles, replyToMessage);
           setStagedFiles([]);
           setUploadProgress({});
           setStagedFilePreviews([]);
         } else if (text.trim()) {
-          await sendCombinedMessage(text.trim(), []);
+          await sendCombinedMessage(text.trim(), [], replyToMessage);
         }
         setReplyingTo(null);
-        playSound('messageSent');
+        playSound("messageSent");
         setText("");
       } catch (error) {
         console.error("Error sending message or file:", error);
@@ -904,7 +1126,7 @@ export default function Chat() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -929,39 +1151,46 @@ export default function Chat() {
     initAudio(); // Ensure audio is ready
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const hasVideo = devices.some(device => device.kind === 'videoinput');
-      const hasAudio = devices.some(device => device.kind === 'audioinput');
+      const hasVideo = devices.some((device) => device.kind === "videoinput");
+      const hasAudio = devices.some((device) => device.kind === "audioinput");
 
       if (!hasVideo && !hasAudio) {
-        alert("No camera or microphone found. Please connect a device and grant permission to make a call.");
+        alert(
+          "No camera or microphone found. Please connect a device and grant permission to make a call."
+        );
         return;
       }
 
       // Request a stream with the devices that are available.
-      const stream = await navigator.mediaDevices.getUserMedia({ video: hasVideo, audio: hasAudio });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: hasVideo,
+        audio: hasAudio,
+      });
 
       setLocalStream(stream);
-      playSound('callStart');
+      playSound("callStart");
       setIsCallActive(true);
 
       if (session?.user?.token) {
-
         const call = await startMeshCall({
           roomId: activeRoom,
           localStream: stream,
           token: session.user.token,
           userName: session?.user?.fullName || "Anonymous",
           onRemoteStream: (remoteStream, peerId, userName) => {
-            setRemoteStreams((prev) => ({ ...prev, [peerId]: { stream: remoteStream, name: userName } }));
+            setRemoteStreams((prev) => ({
+              ...prev,
+              [peerId]: { stream: remoteStream, name: userName },
+            }));
           },
           onParticipantLeft: (peerId) => {
-            setRemoteStreams(prev => {
+            setRemoteStreams((prev) => {
               const newStreams = { ...prev };
               delete newStreams[peerId];
               return newStreams;
             });
           },
-          startCall: startCall
+          startCall: startCall,
         });
         callRef.current = call;
       }
@@ -969,30 +1198,37 @@ export default function Chat() {
       console.error("Error starting call:", error);
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
-          alert("Permission to use camera and microphone was denied. Please grant access in your browser settings to make a call.");
+          alert(
+            "Permission to use camera and microphone was denied. Please grant access in your browser settings to make a call."
+          );
         } else if (error.name === "NotFoundError") {
-          alert("No camera or microphone found. Please connect a device to make a call.");
+          alert(
+            "No camera or microphone found. Please connect a device to make a call."
+          );
         } else {
           alert(`An error occurred while starting the call: ${error.message}`);
         }
       }
       // Ensure call state is cleaned up on error
       if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+        localStream.getTracks().forEach((track) => track.stop());
         setLocalStream(null);
       }
       setIsCallActive(false);
     }
   };
 
-  if (!session) return (
-    <div className="flex items-center justify-center h-full backdrop-blur-sm bg-card/50 rounded-2xl border border-border/50">
-      <div className="text-center p-8">
-        <MessageCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-        <p className="text-muted-foreground font-medium">Sign in to view conversations.</p>
+  if (!session)
+    return (
+      <div className="flex items-center justify-center h-full backdrop-blur-sm bg-card/50 rounded-2xl border border-border/50">
+        <div className="text-center p-8">
+          <MessageCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+          <p className="text-muted-foreground font-medium">
+            Sign in to view conversations.
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   const handleRoomChange = (room: string) => {
     setActiveRoom(room);
@@ -1000,17 +1236,25 @@ export default function Chat() {
 
   const createDirectRoom = (userId1: string, userId2: string) => {
     const sortedIds = [userId1, userId2].sort();
-    return sortedIds.join('-');
+    return sortedIds.join("-");
   };
 
-  const currentUser = users.find(u => u._id === session?.user?._id);
-
+  const currentUser = users.find((u) => u._id === session?.user?._id);
 
   return (
     <>
-      <div className="h-full flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl">
+      <div className="h-full flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
+
+        <ThreadView
+          isOpen={!!activeThreadId}
+          onClose={() => setActiveThreadId(null)}
+          threadId={activeThreadId}
+          messages={messages}
+          onReply={handleReplyInThread}
+          MessageBubbleComponent={MessageBubble}
+        />
 
         <div className="relative flex-1 flex min-h-0">
           {/* Channel List Sidebar */}
@@ -1041,25 +1285,45 @@ export default function Chat() {
                 </h3>
                 <ChevronDownIcon
                   size={16}
-                  className={`transform transition-transform duration-200 ${isChannelsOpen ? "rotate-180" : ""
-                    }`}
+                  className={`transform transition-transform duration-200 ${
+                    isChannelsOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {isChannelsOpen && (
                 <div className="mt-2 space-y-1">
                   {channels
-                    .filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .filter((channel) =>
+                      channel.name
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase())
+                    )
                     .map((channel) => (
                       <div
                         key={channel._id}
-                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 ${activeRoom === channel.name.toLowerCase().replace(/ /g, '-')
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 ${
+                          activeRoom ===
+                          channel.name.toLowerCase().replace(/ /g, "-")
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
                       >
-                        <button className="flex items-center flex-1 text-left" onClick={() => handleRoomChange(channel.name.toLowerCase().replace(/ /g, '-'))}>
-                          <span className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${activeRoom === channel.name.toLowerCase().replace(/ /g, '-') ? 'bg-primary' : 'bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity'
-                            }`}></span>
+                        <button
+                          className="flex items-center flex-1 text-left"
+                          onClick={() =>
+                            handleRoomChange(
+                              channel.name.toLowerCase().replace(/ /g, "-")
+                            )
+                          }
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
+                              activeRoom ===
+                              channel.name.toLowerCase().replace(/ /g, "-")
+                                ? "bg-primary"
+                                : "bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity"
+                            }`}
+                          ></span>
                           {channel.name}
                         </button>
                         <button
@@ -1078,7 +1342,10 @@ export default function Chat() {
                       onClick={() => setCreateChannelModalOpen(true)}
                       className="group cursor-pointer flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                     >
-                      <Plus size={16} className="mr-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <Plus
+                        size={16}
+                        className="mr-2 text-muted-foreground group-hover:text-primary transition-colors"
+                      />
                       Add Channel
                     </button>
                   </div>
@@ -1098,8 +1365,9 @@ export default function Chat() {
                 </h3>
                 <ChevronDownIcon
                   size={16}
-                  className={`transform transition-transform duration-200 ${isDmsOpen ? "rotate-180" : ""
-                    }`}
+                  className={`transform transition-transform duration-200 ${
+                    isDmsOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {isDmsOpen && (
@@ -1107,34 +1375,55 @@ export default function Chat() {
                   {/* Self-chat / Notes to self */}
                   {currentUser && (
                     <button
-                      onClick={() => handleRoomChange(createDirectRoom(currentUser._id, currentUser._id))}
-                      className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${activeRoom === createDirectRoom(currentUser._id, currentUser._id)
-                          ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                          : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
-                        }`}
+                      onClick={() =>
+                        handleRoomChange(
+                          createDirectRoom(currentUser._id, currentUser._id)
+                        )
+                      }
+                      className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                        activeRoom ===
+                        createDirectRoom(currentUser._id, currentUser._id)
+                          ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
+                          : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                      }`}
                     >
                       <div className="relative mr-3">
                         <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
                           <AvatarImage src={currentUser.image || undefined} />
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                            {currentUser.fullName?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                            {currentUser.fullName
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                       </div>
                       <div className="flex flex-col items-start">
-                        <span className="text-xs text-muted-foreground -mt-1">Notes to self</span>
+                        <span className="text-xs text-muted-foreground -mt-1">
+                          Notes to self
+                        </span>
                       </div>
                     </button>
                   )}
                   {recentDms
-                    .map(dm => {
-                      const otherUserId = dm.room.split('-').find(id => id !== session?.user?._id);
-                      const user = users.find(u => u._id === otherUserId);
+                    .map((dm) => {
+                      const otherUserId = dm.room
+                        .split("-")
+                        .find((id) => id !== session?.user?._id);
+                      const user = users.find((u) => u._id === otherUserId);
                       return { ...dm, user };
                     })
-                    .filter(dm => dm.user && dm.room.includes('-'))
-                    .filter(dm => !searchQuery || (dm.user && dm.user.fullName.toLowerCase().includes(searchQuery.toLowerCase())))
-                    .map(dm => {
+                    .filter((dm) => dm.user && dm.room.includes("-"))
+                    .filter(
+                      (dm) =>
+                        !searchQuery ||
+                        (dm.user &&
+                          dm.user.fullName
+                            .toLowerCase()
+                            .includes(searchQuery.toLowerCase()))
+                    )
+                    .map((dm) => {
                       if (!dm.user) return null;
                       const room = dm.room;
                       const user = dm.user;
@@ -1143,15 +1432,21 @@ export default function Chat() {
                         <button
                           key={dm._id}
                           onClick={() => handleRoomChange(room)}
-                          className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${activeRoom === room
-                              ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md'
-                              : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
-                            }`}>
+                          className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                            activeRoom === room
+                              ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
+                              : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
                           <div className="relative mr-3">
                             <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
                               <AvatarImage src={user.image || undefined} />
                               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                                {user.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                {user.fullName
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
                             {onlineUsers.includes(user._id) && (
@@ -1161,8 +1456,7 @@ export default function Chat() {
                           {user.fullName}
                         </button>
                       );
-                    })
-                  }
+                    })}
                 </div>
               )}
             </div>
@@ -1175,7 +1469,7 @@ export default function Chat() {
                 localStream={localStream}
                 remoteStreams={remoteStreams}
                 onEndCall={handleEndCall}
-                userName={userName}
+                userName={fullName.split(" ")[0]}
                 onToggleScreenShare={handleToggleScreenShare}
                 isScreenSharing={isScreenSharing}
                 screenStream={screenStream}
@@ -1185,15 +1479,37 @@ export default function Chat() {
             <div className="backdrop-blur-sm bg-card/50 border-b border-border/50 p-4 flex items-center justify-between">
               <div className="flex items-center">
                 <h2 className="text-lg font-bold text-foreground">
-                  {activeRoom === 'general' ? 'General' : channels.find(c => c.name.toLowerCase().replace(/ /g, '-') === activeRoom)?.name || (users && users.find(u => createDirectRoom(session?.user?._id || '', u._id) === activeRoom)?.fullName) || 'Chat'}
+                  {activeRoom === "general"
+                    ? "General"
+                    : channels.find(
+                        (c) =>
+                          c.name.toLowerCase().replace(/ /g, "-") === activeRoom
+                      )?.name ||
+                      (users &&
+                        users.find(
+                          (u) =>
+                            createDirectRoom(
+                              session?.user?._id || "",
+                              u._id
+                            ) === activeRoom
+                        )?.fullName) ||
+                      "Chat"}
                 </h2>
                 <div className="ml-3 bg-green-500/10 text-green-600 dark:text-green-400 text-xs px-3 py-1 rounded-full font-semibold border border-green-500/20">
                   {onlineUsers.length} online
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => setShowSearch(true)}>
-                  <SearchIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                  onClick={() => setShowSearch(true)}
+                >
+                  <SearchIcon
+                    size={18}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  />
                 </Button>
                 <Button
                   variant="ghost"
@@ -1202,18 +1518,29 @@ export default function Chat() {
                   onClick={handleStartCall}
                   disabled={!session}
                 >
-                  <VideoIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                  <VideoIcon
+                    size={18}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  />
                   <span className="ml-2">Sync</span>
                 </Button>
                 <div className="flex items-center -space-x-2 pr-2">
-                  {users.slice(0, 5).map(user => {
+                  {users.slice(0, 5).map((user) => {
                     const isOnline = onlineUsers.includes(user.fullName);
                     return (
-                      <div key={user.id || user._id} className="relative group/avatar" onClick={() => setSelectedUser(user)}>
+                      <div
+                        key={user.id || user._id}
+                        className="relative group/avatar"
+                        onClick={() => setSelectedUser(user)}
+                      >
                         <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
                           <AvatarImage src={user.image || undefined} />
                           <AvatarFallback className="text-xs font-semibold">
-                            {(user.fullName || "").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                            {(user.fullName || "")
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
                         {isOnline && (
@@ -1231,7 +1558,12 @@ export default function Chat() {
                       </Avatar>
                       <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
                         <p className="font-semibold mb-1">More members:</p>
-                        <p className="font-normal">{users.slice(5).map(u => u.fullName).join(', ')}</p>
+                        <p className="font-normal">
+                          {users
+                            .slice(5)
+                            .map((u) => u.fullName)
+                            .join(", ")}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1254,13 +1586,30 @@ export default function Chat() {
                     {currentResultIndex + 1} of {searchResults.length}
                   </span>
                 )}
-                <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handlePrevResult} disabled={searchResults.length === 0}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1.5 h-7 w-7"
+                  onClick={handlePrevResult}
+                  disabled={searchResults.length === 0}
+                >
                   <ChevronDownIcon size={16} className="transform rotate-90" />
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handleNextResult} disabled={searchResults.length === 0}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1.5 h-7 w-7"
+                  onClick={handleNextResult}
+                  disabled={searchResults.length === 0}
+                >
                   <ChevronDownIcon size={16} className="transform -rotate-90" />
                 </Button>
-                <Button variant="ghost" size="sm" className="p-1.5 h-7 w-7" onClick={handleCloseSearch}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1.5 h-7 w-7"
+                  onClick={handleCloseSearch}
+                >
                   <XIcon size={16} />
                 </Button>
               </div>
@@ -1268,27 +1617,33 @@ export default function Chat() {
 
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar">
-              {messages.map((msg, index) => {
+              {messages
+                .filter((msg) => !msg.threadId)
+                .map((msg, index) => {
                 const isSender = msg.userId === session?.user?._id;
-                const user = users.find(u => u._id === msg.userId);
+                const user = users.find((u) => u._id === msg.userId);
                 const prevMsg = messages[index - 1];
-                const showTimeSeparator = index === 0 ||
-                  (prevMsg && new Date(msg.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString());
-
-
+                const showTimeSeparator =
+                  index === 0 ||
+                  (prevMsg &&
+                    new Date(msg.createdAt).toDateString() !==
+                      new Date(prevMsg.createdAt).toDateString());
 
                 return (
                   <div
                     key={msg.id}
-                    ref={(el) => { messageRefs.current[index] = el; }}
-                    className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? 'bg-primary/10 rounded-lg' : '') : ''}`}>
+                    ref={(el) => {
+                      messageRefs.current[index] = el;
+                    }}
+                    className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? "bg-primary/10 rounded-lg" : "") : ""}`}
+                  >
                     {showTimeSeparator && (
                       <div className="flex items-center justify-center my-4">
                         <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
                           {new Date(msg.createdAt).toLocaleDateString([], {
-                            weekday: 'long',
-                            month: 'short',
-                            day: 'numeric'
+                            weekday: "long",
+                            month: "short",
+                            day: "numeric",
                           })}
                         </div>
                       </div>
@@ -1304,6 +1659,9 @@ export default function Chat() {
                       onAlertClick={handleAlertClick}
                       onReactionClick={handleReactionClick}
                       onReply={handleReply}
+                      onDelete={handleDeleteMessage}
+                      onStartThread={handleStartThread}
+                      onScrollToMessage={handleScrollToMessage}
                       sendReadReceipt={sendReadReceipt}
                     />
                   </div>
@@ -1316,8 +1674,8 @@ export default function Chat() {
             <div className="h-6 px-4 pb-2 flex items-center">
               {typingUsers.length > 0 && (
                 <div className="text-xs text-muted-foreground italic animate-pulse">
-                  {typingUsers.map((user) => user).join(', ')}
-                  {typingUsers.length === 1 ? ' is' : ' are'} typing...
+                  {typingUsers.map((user) => user).join(", ")}
+                  {typingUsers.length === 1 ? " is" : " are"} typing...
                 </div>
               )}
             </div>
@@ -1327,15 +1685,50 @@ export default function Chat() {
               {replyingTo && (
                 <div className="mb-2 p-2 border-l-2 border-primary bg-background/50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                   <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-semibold text-primary">
-                        Replying to {replyingTo.userName}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {replyingTo.text}
-                      </p>
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {replyingTo.file && !Array.isArray(replyingTo.file) && (
+                        <>
+                          {replyingTo.file.type?.startsWith("image") ||
+                          replyingTo.file.thumbnailUrl ? (
+                            <img
+                              src={
+                                replyingTo.file.thumbnailUrl ||
+                                replyingTo.file.url
+                              }
+                              alt="reply-thumb"
+                              className="h-10 w-10 rounded-md object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                              <FileIcon className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="flex-1 overflow-hidden">
+                        <p className="text-xs font-semibold text-primary">
+                          Replying to{" "}
+                          {replyingTo.sender?.fullName ||
+                            replyingTo.fullName ||
+                            "Someone"}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {replyingTo.text ||
+                            (replyingTo.file
+                              ? Array.isArray(replyingTo.file)
+                                ? replyingTo.file[0]?.name ||
+                                  `${replyingTo.file.length} files`
+                                : replyingTo.file.name || "a file"
+                              : "File attachment")}
+                        </p>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => setReplyingTo(null)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-6 w-6"
+                      onClick={() => setReplyingTo(null)}
+                    >
                       <XIcon size={14} />
                     </Button>
                   </div>
@@ -1343,19 +1736,29 @@ export default function Chat() {
               )}
               {stagedFiles.length > 0 && (
                 <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50">
-                  <p className="text-sm font-semibold mb-2 px-2">Attached Files</p>
+                  <p className="text-sm font-semibold mb-2 px-2">
+                    Attached Files
+                  </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {stagedFiles.map((file, index) => (
                       <div key={index} className="flex flex-col gap-2">
                         <div className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2 h-24 justify-between">
                           {stagedFilePreviews[index] ? (
-                            <img src={stagedFilePreviews[index]} alt={file.name} className="w-full h-16 object-cover rounded-md" />
+                            <img
+                              src={stagedFilePreviews[index]}
+                              alt={file.name}
+                              className="w-full h-16 object-cover rounded-md"
+                            />
                           ) : (
                             <div className="flex items-center gap-2 w-full h-16">
                               <FileIcon className="h-8 w-8 text-primary flex-shrink-0" />
                               <div className="flex-1 overflow-hidden">
-                                <p className="text-xs font-medium truncate">{file.name}</p>
-                                <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                                <p className="text-xs font-medium truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.size)}
+                                </p>
                               </div>
                             </div>
                           )}
@@ -1369,16 +1772,24 @@ export default function Chat() {
                               <XIcon size={14} />
                             </Button>
                           )}
-                          {isUploading && uploadProgress[file.name] !== undefined && (
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative mt-auto">
-                              <Progress value={uploadProgress[file.name] > 100 ? 100 : uploadProgress[file.name]} className="h-2" />
-                              {uploadProgress[file.name] > 100 && (
-                                <div className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
-                                  PROCESSING
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          {isUploading &&
+                            uploadProgress[file.name] !== undefined && (
+                              <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative mt-auto">
+                                <Progress
+                                  value={
+                                    uploadProgress[file.name] > 100
+                                      ? 100
+                                      : uploadProgress[file.name]
+                                  }
+                                  className="h-2"
+                                />
+                                {uploadProgress[file.name] > 100 && (
+                                  <div className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">
+                                    PROCESSING
+                                  </div>
+                                )}
+                              </div>
+                            )}
                         </div>
                       </div>
                     ))}
@@ -1388,7 +1799,13 @@ export default function Chat() {
 
               <div className="relative">
                 <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    multiple
+                  />
                   <textarea
                     ref={textareaRef}
                     value={text}
@@ -1407,7 +1824,10 @@ export default function Chat() {
                         className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
                         onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       >
-                        <SmileIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                        <SmileIcon
+                          size={18}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        />
                       </Button>
 
                       {/* FIXED EMOJI PICKER POSITIONING */}
@@ -1415,7 +1835,7 @@ export default function Chat() {
                         <div
                           ref={emojiPickerRef}
                           className="absolute bottom-full right-0 mb-2 z-1000 shadow-xl border border-border/50 rounded-2xl overflow-hidden"
-                          style={{ width: 'min(320px, 90vw)' }}
+                          style={{ width: "min(320px, 90vw)" }}
                         >
                           <EmojiPicker
                             onEmojiClick={handleEmojiClick}
@@ -1428,8 +1848,16 @@ export default function Chat() {
                     </div>
 
                     {/* Rest of your buttons */}
-                    <Button variant="ghost" size="sm" className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200" onClick={() => fileInputRef.current?.click()}>
-                      <PaperclipIcon size={18} className="text-muted-foreground hover:text-foreground transition-colors" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <PaperclipIcon
+                        size={18}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      />
                     </Button>
                     <Button
                       variant="ghost"
@@ -1437,11 +1865,17 @@ export default function Chat() {
                       className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group"
                       onClick={() => setShowAlertModal(true)}
                     >
-                      <BellIcon size={18} className="text-red-500 group-hover:text-red-600 transition-colors" />
+                      <BellIcon
+                        size={18}
+                        className="text-red-500 group-hover:text-red-600 transition-colors"
+                      />
                     </Button>
                     <Button
                       onClick={handleSendMessage}
-                      disabled={(!text.trim() && stagedFiles.length === 0) || isUploading}
+                      disabled={
+                        (!text.trim() && stagedFiles.length === 0) ||
+                        isUploading
+                      }
                       size="sm"
                       className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
@@ -1453,8 +1887,30 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* AI Summary Panel */}
+        <AnimatePresence>
+          {activeThreadId && (
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: "28rem" }}
+              exit={{ width: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <ThreadView
+                isOpen={!!activeThreadId}
+                onClose={() => setActiveThreadId(null)}
+                threadId={activeThreadId}
+                messages={messages}
+                onReply={handleReplyInThread}
+                MessageBubbleComponent={MessageBubble}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!activeThreadId && (
           <div className="hidden lg:block w-72 backdrop-blur-lg bg-card/80 border-l border-border/50 overflow-y-auto">
+            {/* AI Summary Panel */}
             <div className="p-4 border-b border-border/30">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-foreground flex items-center">
@@ -1463,8 +1919,15 @@ export default function Chat() {
                   </div>
                   AI Assistant
                 </h3>
-                <Button variant="ghost" size="sm" className="p-1.5 rounded-xl hover:bg-accent/50 transition-all duration-200">
-                  <ChevronDownIcon size={16} className="text-muted-foreground hover:text-foreground transition-colors" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                >
+                  <ChevronDownIcon
+                    size={16}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  />
                 </Button>
               </div>
             </div>
@@ -1483,6 +1946,8 @@ export default function Chat() {
               </div>
             </div>
           </div>
+        )}
+
         </div>
 
         {/* Critical Alert Modal */}
@@ -1493,13 +1958,18 @@ export default function Chat() {
             // Optional: show a success toast or notification
           }}
           allUsers={users}
-          allChannels={channels.map(c => ({ id: c.name.toLowerCase().replace(/ /g, '-'), name: c.name }))}
+          allChannels={channels.map((c) => ({
+            id: c.name.toLowerCase().replace(/ /g, "-"),
+            name: c.name,
+          }))}
           channelMembers={
-            activeRoom.includes('-') // This is a DM room
-              ? users.filter(u => activeRoom.split('-').includes(u._id))
-              // This is a placeholder. In a real app, you'd get actual channel members.
-              // For now, sending to a "channel" from chat sends to all users.
-              : activeRoom !== 'general' ? users : undefined
+            activeRoom.includes("-") // This is a DM room
+              ? users.filter((u) => activeRoom.split("-").includes(u._id))
+              : // This is a placeholder. In a real app, you'd get actual channel members.
+                // For now, sending to a "channel" from chat sends to all users.
+                activeRoom !== "general"
+                ? users
+                : undefined
           }
         />
 
@@ -1542,10 +2012,7 @@ export default function Chat() {
 
         {/* PDF Modal */}
         {isDocModalOpen && selectedDoc && (
-          <DocumentPreview
-            file={selectedDoc}
-            onClose={closeDocPreview}
-          />
+          <DocumentPreview file={selectedDoc} onClose={closeDocPreview} />
         )}
 
         {/* Reaction Details Modal */}
@@ -1562,7 +2029,9 @@ export default function Chat() {
               allUsers={users}
               currentUserId={session?.user?.id}
               onRemoveReaction={handleReaction}
-              onAddReaction={(emoji) => handleReaction(activeReactionDetails.messageId, emoji)}
+              onAddReaction={(emoji) =>
+                handleReaction(activeReactionDetails.messageId, emoji)
+              }
             />
           )}
         </AnimatePresence>
@@ -1574,7 +2043,7 @@ export default function Chat() {
                 ...selectedUser,
                 isOnline: onlineUsers.includes(selectedUser._id),
                 // Assuming email is fetched with user data. If not, this will be undefined.
-                email: selectedUser.email
+                email: selectedUser.email,
               }}
               onClose={() => setSelectedUser(null)}
               onStartChat={handleStartChat}

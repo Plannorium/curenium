@@ -95,7 +95,7 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-auto transition-transform transform hover:scale-105" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl lg:max-w-6xl w-full max-h-[90vh] overflow-auto transition-transform transform hover:scale-105" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold text-gray-800">{fileName}</h2>
           <div className="flex items-center space-x-2">
