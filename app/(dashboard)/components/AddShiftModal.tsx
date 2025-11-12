@@ -2,35 +2,36 @@
 import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Calendar, Clock, User, Briefcase, Loader2 } from 'lucide-react';
 
+// ... (interfaces and roles remain the same)
 interface User {
-  _id: string;
-  fullName: string;
-  image?: string;
-}
-
-interface UsersApiResponse {
-  users: User[];
-}
-
-interface AddShiftModalProps {
-  onShiftAdded: () => void;
-  children: React.ReactNode;
-}
-
-const roles = {
-  doctor: 'Doctor',
-  nurse: 'Nurse',
-  manager: 'Manager',
-  staff: 'Staff',
-  labtech: 'Lab Tech',
-  reception: 'Reception',
-};
+    _id: string;
+    fullName: string;
+    image?: string;
+  }
+  
+  interface UsersApiResponse {
+    users: User[];
+  }
+  
+  interface AddShiftModalProps {
+    onShiftAdded: () => void;
+    children: React.ReactNode;
+  }
+  
+  const roles = {
+    doctor: 'Doctor',
+    nurse: 'Nurse',
+    manager: 'Manager',
+    staff: 'Staff',
+    labtech: 'Lab Tech',
+    reception: 'Reception',
+  };
 
 const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, children }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,9 +69,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
     try {
       const res = await fetch('/api/shifts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           user: selectedUser, 
           role, 
@@ -83,7 +82,6 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
       if (res.ok) {
         onShiftAdded();
         setIsOpen(false);
-        // Reset form
         setSelectedUser('');
         setRole('');
         setStartTime('');
@@ -103,37 +101,29 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="backdrop-blur-xl bg-background/95 border-border/50 shadow-2xl max-w-lg">
-        {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-lg pointer-events-none"></div>
-        
-        <DialogHeader className="relative pb-6">
-          <DialogTitle className="text-xl font-semibold text-foreground flex items-center">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 mr-3">
-              <Calendar className="h-4 w-4 text-primary" />
+      <DialogContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg sm:max-w-lg p-0">
+        <DialogHeader className="p-6 pb-4">
+          <DialogTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-3">
+              <Calendar className="h-5 w-5 text-blue-500 dark:text-blue-400" />
             </div>
             Add New Shift
           </DialogTitle>
         </DialogHeader>
         
-        <div className="relative space-y-6 py-2">
-          {/* User Selection */}
+        <div className="px-6 pb-6 space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="user" className="text-sm font-medium text-foreground flex items-center">
-              <User className="h-4 w-4 mr-2 text-muted-foreground" />
+            <Label htmlFor="user" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+              <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
               Assign to User
             </Label>
             <Select onValueChange={setSelectedUser} disabled={isLoading}>
-              <SelectTrigger className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+              <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
                 <SelectValue placeholder={isLoading ? "Loading users..." : "Select a user"} />
               </SelectTrigger>
-              <SelectContent className="backdrop-blur-xl bg-popover/95 border-border/50">
+              <SelectContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
                 {users.map(user => (
-                  <SelectItem 
-                    key={user._id} 
-                    value={user._id}
-                    className="hover:bg-accent/50 focus:bg-accent/50 transition-colors duration-150"
-                  >
+                  <SelectItem key={user._id} value={user._id}>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-6 w-6">
                         <AvatarImage src={user.image} />
@@ -149,35 +139,27 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
             </Select>
           </div>
 
-          {/* Role Selection */}
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-sm font-medium text-foreground flex items-center">
-              <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+            <Label htmlFor="role" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+              <Briefcase className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
               Role
             </Label>
             <Select onValueChange={setRole}>
-              <SelectTrigger className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+              <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
-              <SelectContent className="backdrop-blur-xl bg-popover/95 border-border/50">
+              <SelectContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
                 {Object.entries(roles).map(([value, label]) => (
-                  <SelectItem 
-                    key={value} 
-                    value={value}
-                    className="hover:bg-accent/50 focus:bg-accent/50 transition-colors duration-150"
-                  >
-                    {label}
-                  </SelectItem>
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Time Selection */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startTime" className="text-sm font-medium text-foreground flex items-center">
-                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <Label htmlFor="startTime" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
                 Start Time
               </Label>
               <Input 
@@ -185,13 +167,13 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
                 type="datetime-local" 
                 value={startTime} 
                 onChange={e => setStartTime(e.target.value)} 
-                className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="endTime" className="text-sm font-medium text-foreground flex items-center">
-                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <Label htmlFor="endTime" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
                 End Time
               </Label>
               <Input 
@@ -199,22 +181,21 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
                 type="datetime-local" 
                 value={endTime} 
                 onChange={e => setEndTime(e.target.value)} 
-                className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
               />
             </div>
           </div>
 
-          {/* Status Selection */}
-          <div className="space-y-2 mt-2">
-            <Label htmlFor="status" className="text-sm font-medium text-foreground flex items-center">
-              <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+          <div className="space-y-2">
+            <Label htmlFor="status" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+              <Briefcase className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
               Status
             </Label>
             <Select onValueChange={setStatus} value={status}>
-              <SelectTrigger className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+              <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-              <SelectContent className="backdrop-blur-xl bg-popover/95 border-border/50">
+              <SelectContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
                 <SelectItem value="on-shift">On-shift</SelectItem>
                 <SelectItem value="on-call">On-call</SelectItem>
                 <SelectItem value="upcoming">Upcoming</SelectItem>
@@ -223,12 +204,10 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-6 border-t border-border/30">
+        <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             onClick={() => setIsOpen(false)}
-            className="flex-1 backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200"
             disabled={isSubmitting}
           >
             Cancel
@@ -236,21 +215,15 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(({ onShiftAdded, 
           <Button 
             onClick={handleSubmit}
             disabled={!isFormValid || isSubmitting}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
           >
             {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
-              </>
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</>
             ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Shift
-              </>
+              <><Plus className="h-4 w-4 mr-2" /> Add Shift</>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

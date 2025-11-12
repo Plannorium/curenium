@@ -45,12 +45,17 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        // On sign-in, copy user data to the token
-        token.id = user.id;
-        token._id = (user as any)._id;
-        token.name = (user as any).fullName || user.name;
-        token.role = (user as any).role;
-        token.organizationId = (user as any).organizationId;
+        // On initial sign-in, fetch the user from the DB to get authoritative data
+        await dbConnect();
+        const dbUser = await User.findOne({ email: user.email }).lean();
+
+        if (dbUser) {
+          token.id = dbUser._id.toString();
+          token._id = dbUser._id.toString();
+          token.name = dbUser.fullName;
+          token.role = dbUser.role;
+          token.organizationId = dbUser.organizationId?.toString();
+        }
       }
 
       // Create a *new*, signed JWS token for the Cloudflare Worker

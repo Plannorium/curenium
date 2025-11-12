@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Minimize2, Maximize2, PhoneOff, MessageSquare, Send, Smile, ScreenShare, StopCircle } from 'lucide-react';
+import { useGestureControl, Gesture } from '../../lib/use-gesture-control';
+import React, { useState, useEffect, useRef, forwardRef, useCallback } from 'react';
+import { Mic, MicOff, Video, VideoOff, Minimize2, Maximize2, PhoneOff, MessageSquare, Send, Smile, ScreenShare, StopCircle, Hand } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ResizableBox } from 'react-resizable';
-import 'react-resizable/css/styles.css';
-import { playSound, initAudio } from '@/lib/sound/soundGenerator';
+import 'react-resizable/css/styles.css'; // This might need adjustment if path is incorrect
+import { initAudio, playSound } from '@/lib/sound/soundGenerator';
+import { useLocalStorage } from '../../lib/use-local-storage';
+import { GestureControlPopup } from './GestureControlPopup';
+import GestureWalkthrough from './GestureWalkthrough';
+import GestureFeedback from './GestureFeedback';
+import { toast } from 'sonner';
+import { GestureOverlay } from './GestureOverlay';
 
 interface CallViewProps {
   localStream: MediaStream | null;
@@ -17,7 +24,7 @@ interface CallViewProps {
 }
 
 interface CallChatMessage {
-  id: string;
+  id: string; 
   userName: string;
   text: string;
   timestamp: string;
@@ -62,14 +69,18 @@ const useSpeakingIndicator = (stream: MediaStream | null) => {
   return isSpeaking;
 };
 
-const VideoTile = ({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking, isScreenShare }: { stream: MediaStream; isMuted: boolean; userName: string; isLocal?: boolean; isVideoOff?: boolean; isSpeaking?: boolean; isScreenShare?: boolean; }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+const VideoTile = forwardRef<HTMLVideoElement, { stream: MediaStream; isMuted: boolean; userName: string; isLocal?: boolean; isVideoOff?: boolean; isSpeaking?: boolean; isScreenShare?: boolean; }>(({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking, isScreenShare }, fwdRef) => {
 
-  useEffect(() => {
-    if (videoRef.current) {
-      try { (videoRef.current as any).srcObject = stream; } catch (e) {}
+  const videoRef = useCallback((node: HTMLVideoElement) => {
+    if (node) {
+      node.srcObject = stream;
     }
-  }, [stream]);
+    if (typeof fwdRef === 'function') {
+      fwdRef(node);
+    } else if (fwdRef) {
+      fwdRef.current = node;
+    }
+  }, [stream, fwdRef]);
 
   const userInitials = (userName || '')
     .split(' ')
@@ -78,9 +89,9 @@ const VideoTile = ({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking,
     .slice(0, 2);
 
   return (
-    <div className={`relative rounded-lg overflow-hidden flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-1 ring-white/4'} bg-black`}> 
+    <div className={`relative rounded-lg overflow-hidden h-[78%] flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-1 ring-white/4'} bg-black`}> 
       {stream && !isVideoOff ? (
-        <video ref={videoRef} autoPlay playsInline muted={!!isLocal} className={`w-full h-full ${isScreenShare ? 'object-contain' : 'object-cover'}`} />
+        <video ref={videoRef} autoPlay playsInline muted={!!isLocal} className={`w-full h-full ${isScreenShare ? 'object-contain' : 'object-cover'} ${isLocal ? 'scale-x-[-1]' : ''}`} />
       ) : (
         <div className="flex flex-col items-center justify-center text-white bg-gray-800 w-full h-full p-4">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -95,7 +106,9 @@ const VideoTile = ({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking,
       <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-0.5 rounded">{userName}</div>
     </div>
   );
-};
+});
+
+VideoTile.displayName = 'VideoTile';
 
 const TooltipButton = ({ children, tooltip, forceHide }: { children: React.ReactNode; tooltip: string; forceHide?: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -126,7 +139,7 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [popupRef]);
 
   const handleMainButtonClick = () => {
     if (isScreenSharing) setIsPopupOpen(prev => !prev); else onToggleScreenShare();
@@ -173,20 +186,113 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<CallChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const isLocalSpeaking = useSpeakingIndicator(localStream);
-  const [reactions, setReactions] = useState<{ emoji: string; id: number; name: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<CallChatMessage[]>([]);
+  const [reactions, setReactions] = useState<{ id: number; emoji: string; name: string }[]>([]);
   const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
+  const [showGesturePopup, setShowGesturePopup] = useLocalStorage('showGesturePopup', true);
+  const [isGestureControlEnabled, setIsGestureControlEnabled] = useState(false);
+  const [showGestureWalkthrough, setShowGestureWalkthrough] = useState(false);
+  const [currentGesture, setCurrentGesture] = useState<Gesture | null>(null);
+  const [gestureTimestamp, setGestureTimestamp] = useState<number>(0);
+  const [localVideoElement, setLocalVideoElement] = useState<HTMLVideoElement | null>(null);
+
+  const localVideoRef = useCallback((node: HTMLVideoElement) => {
+    if (node) {
+      setLocalVideoElement(node);
+    }
+  }, []);
+
   const reactionPickerRef = useRef<HTMLDivElement>(null);
 
-  // resizable chat width state
+  const isLocalSpeaking = useSpeakingIndicator(localStream);
+
+  const handleToggleMute = useCallback(() => {
+    if (localStream) {
+      const newMuted = !isMuted;
+      localStream.getAudioTracks().forEach(track => track.enabled = !newMuted);
+      setIsMuted(newMuted);
+      playSound(newMuted ? 'mute' : 'unmute');
+    }
+  }, [localStream, isMuted, playSound]);
+
+  const handleToggleVideo = useCallback(() => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+      setIsVideoOff(!isVideoOff);
+      playSound('mute'); // Using 'mute' as a generic 'tick' sound
+    }
+  }, [localStream, isVideoOff, playSound]);
+
+  const callStateRef = useRef({ isMuted, isVideoOff });
+  useEffect(() => {
+    callStateRef.current = { isMuted, isVideoOff };
+  }, [isMuted, isVideoOff]);
+
+  const handleGesture = useCallback(
+    (gesture: Gesture) => {
+      console.log("GESTURE:", gesture);
+      setCurrentGesture(gesture);
+      setGestureTimestamp(Date.now());
+
+      const { isMuted: currentMute, isVideoOff: currentVideo } = callStateRef.current;
+
+      switch (gesture) {
+        case 'mute':
+          if (!currentMute) handleToggleMute();
+          break;
+        case 'unmute':
+          if (currentMute) handleToggleMute();
+          break;
+        case 'camera_off':
+          if (!currentVideo) handleToggleVideo();
+          break;
+        case 'camera_on':
+          if (currentVideo) handleToggleVideo();
+          break;
+        case 'end_call':
+          playSound('callEnd');
+          onEndCall();
+          break;
+      }
+    },
+    [handleToggleMute, handleToggleVideo, playSound, onEndCall]
+  );
+
+  const gestureOverlay = useGestureControl(
+    isGestureControlEnabled ? localVideoElement : null,
+    handleGesture
+  );
+
+  useEffect(() => {
+    if (currentGesture && gestureTimestamp) {
+      const timer = setTimeout(() => {
+        setCurrentGesture(null);
+      }, 1230); // 1.23 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentGesture, gestureTimestamp]);
+
+  const handleEnableGestureControl = () => {
+    if (localVideoElement?.readyState >= 2) {
+      setIsGestureControlEnabled(true);
+      setShowGesturePopup(false);
+      toast.success('Gesture control enabled!');
+    } else {
+      toast.error('Video not ready yet – try again in a second.');
+    }
+  };
+
+  const handleDismissGesturePopup = () => {
+    setShowGesturePopup(false);
+  };
+
   const [chatWidth, setChatWidth] = useState<number>(320);
   const minChatWidth = 240;
   const maxChatWidth = 640;
 
   const handleEndCall = () => {
-    initAudio(); // Ensure audio context is started
     playSound('callEnd');
     onEndCall();
   };
@@ -202,45 +308,30 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   }, []);
 
   useEffect(() => {
-    // clamp chat width on resize
     const handler = () => setChatWidth((w) => Math.min(maxChatWidth, Math.max(minChatWidth, w)));
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  const handleToggleMute = () => {
-    initAudio(); // Ensure audio context is started
-    if (localStream) {
-      const newMuted = !isMuted;
-      localStream.getAudioTracks().forEach(track => track.enabled = !newMuted);
-      setIsMuted(newMuted);
-      playSound(newMuted ? 'mute' : 'unmute');
-    }
+  const handleToggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+    initAudio();
   };
-
-  const handleToggleVideo = () => {
-    initAudio(); // Ensure audio context is started
-    if (localStream) {
-      localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-      setIsVideoOff(!isVideoOff);
-      playSound('mute'); // Using 'mute' as a generic 'tick' sound
-    }
-  };
-
-  const handleToggleMinimize = () => setIsMinimized(!isMinimized);
 
   const handleSendChatMessage = () => {
     if (chatInput.trim()) {
       const newMessage: CallChatMessage = { id: crypto.randomUUID(), userName, text: chatInput.trim(), timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
       setChatMessages(prev => [...prev, newMessage]);
       setChatInput('');
+      playSound('message');
     }
   };
 
   const handleSendReaction = (emoji: string) => {
     const newReaction = { id: Date.now(), emoji, name: userName };
     setReactions(prev => [...prev, newReaction]);
-    setIsReactionPickerOpen(false);
+setIsReactionPickerOpen(false);
+    playSound('reaction');
     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== newReaction.id)), 750);
   };
 
@@ -258,7 +349,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
             </div>
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <TooltipButton tooltip="Maximize">
               <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white cursor-pointer">
@@ -274,7 +365,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
             <TooltipButton tooltip={isVideoOff ? 'Turn on camera' : 'Turn off camera'}>
               <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white cursor-pointer">{isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}</Button>
             </TooltipButton>
-            <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" />
+            <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} />
             <TooltipButton tooltip="End call">
               <Button onClick={handleEndCall} variant="destructive" size="icon" className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white cursor-pointer"><PhoneOff size={18} /></Button>
             </TooltipButton>
@@ -286,34 +377,63 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-1 overflow-hidden">
-      {/* custom scrollbar CSS injected for this component */}
+      {showGesturePopup && <GestureControlPopup onEnable={handleEnableGestureControl} onDismiss={handleDismissGesturePopup} />}
+      <GestureFeedback gesture={currentGesture} />
+      {showGestureWalkthrough && (
+        <GestureWalkthrough
+          onClose={() => {
+            setShowGestureWalkthrough(false);
+            handleEnableGestureControl();
+          }}
+        />
+      )}
+
       <style>{`
         .custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.16) transparent; }
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06)); border-radius: 12px; border: 2px solid transparent; background-clip: padding-box; }
         .resizable-handle { width: 4px; cursor: col-resize; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
-        .participant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+        .participant-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+         .participant-grid > * { min-height: 200px; }
+         @media (max-width: 768px) {
+           .participant-grid {
+             grid-template-columns: 1fr;
+           }
+         }
       `}</style>
 
       <div className="relative w-full h-full flex flex-col" style={{ paddingRight: isChatOpen ? `${chatWidth + 24}px` : '0', transition: 'padding-right 0.25s ease' }}>
-        {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
-          {/* Screen share header */}
           {isScreenSharing && screenStream && (
-            <div className="w-full max-h-fit overflow-hidden p-2 md:py-4 md:px-1.5">
+            <div className="w-full max-h-full h-340 lg:h-fit lg:max-h-fit overflow-hidden p-2 md:py-4 md:px-1.5">
               <VideoTile stream={screenStream} isMuted={true} userName={"Your Screen"} isLocal={true} isScreenShare={true} />
             </div>
           )}
 
-          {/* participants area */}
           <div className="p-3 ">
             <div className="participant-grid">
-              {/* local tile always first */}
               {localStream && (
-                <VideoTile stream={localStream} isMuted={isMuted} userName={`${userName} (You)`} isLocal={true} isVideoOff={isVideoOff} isSpeaking={isLocalSpeaking} />
+                <div className="relative">
+                  <VideoTile
+                    ref={localVideoRef}
+                    stream={localStream}
+                    isMuted={isMuted}
+                    userName={`${userName} (You)`}
+                    isLocal={true}
+                    isVideoOff={isVideoOff}
+                    isSpeaking={isLocalSpeaking}
+                  />
+                  {isGestureControlEnabled && (
+                    <GestureOverlay
+                      videoRef={{ current: localVideoElement }}
+                      handResult={gestureOverlay.handResult}
+                      gesture={gestureOverlay.gesture}
+                      confidence={gestureOverlay.confidence}
+                    />
+                  )}
+                </div>
               )}
-
               {Object.entries(remoteStreams).map(([peerId, remote]) => (
                 <RemoteVideoTile key={peerId} peerId={peerId} remote={remote} />
               ))}
@@ -321,7 +441,6 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           </div>
         </div>
 
-        {/* Floating reactions (no break) */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <AnimatePresence>
             {reactions.map((reaction) => (
@@ -335,8 +454,27 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           </AnimatePresence>
         </div>
 
-        {/* Controls */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/70 backdrop-blur-md p-2 rounded-full border border-white/10 shadow-2xl w-auto">
+          <TooltipButton tooltip={isGestureControlEnabled ? 'Disable Gesture Control' : 'Enable Gesture Control'}>
+            <Button
+              onClick={() => {
+                if (isGestureControlEnabled) {
+                  setIsGestureControlEnabled(false);
+                  toast.info('Gesture control disabled.');
+                } else {
+                  setShowGestureWalkthrough(true);
+                }
+              }}
+              variant="outline"
+              size="icon"
+              className={`rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14 ${
+                isGestureControlEnabled ? 'bg-green-500/80' : ''
+              }`}
+            >
+              <Hand size={20} />
+            </Button>
+          </TooltipButton>
+
           <TooltipButton tooltip={isMuted ? 'Unmute' : 'Mute'}>
             <Button onClick={handleToggleMute} variant="outline" size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14">{isMuted ? <MicOff size={20} /> : <Mic size={20} />}</Button>
           </TooltipButton>
@@ -372,7 +510,6 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           </TooltipButton>
         </div>
 
-        {/* Top Right Controls */}
         <div className="absolute top-4 right-4" style={{ right: isChatOpen ? `${chatWidth + 24}px` : '1rem', transition: 'right 0.25s ease' }}>
           <TooltipButton tooltip="Minimize">
             <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white"><Minimize2 size={20} /></Button>
@@ -380,7 +517,6 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
         </div>
       </div>
 
-      {/* Chat Panel (resizable) */}
       <AnimatePresence>
         {isChatOpen && (
           <motion.div initial={{ x: '100%' }} animate={{ x: '0%' }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }} className="absolute top-0 right-0 h-full flex">

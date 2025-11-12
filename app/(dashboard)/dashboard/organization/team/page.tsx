@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { InviteList } from '@/components/dashboard/invites/InviteList';
+import { InviteList } from '@/components/invites/InviteList';
 
 const TeamPage = () => {
   return (

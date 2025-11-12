@@ -1,7 +1,8 @@
+import { fetchApi } from "@/lib/api";
 import { toast } from "sonner";
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
-import { playSound } from '@/lib/sound/soundGenerator';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { playSound } from "@/lib/sound/soundGenerator";
 
 export interface UploadResponse {
   url: string;
@@ -26,7 +27,7 @@ export interface Message {
   file?: MessageFile;
   content?: any;
   createdAt?: string;
-  type?: 'message' | 'alert_notification';
+  type?: "message" | "alert_notification";
   alert?: any;
   reactions?: { [emoji: string]: { userId: string; fullName: string }[] };
   sender?: {
@@ -40,14 +41,22 @@ export interface Message {
     text: string;
     file?: MessageFile;
   };
-  status?: 'sent' | 'delivered' | 'read';
+  status?: "sent" | "delivered" | "read";
 }
 
 // Allow messages to carry a single file or multiple files
-export type MessageFile = UploadResponse | UploadResponse[] | undefined;
+export type MessageFile = UploadResponse | Partial<UploadResponse> | (UploadResponse | Partial<UploadResponse>)[] | undefined;
 
 interface WebSocketMessage {
-  type: 'typing' | 'message' | 'messages' | 'presence' | 'auth' | 'reaction' | 'alert_notification' | 'message_status_update';
+  type:
+    | "typing"
+    | "message"
+    | "messages"
+    | "presence"
+    | "auth"
+    | "reaction"
+    | "alert_notification"
+    | "message_status_update";
   isTyping?: boolean;
   fullName?: string;
   messages?: Message[];
@@ -62,46 +71,6 @@ interface WebSocketMessage {
   payload?: any;
 }
 
-export const uploadFile = (
-  file: File,
-  onProgress: (percentage: number) => void
-): Promise<UploadResponse> => {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) {
-        const percentage = Math.round((event.loaded * 100) / event.total);
-        onProgress(percentage);
-      }
-    });
-
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response);
-        } catch (error) {
-          reject(new Error('Failed to parse upload response'));
-        }
-      } else {
-        reject(new Error(`File upload failed with status: ${xhr.status}`));
-      }
-    });
-
-    xhr.addEventListener('error', () => {
-      reject(new Error('File upload failed'));
-    });
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const endpoint = file.type === 'application/pdf' ? '/api/upload-pdf' : '/api/upload';
-    xhr.open('POST', endpoint, true);
-    xhr.send(formData);
-  });
-};
-
 export const useChat = (room: string) => {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -114,32 +83,33 @@ export const useChat = (room: string) => {
 
   const _sendMessage = useCallback((payload: any) => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-      console.error('Cannot send message: WebSocket not connected.');
+      console.error("Cannot send message: WebSocket not connected.");
       return;
     }
     try {
       ws.current.send(JSON.stringify(payload));
       console.log("Sent message:", payload);
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
     }
   }, []);
 
-  const sendPayload = useCallback((payload: any) => {
-    // wrapper that exposes raw payload sending to callers
-    _sendMessage(payload);
-    playSound('messageSent');
-  }, [_sendMessage]);
+  const sendPayload = useCallback(
+    (payload: any) => {
+      // wrapper that exposes raw payload sending to callers
+      _sendMessage(payload);
+      playSound("messageSent");
+    },
+    [_sendMessage]
+  );
 
   useEffect(() => {
-
-
     const maxRetries = 3;
     let currentWs: WebSocket | null = null;
 
     const connect = () => {
       if (retryCount.current >= maxRetries) {
-        console.error('Max retry attempts reached');
+        console.error("Max retry attempts reached");
         return;
       }
 
@@ -147,29 +117,32 @@ export const useChat = (room: string) => {
 
       setMessages([]); // Clear messages when room changes
       setTypingUsers([]); // Clear typing users when room changes
-      
-      const workerUrl = process.env.NODE_ENV === 'development'
-        ? 'http://127.0.0.1:8787'
-        : process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+
+      const workerUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://127.0.0.1:8787"
+          : process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
 
       if (!workerUrl) {
-        console.error('Worker URL is not configured.');
+        console.error("Worker URL is not configured.");
         return;
       }
 
       let wsUrl;
       try {
         const url = new URL(workerUrl);
-        const wsProtocol = url.protocol === 'https:' ? 'wss' : 'ws';
+        const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
         wsUrl = `${wsProtocol}://${url.host}/api/chat/socket?room=${room}`;
       } catch (error) {
-        console.error('Invalid worker URL:', workerUrl, error);
+        console.error("Invalid worker URL:", workerUrl, error);
         return;
       }
-      
-      console.log(`Connecting to WebSocket: ${wsUrl}, Attempt: ${retryCount.current + 1}`);
-      console.log('Worker URL:', workerUrl);
-      
+
+      console.log(
+        `Connecting to WebSocket: ${wsUrl}, Attempt: ${retryCount.current + 1}`
+      );
+      console.log("Worker URL:", workerUrl);
+
       // Close existing connection from this effect scope if it exists
       if (currentWs) {
         currentWs.onclose = null; // Prevent onclose from triggering a retry
@@ -183,10 +156,10 @@ export const useChat = (room: string) => {
         currentWs.onopen = () => {
           console.log("WebSocket connected successfully");
           retryCount.current = 0; // Reset retry count on successful connection
-          
+
           if (session?.user && currentWs) {
             const authMessage = JSON.stringify({
-              type: 'auth',
+              type: "auth",
               token: session.user.token, // Send the token for validation
               user: {
                 id: session.user.id,
@@ -203,123 +176,144 @@ export const useChat = (room: string) => {
             const message = JSON.parse(event.data);
             console.log("Received message:", message);
 
-            if (
-              pendingMessageRef.current &&
-              message.type === "message" &&
-              message.sender?._id === (session?.user as any)?._id && // Compare IDs
-              !message.threadId && // Ensure it's not a thread message from another user
-              pendingMessageRef.current.text === message.content // Match content
-            ) {
-              const pendingMessage = pendingMessageRef.current;
+            // Handle optimistic message confirmation (for text, files, voice, etc.)
+            if (message.type === "message" && message.optimisticId) {
               setMessages((prevMessages) =>
                 prevMessages.map((m) =>
-                  m.id === pendingMessage.id
-                    ? { ...m, id: message.id, createdAt: message.createdAt }
+                  m.id === message.optimisticId
+                    ? {
+                        ...m,
+                        ...message, // Replace with the full message from the server
+                        id: message.id || message._id, // Use real DB ID
+                        file: message.files || message.file, // Use real file object
+                        status: "sent",
+                      }
                     : m
                 )
               );
-              pendingMessageRef.current = null; // Clear after handling
-              return; // Stop further processing for this message
+              pendingMessageRef.current = null; // Clear ref used for text messages
+              return; // IMPORTANT: Stop further processing to prevent duplicates
             }
 
-            if (message.type === 'typing') {
+            // Handle other incoming websocket events
+            if (message.type === "typing") {
               if (message.isTyping) {
-                setTypingUsers(prev => [...new Set([...prev, message.fullName])]);
+                setTypingUsers((prev) => [
+                  ...new Set([...prev, message.fullName]),
+                ]);
               } else {
-                setTypingUsers(prev => prev.filter(user => user !== message.fullName));
+                setTypingUsers((prev) =>
+                  prev.filter((user) => user !== message.fullName)
+                );
               }
-            } else if (message.type === 'message') {
-              // Ensure message has required fields before adding
+            } else if (message.type === "message") {
+              // Handle new messages from other users
               if (message.sender) {
                 const newMessage: Message = {
-                  id: message.id || crypto.randomUUID(),
+                  id: message._id || message.id, // Prioritize DB ID
                   userId: message.sender._id,
                   threadId: message.threadId || null, // Map threadId from incoming message
                   fullName: message.sender.fullName,
                   userImage: message.sender.image || undefined,
-                  text: message.content || '', // Use content from the message
+                  text: message.content || "", // Use content from the message
                   file: message.files || message.file, // support files[] or file
                   sender: message.sender, // Preserve the sender object
                   replyTo: message.replyTo
                     ? {
                         id: message.replyTo.id,
-                        text: message.replyTo.text || message.replyTo.content || '',
-                        fullName: message.replyTo.fullName || message.replyTo.sender?.fullName || (message.replyTo as any).userName || 'Unknown',
+                        text:
+                          message.replyTo.text || message.replyTo.content || "",
+                        fullName:
+                          message.replyTo.fullName ||
+                          message.replyTo.sender?.fullName ||
+                          (message.replyTo as any).userName ||
+                          "Unknown",
                         file: message.replyTo.file,
                       }
                     : undefined,
                   createdAt: message.timestamp || new Date().toISOString(),
                 };
-                console.log('Adding new message:', newMessage);
-                console.log('Message files:', message.files);
-                console.log('Message file:', message.file);
-                setMessages(prevMessages => {
-                  if (prevMessages.some(m => m.id === message.id)) {
-                    console.log('Message already exists, skipping');
+
+                setMessages((prevMessages) => {
+                  // Prevent adding a message that already exists
+                  if (prevMessages.some((m) => m.id === newMessage.id)) {
                     return prevMessages;
                   }
-                  playSound('notification');
+                  playSound("notification");
                   return [...(prevMessages || []), newMessage];
                 });
-                
+
                 // Remove the sender from typing users
                 if (message.sender.fullName) {
-                  setTypingUsers(prev => prev.filter(user => user !== message.sender.fullName));
+                  setTypingUsers((prev) =>
+                    prev.filter((user) => user !== message.sender.fullName)
+                  );
                 }
-              } else if (message.type === 'alert_notification' && message.alert) {
-                const alertMessage: Message = {
-                  id: message.alert._id || crypto.randomUUID(),
-                  type: 'alert_notification',
-                  alert: message.alert,
-                  text: message.alert.message,
-                  userId: message.alert.createdBy._id, // Not strictly needed but good for consistency
-                  fullName: message.alert.createdBy.fullName,
-                };
-                setMessages(prev => [...(prev || []), alertMessage]);
               } else {
-                console.warn('Received incomplete message:', message);
+                console.warn("Received incomplete message:", message);
               }
-            } else if (message.type === 'messages') {
+            } else if (
+              message.type === "alert_notification" &&
+              message.alert
+            ) {
+              const alertMessage: Message = {
+                id: message.alert._id || crypto.randomUUID(),
+                type: "alert_notification",
+                alert: message.alert,
+                text: message.alert.message,
+                userId: message.alert.createdBy._id, // Not strictly needed but good for consistency
+                fullName: message.alert.createdBy.fullName,
+              };
+              setMessages((prev) => [...(prev || []), alertMessage]);
+            } else if (message.type === "messages") {
               const historicalMessages = (message.messages || [])
                 .filter(Boolean)
                 .map((msg: any) => ({
-                  id: msg.id || crypto.randomUUID(),
+                  id: msg._id || msg.id, // Prioritize DB ID
                   userId: msg.sender?._id,
                   fullName: msg.sender?.fullName,
                   threadId: msg.threadId || null, // Map threadId from historical messages
                   userImage: msg.sender?.image,
-                  text: msg.content || '',
+                  text: msg.content || "",
                   file: msg.files || msg.file,
                   sender: msg.sender, // Preserve the sender object
                   createdAt: msg.createdAt || msg.timestamp,
                   reactions: msg.reactions,
-                  replyTo: msg.replyTo ? {
-                    id: msg.replyTo.id,
-                    text: msg.replyTo.text || msg.replyTo.content || '',
-                    fullName: msg.replyTo.fullName || (msg.replyTo as any).userName || 'Unknown',
-                    file: msg.replyTo.file,
-                  } : undefined,
+                  deleted: msg.deleted, // Preserve the deleted property
+                  replyTo: msg.replyTo
+                    ? {
+                        id: msg.replyTo.id,
+                        text: msg.replyTo.text || msg.replyTo.content || "",
+                        fullName:
+                          msg.replyTo.fullName ||
+                          (msg.replyTo as any).userName ||
+                          "Unknown",
+                        file: msg.replyTo.file,
+                      }
+                    : undefined,
                 }));
               setMessages(historicalMessages);
-            } else if (message.type === 'reaction') {
+            } else if (message.type === "reaction") {
               if (message.payload) {
                 const { messageId, emoji, userId, fullName } = message.payload;
-                setMessages(prevMessages =>
-                  prevMessages.map(msg => {
+                setMessages((prevMessages) =>
+                  prevMessages.map((msg) => {
                     if (msg.id === messageId) {
                       const reactions = msg.reactions || {};
                       const users = reactions[emoji] || [];
-                      const userIndex = users.findIndex(u => u.userId === userId);
-              
+                      const userIndex = users.findIndex(
+                        (u) => u.userId === userId
+                      );
+
                       let newUsers;
                       if (userIndex > -1) {
                         // User has already reacted with this emoji, so remove it
-                        newUsers = users.filter(u => u.userId !== userId);
+                        newUsers = users.filter((u) => u.userId !== userId);
                       } else {
                         // User is adding a new reaction
                         newUsers = [...users, { userId, fullName }];
                       }
-              
+
                       if (newUsers.length === 0) {
                         const { [emoji]: _, ...rest } = reactions;
                         return { ...msg, reactions: rest };
@@ -336,34 +330,66 @@ export const useChat = (room: string) => {
                     return msg;
                   })
                 );
+              } else if (message.type === "message_deleted") {
+                const { messageId } = message.payload;
+                setMessages((prevMessages) =>
+                  prevMessages.map((msg) => {
+                    if (msg.id === messageId) {
+                      return {
+                        ...msg,
+                        text: "This message was deleted",
+                        content: "This message was deleted",
+                        file: undefined,
+                        deleted: true,
+                      };
+                    }
+                    return msg;
+                  })
+                );
               }
-              } else if (message.type === 'message_status_update') {
+            } else if (message.type === "message_status_update") {
               const { messageId, status } = message.payload;
-              setMessages(prevMessages =>
-                prevMessages.map(msg =>
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
                   msg.id === messageId ? { ...msg, status } : msg
                 )
               );
-            } else if (message.type === 'presence') {
+            } else if (message.type === "presence") {
               if (message.onlineUsers) {
                 setOnlineUsers(message.onlineUsers);
               }
+            } else if (message.type === "message_updated") {
+              const updatedMessage = message.payload;
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                  msg.id === updatedMessage.id
+                    ? { ...msg, ...updatedMessage }
+                    : msg
+                )
+              );
+            } else if (message.type === "presence") {
+              setOnlineUsers(message.onlineUsers);
             } else if (message.error) {
-              console.error('WebSocket error:', message.error);
+              console.error("WebSocket error:", message.error);
             }
           } catch (error) {
-            console.error('Error processing WebSocket message:', error);
+            console.error("Error processing WebSocket message:", error);
           }
         };
 
         currentWs.onerror = (event) => {
           // Generic error events don't have much info, so we'll log the close event for details.
-          console.error("WebSocket error event. See close event for details.", event);
+          console.error(
+            "WebSocket error event. See close event for details.",
+            event
+          );
         };
 
         currentWs.onclose = (event) => {
-          console.log(`WebSocket disconnected: code=${event.code}, reason='${event.reason}', wasClean=${event.wasClean}`);
-          
+          console.log(
+            `WebSocket disconnected: code=${event.code}, reason='${event.reason}', wasClean=${event.wasClean}`
+          );
+
           // Don't retry on normal closure or if the component has unmounted.
           if (event.code === 1000 || ws.current !== currentWs) {
             return;
@@ -371,30 +397,37 @@ export const useChat = (room: string) => {
 
           if (retryCount.current < maxRetries) {
             retryCount.current++;
-            const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
-            console.log(`Connection failed. Retrying in ${delay}ms (attempt ${retryCount.current}/${maxRetries})...`);
-            
+            const delay = Math.min(
+              1000 * Math.pow(2, retryCount.current),
+              10000
+            );
+            console.log(
+              `Connection failed. Retrying in ${delay}ms (attempt ${retryCount.current}/${maxRetries})...`
+            );
+
             if (retryTimeout.current) {
               clearTimeout(retryTimeout.current);
             }
-            
+
             retryTimeout.current = setTimeout(connect, delay);
           } else {
             console.error("Max retry attempts reached. Giving up.");
           }
         };
-
       } catch (error) {
-        console.error('Error creating WebSocket:', error);
+        console.error("Error creating WebSocket:", error);
         retryCount.current++;
-        
+
         if (retryTimeout.current) {
           clearTimeout(retryTimeout.current);
         }
-        
-        retryTimeout.current = setTimeout(() => {
-          connect();
-        }, Math.min(1000 * Math.pow(2, retryCount.current), 10000));
+
+        retryTimeout.current = setTimeout(
+          () => {
+            connect();
+          },
+          Math.min(1000 * Math.pow(2, retryCount.current), 10000)
+        );
       }
     };
 
@@ -411,14 +444,17 @@ export const useChat = (room: string) => {
           ws.current = null;
         }
       }
-    };``
+    };
+    ``;
   }, [session, room, _sendMessage]);
 
   const sendCombinedMessage = useCallback(
     async (
       text: string,
       uploadedFiles?: UploadResponse[],
-      replyTo?: Message,
+      isVoiceMessage: boolean = false,
+      replyTo?: Message, // Kept for text replies
+      optimisticId?: string, // New param for optimistic replacement
       threadId?: string // Ensure threadId is accepted here
     ) => {
       if (!session?.user) {
@@ -426,24 +462,26 @@ export const useChat = (room: string) => {
         return;
       }
 
-      // --- Optimistic Update ---
-      if (threadId) {
+      // --- Optimistic Update for text messages ---
+      if (!optimisticId && !isVoiceMessage && (text || (uploadedFiles && uploadedFiles.length > 0))) {
+        const tempId = `temp-text-${crypto.randomUUID()}`;
         const optimisticMessage: Message = {
-          id: `temp-${crypto.randomUUID()}`,
-          text: text,
-          userId: (session.user as any)._id, // Correctly use _id
-          fullName: session.user.name || "You",
-          userImage: session.user.image,
-          threadId: threadId,
-          file: uploadedFiles,
-          replyTo: replyTo,
-          status: "sent",
-          createdAt: new Date().toISOString(),
+            id: tempId,
+            text: text,
+            userId: (session.user as any)._id,
+            fullName: session.user.name || "You",
+            userImage: session.user.image,
+            threadId: threadId,
+            file: uploadedFiles,
+            replyTo: replyTo as any,
+            status: "sent",
+            createdAt: new Date().toISOString(),
         };
-        pendingMessageRef.current = optimisticMessage;
+        pendingMessageRef.current = { ...optimisticMessage, id: tempId }; // Use the tempId
         setMessages((prev) => [...prev, optimisticMessage]);
+        optimisticId = tempId; // Use this ID for replacement
       }
-      // -------------------------
+      // ------------------------------------------
 
       const filesWithThumbnails = uploadedFiles
         ? await Promise.all(
@@ -469,6 +507,7 @@ export const useChat = (room: string) => {
       const payload = {
         type: "message",
         content: text || "", // may be empty if just files
+        optimisticId: optimisticId, // Send the temp ID to the backend
         threadId: threadId, // Assign threadId to the payload
         files: filesWithThumbnails?.length ? filesWithThumbnails : undefined,
         replyTo: replyTo
@@ -491,13 +530,24 @@ export const useChat = (room: string) => {
   );
 
   // Deprecated: use sendCombinedMessage instead
-  const sendMessage = useCallback((message: string) => sendCombinedMessage(message, []), [sendCombinedMessage]);
-  const sendFile = useCallback((file: File, fileInfo: UploadResponse) => sendCombinedMessage(`File: ${fileInfo.name}`, [fileInfo]), [sendCombinedMessage]);
+  const sendMessage = useCallback(
+    (message: string) => sendCombinedMessage(message, []),
+    [sendCombinedMessage],
+  );
+  const sendFile = useCallback(
+    (file: File, fileInfo: UploadResponse) =>
+      sendCombinedMessage(`File: ${fileInfo.name}`, [fileInfo], false),
+    [sendCombinedMessage]
+  );
 
   const sendTyping = (isTyping: boolean) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN && session?.user?.fullName) {
+    if (
+      ws.current &&
+      ws.current.readyState === WebSocket.OPEN &&
+      session?.user?.fullName
+    ) {
       const payload = {
-        type: 'typing',
+        type: "typing",
         isTyping,
         fullName: session.user.fullName,
         room,
@@ -507,77 +557,106 @@ export const useChat = (room: string) => {
   };
 
   const startCall = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN && session?.user) {
+    if (
+      ws.current &&
+      ws.current.readyState === WebSocket.OPEN &&
+      session?.user
+    ) {
       const payload = {
-        type: 'call-start',
+        type: "call-start",
         room,
       };
       ws.current.send(JSON.stringify(payload));
     }
   };
 
-  const sendReadReceipt = useCallback((messageId: string) => {
-    _sendMessage({
-      type: 'message_status_update',
-      payload: {
-        messageId,
-        status: 'read',
-        room,
-      }
-    });
-  }, [room, _sendMessage]);
-
-  const deleteMessage = useCallback(async (messageId: string) => {
-    try {
-      const res = await fetch('/api/chat/messages', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
+  const sendReadReceipt = useCallback(
+    (messageId: string) => {
+      _sendMessage({
+        type: "message_status_update",
+        payload: {
+          messageId,
+          status: "read",
+          room,
         },
-        body: JSON.stringify({ messageId }),
       });
+    },
+    [room, _sendMessage]
+  );
 
-      if (res.ok) {
-        // Optimistically update the message to show it's deleted.
-        setMessages(prevMessages => prevMessages.map(m => {
-          if (m.id === messageId) {
-            return {
-              ...m,
-              text: 'This message has been deleted.',
-              file: undefined,
-              deleted: {
-                by: 'user', // This will be updated by the websocket event later for admin deletions
-                at: new Date().toISOString()
-              }
-            };
+  const uploadFile = useCallback(
+    (
+      file: File,
+      onProgress: (percentage: number) => void,
+      optimisticId?: string) => {
+      return new Promise<UploadResponse>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            const percentage = Math.round((event.loaded * 100) / event.total);
+            onProgress(percentage);
           }
-          return m;
-        }));
-      } else {
-        const errorData: any = await res.json();
-        console.error('Failed to delete message:', errorData.error);
-        toast.error('Failed to delete message');
-      }
-    } catch (error) {
-      console.error('Error deleting message:', error);
-      toast.error('An error occurred while deleting the message');
-    }
-  }, []);
+        });
+
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText) as UploadResponse;
+              // The upload is complete; resolve the promise with the file details.
+              // The component will handle sending the message.
+              resolve(response);
+            } catch (error) {
+              reject(new Error("Failed to parse upload response"));
+            }
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          reject(new Error("File upload failed"));
+        });
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const endpoint =
+          file.type === "application/pdf" ? "/api/upload-pdf" : "/api/upload";
+        xhr.open("POST", endpoint, true);
+        xhr.send(formData);
+      });
+    },
+    [sendCombinedMessage]
+  );
+
+  const deleteMessage = useCallback(
+    (messageId: string) => {
+      _sendMessage({
+        type: "delete_message",
+        payload: {
+          messageId,
+          room,
+        },
+      });
+      toast.success("Message deleted.");
+    },
+    [room, _sendMessage]
+  );
 
   const startThread = useCallback((message: Message) => {
     // This is a placeholder for your thread logic.
     // You would typically open a new view or sidebar here.
-    console.log('Starting thread for message:', message.id);
+    console.log("Starting thread for message:", message.id);
     // For now, let's just log it.
     // You can later implement a separate state for the active thread,
     // fetch its messages, and display them in a new component.
     toast.info(`Replying in thread to ${message.fullName}`);
   }, []);
 
-
-
   return {
     messages,
+    setMessages, // Make sure to return setMessages
     typingUsers,
     onlineUsers,
     sendCombinedMessage, // ✅ new function

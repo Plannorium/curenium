@@ -6,7 +6,7 @@ import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ fullName: user.fullName }, { status: 200 });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ message: 'Error fetching user data' }, { status: 500 });
   }
 }
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json({ message: 'Profile updated successfully' }, { status: 200 });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ message: 'Error updating user' }, { status: 500 });
   }
 }

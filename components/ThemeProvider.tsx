@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState, createContext, useContext } from 'react';
+import React, { useEffect, createContext, useContext, Dispatch, SetStateAction } from 'react';
+import { useLocalStorage } from '../app/lib/use-local-storage';
 
 type Theme = 'dark' | 'light';
 type Font = "inter" | "manrope" | "system";
@@ -8,8 +9,8 @@ type ThemeContextType = {
   theme: Theme;
   font: Font;
   toggleTheme: () => void;
-  setFont: (font: Font) => void;
-  setTheme: (theme: Theme) => void;
+  setFont: Dispatch<SetStateAction<Font>>;
+  setTheme: Dispatch<SetStateAction<Theme>>;
 };
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -19,8 +20,8 @@ export const ThemeProvider: React.FC<{
 }> = ({
   children
 }) => {
-  const [theme, setTheme] = useState<Theme>('light');
-  const [font, setFont] = useState<Font>('inter');
+  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
+  const [font, setFont] = useLocalStorage<Font>('font', 'inter');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -28,8 +29,8 @@ export const ThemeProvider: React.FC<{
         const response = await fetch("/api/settings/appearance");
         if (response.ok) {
           const data = (await response.json()) as { theme?: Theme; font?: Font };
-          setTheme(data.theme || "light");
-          setFont(data.font || "inter");
+          if (data.theme) setTheme(data.theme);
+          if (data.font) setFont(data.font);
         } else {
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           setTheme(prefersDark ? 'dark' : 'light');
@@ -40,14 +41,18 @@ export const ThemeProvider: React.FC<{
       }
     };
 
-    fetchSettings();
-  }, []);
+    const cachedTheme = localStorage.getItem('theme');
+    const cachedFont = localStorage.getItem('font');
+
+    if (!cachedTheme || !cachedFont) {
+      fetchSettings();
+    }
+  }, [setTheme, setFont]);
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('dark', 'light');
     root.classList.add(theme);
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
   useEffect(() => {
@@ -56,7 +61,7 @@ export const ThemeProvider: React.FC<{
   }, [font]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   return <ThemeContext.Provider value={{

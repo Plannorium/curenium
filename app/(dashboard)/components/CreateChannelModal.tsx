@@ -80,7 +80,8 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
           p-6
           backdrop-blur-2xl 
           bg-gradient-to-br from-background/60 via-card/70 to-background/50
-          border border-border/40 
+          dark:from-gray-900/70 dark:via-gray-800/80 dark:to-gray-900/70
+          border border-border/40 dark:border-gray-700/50
           rounded-2xl 
           shadow-[0_8px_40px_-12px_rgba(0,0,0,0.25)]
           transition-all duration-300
@@ -121,8 +122,8 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               placeholder="e.g., patient-updates"
               className="
                 col-span-3 
-                bg-background/50 
-                border border-border/30 
+                bg-background/50 dark:bg-gray-800/50
+                border border-border/30 dark:border-gray-700/60
                 rounded-xl 
                 focus:ring-2 focus:ring-primary/30
                 shadow-inner

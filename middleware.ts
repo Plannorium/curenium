@@ -13,15 +13,15 @@ export default withAuth(
     const userRole = token.role as string;
 
     if (pathname.startsWith("/dashboard/organization") && userRole !== "admin") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
     }
 
     if (pathname.startsWith("/dashboard/clinical") && !["admin", "doctor"].includes(userRole)) {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
     }
 
-    if (pathname.startsWith("/dashboard/invites") && userRole !== "admin") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    if (pathname.startsWith("/dashboard/admin") && userRole !== "admin") {
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
     }
 
     return NextResponse.next();

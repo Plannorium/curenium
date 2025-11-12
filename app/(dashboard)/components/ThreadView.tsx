@@ -9,6 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/hooks/useChat";
 import { SendIcon } from "lucide-react";
 
+interface User {
+  id: string;
+  _id: string;
+  fullName: string;
+  image?: string;
+  role?: string;
+  email?: string;
+}
+
 interface ThreadViewProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,6 +25,9 @@ interface ThreadViewProps {
   messages: Message[];
   onReply: (threadId: string, content: string) => void;
   MessageBubbleComponent: React.ComponentType<any>;
+  sendReadReceipt: (messageId: string) => void;
+  allUsers: User[];
+  className?: string;
 }
 
 export const ThreadView: React.FC<ThreadViewProps> = ({
@@ -25,6 +37,9 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   messages,
   onReply,
   MessageBubbleComponent,
+  sendReadReceipt,
+  allUsers,
+  className,
 }) => {
   const [replyContent, setReplyContent] = useState("");
   const parentMessage = messages.find((m) => m.id === threadId);
@@ -50,7 +65,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
           animate={{ x: "0%" }}
           exit={{ x: "100%" }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="absolute top-0 right-0 h-full w-full max-w-md bg-card/95 backdrop-blur-lg border-l border-border/50 shadow-2xl flex flex-col z-40"
+          className={`absolute top-0 right-0 h-full w-full max-w-md bg-card/95 backdrop-blur-lg border-l border-border/50 shadow-2xl flex flex-col z-40 ${className}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/50 flex-shrink-0">
@@ -72,25 +87,35 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
           <div className="flex-1 overflow-y-auto p-4 space-y-4 md:max-h-[calc(100vh-15rem)]">
             {/* Parent Message */}
             {parentMessage && (
-              <div className="border-b border-border/50 pb-4">
-                <MessageBubbleComponent
-                  msg={parentMessage}
-                  isSender={false}
-                  showTime={true}
-                />
-              </div>
+              (() => {
+                const user = allUsers.find(u => u._id === parentMessage.userId);
+                return (
+                  <div className="border-b border-border/50 pb-4">
+                    <MessageBubbleComponent
+                      msg={parentMessage}
+                      user={user}
+                      isSender={false} // This is context-dependent, assuming parent is not the sender
+                      showTime={true}
+                      sendReadReceipt={sendReadReceipt}
+                    />
+                  </div>
+                );
+              })()
             )}
 
             {/* Replies */}
             <div className="space-y-4">
-              {threadReplies.map((reply) => (
-                <MessageBubbleComponent
+              {threadReplies.map((reply) => {
+                const user = allUsers.find(u => u._id === reply.userId);
+                return <MessageBubbleComponent
                   key={reply.id}
                   msg={reply}
                   isSender={false}
                   showTime={true}
-                />
-              ))}
+                  sendReadReceipt={sendReadReceipt}
+                  user={user}
+                />;
+              })}
             </div>
             <div ref={messagesEndRef} />
           </div>

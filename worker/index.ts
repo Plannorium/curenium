@@ -139,6 +139,7 @@ export class ChatRoom {
                     id: crypto.randomUUID(),
                     threadId: data.threadId,
                     content: data.content,
+                    file: data.files, // Ensure single file is also handled
                     files: data.files,
                     replyTo: data.replyTo, // This will now include the 'file' property
                     createdAt: new Date().toISOString(),
@@ -200,6 +201,28 @@ export class ChatRoom {
                 this.broadcast(JSON.stringify(data));
             } else if (data.type === 'typing') {
                 this.broadcast(JSON.stringify(data));
+            } else if (data.type === 'delete_message') {
+                const { messageId } = data.payload;
+                const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
+
+                if (messageIndex > -1) {
+                    // "Soft delete" the message by updating its properties
+                    this.messages[messageIndex] = {
+                        ...this.messages[messageIndex],
+                        content: 'This message was deleted',
+                        text: 'This message was deleted',
+                        file: undefined,
+                        files: undefined, // Clear files
+                        deleted: {
+                            by: session.user?.name || 'A user',
+                            at: new Date().toISOString(),
+                        },
+                    };
+
+                    await this.state.storage.put("messages", this.messages);
+                    // Broadcast the updated message object
+                    this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
+                }
             }
         });
 

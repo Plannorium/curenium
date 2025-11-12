@@ -52,7 +52,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, initialInd
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10 bg-black/30 rounded-full p-2"
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10 bg-black/30 dark:bg-gray-800/50 rounded-full p-2"
           >
             <XIcon size={24} />
           </button>
@@ -64,7 +64,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, initialInd
                   e.stopPropagation();
                   setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
                 }}
-                className="absolute left-4 text-white/70 hover:text-white transition-colors bg-black/30 rounded-full p-3 z-10"
+                className="absolute left-4 text-white/70 hover:text-white transition-colors bg-black/30 dark:bg-gray-800/50 rounded-full p-3 z-10"
               >
                 <ChevronLeftIcon size={28} />
               </button>
@@ -89,14 +89,14 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, initialInd
                   e.stopPropagation();
                   setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
                 }}
-                className="absolute right-4 text-white/70 hover:text-white transition-colors bg-black/30 rounded-full p-3 z-10"
+                className="absolute right-4 text-white/70 hover:text-white transition-colors bg-black/30 dark:bg-gray-800/50 rounded-full p-3 z-10"
               >
                 <ChevronRightIcon size={28} />
               </button>
             )}
           </div>
 
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white/90 rounded-lg px-4 py-2 text-center text-sm">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 dark:bg-gray-900/60 text-white/90 rounded-lg px-4 py-2 text-center text-sm">
             <p className="font-semibold">{currentImage.name}</p>
             <p className="text-xs">{currentIndex + 1} / {images.length}</p>
           </div>

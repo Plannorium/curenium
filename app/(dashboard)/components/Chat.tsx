@@ -7,6 +7,15 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { MicIcon } from "lucide-react";
+import {
   SendIcon,
   PaperclipIcon,
   BellIcon,
@@ -14,8 +23,10 @@ import {
   InfoIcon,
   SearchIcon,
   ChevronDownIcon,
+  ChevronDown,
   XIcon,
   Users,
+  PauseIcon,
   CornerUpLeft,
   MessageCircle,
   FileIcon,
@@ -34,7 +45,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
-import { useChat } from "@/hooks/useChat";
+import { useChat, Message } from "@/hooks/useChat";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { FileAttachment } from "./FileAttachment";
@@ -47,23 +58,17 @@ import { AnimatePresence } from "framer-motion";
 import { UserProfileCard } from "./UserProfileCard";
 import { AlertDetailsModal } from "./AlertDetailsModal";
 import { SendAlertModal } from "./SendAlertModal";
-import { IMessage } from "@/types/models";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { initAudio, playSound } from "@/lib/sound/soundGenerator";
 import { CreateChannelModal } from "./CreateChannelModal";
 import { ManageChannelModal } from "./ManageChannelModal";
+import { ChannelMembersModal } from "./ChannelMembersModal";
 import SoundPalette from "./SoundPalette";
 import { MessageSquareText } from "lucide-react"; // Import MessageSquareText
 import { ThreadView } from "./ThreadView";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import PdfPreviewCard from "./PdfPreviewCard";
+import AudioVisualizer from "./AudioVisualizer";
+import LiveAudioVisualizer from "./LiveAudioVisualizer";
 
 interface User {
   id: string;
@@ -93,6 +98,73 @@ interface Channel {
   name: string;
   members: string[];
 }
+
+const AudioPlayer = ({ src }: { src: string }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-background/70 dark:bg-gray-800/50 w-full lg:-64">
+      <audio
+        ref={audioRef}
+        src={src}
+        crossOrigin="anonymous"
+        preload="metadata"
+        onEnded={() => setIsPlaying(false)}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        className="hidden"
+      />
+      <Button
+        onClick={togglePlay}
+        size="sm"
+        variant="ghost"
+        className="rounded-full h-8 w-8 p-0 shrink-0"
+      >
+        {isPlaying ? "❚❚" : "►"}
+      </Button>
+      <div className="max-w-[88%] lg:max-w-full flex-grow flex items-center h-8">
+        <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
+      </div>
+      <div className="text-xs text-muted-foreground flex justify-start items-center gap-x-1.5">
+        {formatTime(currentTime)} / {formatTime(duration)}
+      </div>
+    </div>
+  );
+};
 
 const isSingleEmoji = (str: string): boolean => {
   if (!str) return false;
@@ -146,6 +218,7 @@ interface MessageBubbleProps {
   onStartThread: (message: any) => void;
   onScrollToMessage: (messageId: string) => void;
   sendReadReceipt: (messageId: string) => void;
+  voiceUploadProgress: Record<string, number>;
 }
 
 const MessageBubble = ({
@@ -163,6 +236,7 @@ const MessageBubble = ({
   onStartThread,
   onScrollToMessage,
   sendReadReceipt,
+  voiceUploadProgress,
 }: MessageBubbleProps) => {
   const { data: session } = useSession();
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
@@ -275,25 +349,24 @@ const MessageBubble = ({
 
     return (
       <div className="space-y-2">
-        {nonImages.map((f: any, i: number) => {
-          if (!f || !f.url) return null;
-          if (f.type === "application/pdf" || f.name?.endsWith(".pdf")) {
-            return (
-              <PdfPreviewCard
-                key={i}
-                file={f}
-                onPreview={() => openDocPreview(f)}
-              />
-            );
-          }
-          return (
-            <FileAttachment
-              key={i}
-              file={f}
-              onPreview={() => openDocPreview(f)}
-            />
-          );
-        })}
+        {nonImages.map((f: any, i: number) => (
+          <React.Fragment key={i}>
+            {(() => {
+              const isVoiceMessage = f.type?.startsWith("audio/") || (f.resource_type === "video" && f.url.endsWith(".webm"));
+              if (isVoiceMessage) {
+                // Normal player when upload is finished
+                if (f.url) return <AudioPlayer src={f.url} />;
+                return null;
+              }
+
+              if (f.type === "application/pdf" || f.name?.endsWith(".pdf")) {
+                return <PdfPreviewCard file={f} onPreview={() => openDocPreview(f)} />;
+              }
+
+              return <FileAttachment file={f} onPreview={() => openDocPreview(f)} />;
+            })()}
+          </React.Fragment>
+        ))}
       </div>
     );
   };
@@ -316,10 +389,10 @@ const MessageBubble = ({
       >
         <button
           onClick={() => onAlertClick(alert)}
-          className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40`}
+          className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-500/5 dark:border-${color}-500/20 dark:hover:bg-${color}-500/10 dark:hover:border-${color}-500/30`}
         >
           <div
-            className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20`}
+            className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20 dark:bg-${color}-500/5 dark:border-${color}-500/10`}
           >
             <BellIcon size={24} className={`text-${color}-500 animate-pulse`} />
           </div>
@@ -367,20 +440,20 @@ const MessageBubble = ({
         <div className={cn("flex flex-col relative items-start group")}>
           <div
             className={cn(
-              "relative group rounded-xl bg-gradient-to-br p-2 transition-all duration-200 max-w-full sm:max-w-md lg:max-w-lg",
+              "relative group rounded-xl bg-gradient-to-br p-2 transition-all duration-200 max-w-full sm:max-w-[22rem] lg:max-w-[31.5rem]",
               !isEmoji &&
                 `px-3 py-2 ${
                   isSender
-                    ? "from-primary/20 to-primary/10 border-primary/30 bg-card"
-                    : "bg-card border-border/40"
+                    ? "from-primary/20 to-primary/10 border-primary/90 bg-card dark:bg-gray-900/80 border-r dark:border-gray-700/50"
+                    : "bg-card border-border/40 dark:bg-gray-800/50 dark:border-gray-700/50"
                 }`
             )}
           >
-            <div className="absolute top-0 right-0 mt-[-12px] mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10">
+            <div className="absolute top-0 right-0 mt-[-12px] mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700">
               <div className="relative" ref={reactionPickerRef}>
                 <button
                   onClick={() => setReactionPickerOpen((p) => !p)}
-                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
                 >
                   <SmileIcon size={15} className="text-muted-foreground" />
                 </button>
@@ -398,19 +471,22 @@ const MessageBubble = ({
               </div>
               <button
                 onClick={() => onReply(msg)}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
               >
                 <CornerUpLeft size={15} className="text-muted-foreground" />
               </button>
               <button
                 onClick={() => onStartThread(msg)}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
               >
-                <MessageSquareText size={15} className="text-muted-foreground" />
+                <MessageSquareText
+                  size={15}
+                  className="text-muted-foreground"
+                />
               </button>
               <button
                 onClick={() => onDelete(msg.id)}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors"
+                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
               >
                 <Trash2 size={15} className="text-muted-foreground" />
               </button>
@@ -420,7 +496,7 @@ const MessageBubble = ({
             {msg.replyTo && (
               <div className="mb-2">
                 <div
-                  className="relative flex items-start gap-2 rounded-lg bg-background/30 p-2 cursor-pointer border-l-4 border-primary/60 shadow-inner"
+                  className="relative flex items-start gap-2 rounded-lg bg-background/30 p-2 cursor-pointer border-l-4 border-primary/60 shadow-inner dark:bg-gray-800/50"
                   onClick={() => onScrollToMessage(msg.replyTo.id)}
                 >
                   {(() => {
@@ -429,7 +505,7 @@ const MessageBubble = ({
                       : msg.replyTo.file;
                     if (!fileData) return null;
 
-                    if (
+                    if ( 
                       fileData.type?.startsWith("image") ||
                       fileData.thumbnailUrl
                     ) {
@@ -466,10 +542,13 @@ const MessageBubble = ({
               </div>
             )}
 
-            {msg.deleted ? (
-              <p className="text-[1rem] leading-relaxed break-words text-muted-foreground italic">
-                This message was deleted
-              </p>
+            {msg.deleted ? ( // This should be the first check
+              <div className="flex items-center gap-2">
+                <Trash2 size={14} className="text-muted-foreground/80" />
+                <p className="text-sm leading-relaxed break-words text-muted-foreground italic">
+                  message deleted by {msg.deleted.by}
+                </p>
+              </div>
             ) : (
               <>
                 {/* TEXT */}
@@ -496,7 +575,7 @@ const MessageBubble = ({
 
             {/* SENT CHECK */}
             {isSender && !msg.file && (
-              <div className="absolute bottom-1 right-1 text-[0.78rem] text-muted-foreground opacity-70">
+              <div className="absolute bottom-[-1.5] right-1 text-[0.78rem] text-muted-foreground opacity-70">
                 {msg.status === "read" ? (
                   <span className="text-blue-500">✓✓</span>
                 ) : msg.status === "delivered" ? (
@@ -516,7 +595,7 @@ const MessageBubble = ({
                     <div key={emoji} className="relative group">
                       <button
                         onClick={() => onReactionClick(msg.id, emoji, users)}
-                        className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer"
+                        className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer dark:bg-primary/5 dark:border-primary/10 dark:hover:bg-primary/10"
                       >
                         <span>{emoji}</span>
                         <span className="font-medium text-primary text-[0.6rem]">
@@ -539,6 +618,19 @@ export default function Chat() {
   const { data: session } = useSession();
   const fullName = session?.user?.name || "Anonymous";
   const [activeRoom, setActiveRoom] = useState("general");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+
+  useEffect(() => {
+    const room = searchParams.get("room");
+    if (room) {
+      setActiveRoom(room);
+    } else {
+      setActiveRoom("general");
+    }
+  }, [searchParams]);
   // const { messages, sendCombinedMessage, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
   const [text, setText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -559,17 +651,28 @@ export default function Chat() {
   const [isCreateChannelModalOpen, setCreateChannelModalOpen] = useState(false);
   const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
+  const [isMembersModalOpen, setMembersModalOpen] = useState(false);
   const [isDmsOpen, setIsDmsOpen] = useState(true);
-  const [replyingTo, setReplyingTo] = useState<any | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingMessage, setDeletingMessage] = useState<any | null>(null);
+
+  const [voiceUploadProgress, setVoiceUploadProgress] = useState<Record<string, number>>({});
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'sending'>('idle');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
   const handleStartThread = (message: any) => {
-    setActiveThreadId(message.id);
+    setActiveThreadId(message.id); // This should open the thread view
   };
 
   const handleReplyInThread = (threadId: string, content: string) => {
-    sendCombinedMessage(content, undefined, undefined, threadId);
+    sendCombinedMessage(content, undefined, false, undefined, undefined, threadId);
   };
 
   const [stagedFilePreviews, setStagedFilePreviews] = useState<string[]>([]);
@@ -601,6 +704,7 @@ export default function Chat() {
   const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
   const {
     messages,
+    setMessages,
     sendCombinedMessage,
     uploadFile,
     onlineUsers,
@@ -641,7 +745,7 @@ export default function Chat() {
 
   const handleThreadReply = (threadId: string, content: string) => {
     if (session?.user) {
-      sendCombinedMessage(content, [], undefined, threadId); // Pass threadId here
+    sendCombinedMessage(content, undefined, false, undefined, undefined, threadId);
     }
   };
 
@@ -693,7 +797,102 @@ export default function Chat() {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    await deleteMessage(messageId);
+    const messageToDelete = messages.find((m) => m.id === messageId);
+    if (messageToDelete) {
+      setDeletingMessage(messageToDelete);
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  const handleToggleRecording = async () => {
+    if (recordingState === "idle") {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setRecordingStream(stream);
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          if (audioChunksRef.current.length === 0) return;
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const file = new File([blob], "voice-message.webm", { type: "audio/webm" });
+ 
+          try {
+            // First, upload the file and wait for the response.
+            const uploadedFile = await uploadFile(file, (progress) => {
+              // We can still track progress if we want to add a non-optimistic UI later.
+              console.log(`Voice message upload progress: ${progress}%`);
+            });
+            
+            // Once the upload is complete, send the message with the file details.
+            sendCombinedMessage("", [uploadedFile], true);
+            
+          } catch (error) {
+            console.error("Error sending voice message:", error);
+            alert("Failed to send voice message.");
+          } finally {
+            setRecordingState("idle");
+            setRecordingStream(null);
+            if (mediaRecorderRef.current) {
+              mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+            }
+            audioChunksRef.current = [];
+          }
+        };
+
+        mediaRecorder.start();
+        setRecordingState("recording");
+      } catch (error) {
+        console.error("Error starting recording:", error);
+        alert("Could not start recording. Please check microphone permissions.");
+      }
+    }
+  };
+
+  const handleSendVoiceMessage = async () => {
+    if (mediaRecorderRef.current && (recordingState === "recording" || recordingState === "paused")) {
+      setRecordingState("sending");
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const handlePauseRecording = () => {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.pause();
+      setRecordingState('paused');
+    } else if (mediaRecorderRef.current?.state === 'paused') {
+      mediaRecorderRef.current.resume();
+      setRecordingState('recording');
+    }
+  };
+
+  const handleCancelRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = null; // Prevent onstop from firing and sending
+      mediaRecorderRef.current.stop();
+    }
+    if (audioContextRef.current?.state !== "closed") {
+      audioContextRef.current?.close();
+    }
+    audioContextRef.current = null;
+    recordingStream?.getTracks().forEach((track) => track.stop());
+    setRecordingState('idle');
+    setRecordingStream(null);
+    audioChunksRef.current = [];
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (deletingMessage) {
+      await deleteMessage(deletingMessage.id);
+      setDeletingMessage(null);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleEndCall = () => {
@@ -760,8 +959,50 @@ export default function Chat() {
     }
   };
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const scrollToBottom = () => {
+      container.scrollTop = container.scrollHeight;
+    };
+
+    scrollToBottom();
+
+    const observer = new MutationObserver(scrollToBottom);
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+    });
+
+    const timer = setTimeout(scrollToBottom, 300);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, [messages]);
+
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop <=
+        container.clientHeight + 200;
+      setShowScrollToBottom(!isNearBottom && messages.length > 5);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    handleScroll();
+
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [messages]);
 
   useEffect(() => {
@@ -829,7 +1070,7 @@ export default function Chat() {
       try {
         const response = await fetch("/api/messages/recent");
         if (response.ok) {
-          const data: IMessage[] = await response.json();
+          const data: Message[] = await response.json();
           setRecentDms(data);
         }
       } catch (error) {
@@ -1073,7 +1314,6 @@ export default function Chat() {
               replyingTo.sender?.fullName ||
               replyingTo.sender?.fullName ||
               replyingTo.fullName ||
-              replyingTo.userName ||
               "Unknown",
             userId: replyingTo.userId,
             file: replyingTo.file, // Add file information to the reply payload
@@ -1085,7 +1325,7 @@ export default function Chat() {
         if (stagedFiles.length > 0) {
           const uploadPromises = stagedFiles.map((file) =>
             uploadFile(file, (progress) => {
-              setUploadProgress((prev) => ({ ...prev, [file.name]: progress }));
+              setUploadProgress((prev) => ({ ...prev, [file.name]: progress }))
             })
           );
           const uploadedFiles = await Promise.all(uploadPromises);
@@ -1096,12 +1336,12 @@ export default function Chat() {
           setUploadProgress(newProgress);
 
           // Use sendCombinedMessage to send text and files together
-          await sendCombinedMessage(text.trim(), uploadedFiles, replyToMessage);
+          await sendCombinedMessage(text.trim(), uploadedFiles, false, replyToMessage);
           setStagedFiles([]);
           setUploadProgress({});
           setStagedFilePreviews([]);
         } else if (text.trim()) {
-          await sendCombinedMessage(text.trim(), [], replyToMessage);
+          await sendCombinedMessage(text.trim(), [], false, replyToMessage);
         }
         setReplyingTo(null);
         playSound("messageSent");
@@ -1231,7 +1471,7 @@ export default function Chat() {
     );
 
   const handleRoomChange = (room: string) => {
-    setActiveRoom(room);
+    router.push(`${pathname}?room=${room}`);
   };
 
   const createDirectRoom = (userId1: string, userId2: string) => {
@@ -1243,7 +1483,7 @@ export default function Chat() {
 
   return (
     <>
-      <div className="h-full flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
+      <div className="h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
 
@@ -1254,17 +1494,19 @@ export default function Chat() {
           messages={messages}
           onReply={handleReplyInThread}
           MessageBubbleComponent={MessageBubble}
+          sendReadReceipt={sendReadReceipt}
+          allUsers={users}
         />
 
         <div className="relative flex-1 flex min-h-0">
           {/* Channel List Sidebar */}
-          <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 border-r border-border/50 flex-shrink-0">
+          <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 flex-shrink-0">
             <div className="p-4">
               <div className="relative" ref={emojiPickerRef}>
                 <input
                   type="text"
                   placeholder="Search conversations"
-                  className="backdrop-blur-sm bg-background/50 border border-border/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
+                  className="backdrop-blur-sm bg-background/50 dark:bg-gray-800/50 border border-border/60 dark:border-gray-700/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -1292,6 +1534,28 @@ export default function Chat() {
               </button>
               {isChannelsOpen && (
                 <div className="mt-2 space-y-1">
+                  <div
+                    className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
+                      activeRoom === "general"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <button
+                      className="flex cursor-pointer items-center flex-1 text-left"
+                      onClick={() => handleRoomChange("general")}
+                    >
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
+                          activeRoom === "general"
+                            ? "bg-primary"
+                            : "bg-green-500 opacity-60 group-hover:opacity-100 transition-opacity"
+                        }`}
+                      ></span>
+                      General
+                    </button>
+                    {/* No manage button for the general channel */}
+                  </div>
                   {channels
                     .filter((channel) =>
                       channel.name
@@ -1301,7 +1565,7 @@ export default function Chat() {
                     .map((channel) => (
                       <div
                         key={channel._id}
-                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 ${
+                        className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
                           activeRoom ===
                           channel.name.toLowerCase().replace(/ /g, "-")
                             ? "bg-primary/10 text-primary"
@@ -1309,7 +1573,7 @@ export default function Chat() {
                         }`}
                       >
                         <button
-                          className="flex items-center flex-1 text-left"
+                          className="flex cursor-pointer items-center flex-1 text-left"
                           onClick={() =>
                             handleRoomChange(
                               channel.name.toLowerCase().replace(/ /g, "-")
@@ -1337,10 +1601,10 @@ export default function Chat() {
                         </button>
                       </div>
                     ))}
-                  <div className="px-3">
+                  <div className="px-3 cursor-pointer">
                     <button
                       onClick={() => setCreateChannelModalOpen(true)}
-                      className="group cursor-pointer flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                      className="group flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 dark:border-gray-700/50 dark:hover:border-primary/50 dark:bg-gray-800/20 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                     >
                       <Plus
                         size={16}
@@ -1380,15 +1644,15 @@ export default function Chat() {
                           createDirectRoom(currentUser._id, currentUser._id)
                         )
                       }
-                      className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                      className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
                         activeRoom ===
                         createDirectRoom(currentUser._id, currentUser._id)
                           ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
-                          : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                          : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       <div className="relative mr-3">
-                        <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
+                        <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
                           <AvatarImage src={currentUser.image || undefined} />
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                             {currentUser.fullName
@@ -1432,14 +1696,14 @@ export default function Chat() {
                         <button
                           key={dm._id}
                           onClick={() => handleRoomChange(room)}
-                          className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                          className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
                             activeRoom === room
                               ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
-                              : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                              : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
                           }`}
                         >
                           <div className="relative mr-3">
-                            <Avatar className="h-6 w-6 ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200">
+                            <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
                               <AvatarImage src={user.image || undefined} />
                               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                                 {user.fullName
@@ -1463,7 +1727,7 @@ export default function Chat() {
           </div>
 
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden bg-background dark:bg-gray-900/80 border-l border-r border-border/50 dark:border-gray-700/50">
             {isCallActive && localStream && (
               <CallView
                 localStream={localStream}
@@ -1476,9 +1740,9 @@ export default function Chat() {
               />
             )}
             {/* Chat Header */}
-            <div className="backdrop-blur-sm bg-card/50 border-b border-border/50 p-4 flex items-center justify-between">
-              <div className="flex items-center">
-                <h2 className="text-lg font-bold text-foreground">
+            <header className="flex items-center justify-between p-4 border-b border-border/50 dark:border-gray-700/50 bg-background/30 dark:bg-transparent backdrop-blur-sm z-10">
+              <div className="flex items-center overflow-hidden">
+                <h2 className="text-base font-bold text-foreground cursor-pointer truncate">
                   {activeRoom === "general"
                     ? "General"
                     : channels.find(
@@ -1495,15 +1759,15 @@ export default function Chat() {
                         )?.fullName) ||
                       "Chat"}
                 </h2>
-                <div className="ml-3 bg-green-500/10 text-green-600 dark:text-green-400 text-xs px-3 py-1 rounded-full font-semibold border border-green-500/20">
+                <div className="ml-3 bg-green-500/10 text-green-600 dark:text-green-400 text-xs px-3 py-1 rounded-full font-semibold border border-green-500/20 hidden md:block">
                   {onlineUsers.length} online
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 md:space-x-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                  className="p-2.5 cursor-pointer rounded-xl hover:bg-accent/50 transition-all duration-200"
                   onClick={() => setShowSearch(true)}
                 >
                   <SearchIcon
@@ -1522,54 +1786,37 @@ export default function Chat() {
                     size={18}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   />
-                  <span className="ml-2">Sync</span>
+                  <span className="ml-2 hidden md:inline">Sync</span>
                 </Button>
-                <div className="flex items-center -space-x-2 pr-2">
-                  {users.slice(0, 5).map((user) => {
-                    const isOnline = onlineUsers.includes(user.fullName);
-                    return (
-                      <div
-                        key={user.id || user._id}
-                        className="relative group/avatar"
-                        onClick={() => setSelectedUser(user)}
-                      >
-                        <Avatar className="h-8 w-8 border-2 border-background hover:z-10 transition-all duration-200 cursor-pointer">
-                          <AvatarImage src={user.image || undefined} />
-                          <AvatarFallback className="text-xs font-semibold">
-                            {(user.fullName || "")
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {isOnline && (
-                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
-                        )}
-                      </div>
-                    );
-                  })}
-                  {users.length > 5 && (
-                    <div className="relative group/avatar">
-                      <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
-                        <AvatarFallback className="text-xs font-semibold bg-muted">
-                          +{users.length - 5}
+
+                {/* Members Display */}
+                <button
+                  onClick={() => setMembersModalOpen(true)}
+                  className="flex items-center group"
+                >
+                  <div className="flex items-center -space-x-2 pr-2 transition-all duration-300 group-hover:-space-x-1">
+                    {users.slice(0, 4).map((user) => (
+                      <Avatar key={user.id || user._id} className="h-8 w-8 border-2 border-background group-hover:z-10 transition-all duration-200">
+                        <AvatarImage src={user.image || undefined} />
+                        <AvatarFallback className="text-xs font-semibold">
+                          {(user.fullName || "").split(" ").map((n) => n[0]).join("").slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs bg-card text-foreground text-xs rounded py-2 px-3 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 pointer-events-none shadow-lg border z-20">
-                        <p className="font-semibold mb-1">More members:</p>
-                        <p className="font-normal">
-                          {users
-                            .slice(5)
-                            .map((u) => u.fullName)
-                            .join(", ")}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    ))}
+                    {users.length > 4 && (
+                      <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
+                        <AvatarFallback className="text-xs font-semibold bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                          +{users.length - 4}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                  <div className="md:hidden">
+                    <Users size={18} className="text-muted-foreground" />
+                  </div>
+                </button>
               </div>
-            </div>
+            </header>
 
             {/* Search Bar */}
             {showSearch && (
@@ -1580,6 +1827,7 @@ export default function Chat() {
                   className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 py-1"
                   value={chatSearchQuery}
                   onChange={handleChatSearch}
+                  autoFocus
                 />
                 {searchResults.length > 0 && (
                   <span className="text-xs text-muted-foreground">
@@ -1589,7 +1837,7 @@ export default function Chat() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-1.5 h-7 w-7"
+                  className="p-1.5 h-7 w-7 "
                   onClick={handlePrevResult}
                   disabled={searchResults.length === 0}
                 >
@@ -1598,7 +1846,7 @@ export default function Chat() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-1.5 h-7 w-7"
+                  className="p-1.5 h-7 w-7 "
                   onClick={handleNextResult}
                   disabled={searchResults.length === 0}
                 >
@@ -1607,7 +1855,7 @@ export default function Chat() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-1.5 h-7 w-7"
+                  className="p-1.5 h-7 w-7 cursor-pointer"
                   onClick={handleCloseSearch}
                 >
                   <XIcon size={16} />
@@ -1616,59 +1864,106 @@ export default function Chat() {
             )}
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar">
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar"
+            >
               {messages
                 .filter((msg) => !msg.threadId)
                 .map((msg, index) => {
-                const isSender = msg.userId === session?.user?._id;
-                const user = users.find((u) => u._id === msg.userId);
-                const prevMsg = messages[index - 1];
-                const showTimeSeparator =
-                  index === 0 ||
-                  (prevMsg &&
-                    new Date(msg.createdAt).toDateString() !==
-                      new Date(prevMsg.createdAt).toDateString());
+                  const isSender = msg.userId === session?.user?._id;
+                  const user = users.find((u) => u._id === msg.userId);
+                  const prevMsg = messages[index - 1];
+                  const showTimeSeparator =
+                    index === 0 ||
+                    (prevMsg &&
+                      new Date(msg.createdAt).toDateString() !==
+                        new Date(prevMsg.createdAt).toDateString());
 
-                return (
-                  <div
-                    key={msg.id}
-                    ref={(el) => {
-                      messageRefs.current[index] = el;
-                    }}
-                    className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? "bg-primary/10 rounded-lg" : "") : ""}`}
-                  >
-                    {showTimeSeparator && (
-                      <div className="flex items-center justify-center my-4">
-                        <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
-                          {new Date(msg.createdAt).toLocaleDateString([], {
-                            weekday: "long",
-                            month: "short",
-                            day: "numeric",
-                          })}
+                  return (
+                    <div
+                      key={msg.id}
+                      ref={(el) => {
+                        messageRefs.current[index] = el;
+                      }}
+                      className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? "bg-primary/10 rounded-lg" : "") : ""}`}
+                    >
+                      {showTimeSeparator && (
+                        <div className="flex items-center justify-center my-4">
+                          <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
+                            {new Date(msg.createdAt).toLocaleDateString([], {
+                              weekday: "long",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    <MessageBubble
-                      msg={msg}
-                      isSender={isSender}
-                      user={user}
-                      showTime={true}
-                      openDocPreview={openDocPreview}
-                      openLightbox={openLightbox}
-                      handleReaction={handleReaction}
-                      onAlertClick={handleAlertClick}
-                      onReactionClick={handleReactionClick}
-                      onReply={handleReply}
-                      onDelete={handleDeleteMessage}
-                      onStartThread={handleStartThread}
-                      onScrollToMessage={handleScrollToMessage}
-                      sendReadReceipt={sendReadReceipt}
-                    />
-                  </div>
-                );
-              })}
+                      )}
+                      <MessageBubble
+                        msg={msg}
+                        isSender={isSender}
+                        user={user}
+                        showTime={true}
+                        openDocPreview={openDocPreview}
+                        openLightbox={openLightbox}
+                        handleReaction={handleReaction}
+                        onAlertClick={handleAlertClick}
+                        onReactionClick={handleReactionClick}
+                        onReply={handleReply}
+                        onDelete={handleDeleteMessage}
+                        onStartThread={handleStartThread}
+                        onScrollToMessage={handleScrollToMessage}
+                        sendReadReceipt={sendReadReceipt}
+                        voiceUploadProgress={voiceUploadProgress}
+                      />
+                    </div>
+                  );
+                })}
               <div ref={bottomRef} />
             </div>
+
+            {showScrollToBottom && (
+              <button
+                onClick={() => {
+                  if (messagesContainerRef.current) {
+                    messagesContainerRef.current.scrollTo({
+                      top: messagesContainerRef.current.scrollHeight,
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+                className="fixed bottom-24 right-8 bg-primary text-white rounded-full p-3 shadow-lg z-50 animate-bounce"
+              >
+                <ChevronDownIcon size={20} />
+              </button>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            <Dialog
+              open={showDeleteConfirm}
+              onOpenChange={setShowDeleteConfirm}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Are you sure?</DialogTitle>
+                </DialogHeader>
+                <DialogDescription>
+                  This action will permanently delete the message. This cannot
+                  be undone.
+                </DialogDescription>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Cancel
+                  </Button>{" "}
+                  <Button variant="destructive" onClick={confirmDeleteMessage}>
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Typing Indicator */}
             <div className="h-6 px-4 pb-2 flex items-center">
@@ -1681,9 +1976,9 @@ export default function Chat() {
             </div>
 
             {/* Message Input */}
-            <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4">
+            <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4 dark:border-gray-700/50 dark:bg-transparent">
               {replyingTo && (
-                <div className="mb-2 p-2 border-l-2 border-primary bg-background/50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                  <div className="mb-2 p-2 border-l-2 border-primary bg-background/50 dark:bg-gray-800/50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2 overflow-hidden">
                       {replyingTo.file && !Array.isArray(replyingTo.file) && (
@@ -1735,7 +2030,7 @@ export default function Chat() {
                 </div>
               )}
               {stagedFiles.length > 0 && (
-                <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50">
+                <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50 dark:bg-gray-800/50">
                   <p className="text-sm font-semibold mb-2 px-2">
                     Attached Files
                   </p>
@@ -1798,7 +2093,7 @@ export default function Chat() {
               )}
 
               <div className="relative">
-                <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
+                <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/50 dark:border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -1806,148 +2101,187 @@ export default function Chat() {
                     className="hidden"
                     multiple
                   />
-                  <textarea
-                    ref={textareaRef}
-                    value={text}
-                    onChange={handleTyping}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type your message..."
-                    className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32"
-                    rows={1}
-                  />
-                  <div className="flex items-center space-x-1 ml-3">
-                    {/* EMOJI BUTTON - Fixed */}
-                    <div className="relative">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      >
-                        <SmileIcon
-                          size={18}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                        />
-                      </Button>
-
-                      {/* FIXED EMOJI PICKER POSITIONING */}
-                      {showEmojiPicker && (
-                        <div
-                          ref={emojiPickerRef}
-                          className="absolute bottom-full right-0 mb-2 z-1000 shadow-xl border border-border/50 rounded-2xl overflow-hidden"
-                          style={{ width: "min(320px, 90vw)" }}
-                        >
-                          <EmojiPicker
-                            onEmojiClick={handleEmojiClick}
-                            height={350}
-                            width="100%"
-                            theme={Theme.AUTO}
-                          />
+                  {recordingState === 'idle' ? (
+                    <textarea
+                      ref={textareaRef}
+                      value={text}
+                      onChange={handleTyping}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type your message..."
+                      className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32"
+                      rows={1}
+                    />
+                  ) : (
+                    <div className="w-full h-[2.125rem] flex items-center gap-4">
+                      {recordingState !== 'sending' && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground" onClick={handleCancelRecording}>
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                      <LiveAudioVisualizer stream={recordingStream} isRecording={recordingState === 'recording'} isSending={recordingState === 'sending'} />
+                      {recordingState === 'sending' && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Sending…
                         </div>
                       )}
+                      {recordingState === 'paused' && (
+                        <div className="text-sm text-muted-foreground animate-pulse">Paused</div>
+                      )}
                     </div>
+                  )}
+                  <div className="flex items-center space-x-1 ml-3">
+                    {recordingState === 'idle' && (
+                      <>
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          >
+                            <SmileIcon
+                              size={18}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            />
+                          </Button>
+                          {showEmojiPicker && (
+                            <div
+                              ref={emojiPickerRef}
+                              className="absolute bottom-full right-0 mb-2 z-1000 shadow-xl border border-border/50 rounded-2xl overflow-hidden"
+                              style={{ width: "min(320px, 90vw)" }}
+                            >
+                              <EmojiPicker
+                                onEmojiClick={handleEmojiClick}
+                                height={350}
+                                width="100%"
+                                theme={Theme.AUTO}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <PaperclipIcon
+                            size={18}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group"
+                          onClick={() => setShowAlertModal(true)}
+                        >
+                          <BellIcon
+                            size={18}
+                            className="text-red-500 group-hover:text-red-600 transition-colors"
+                          />
+                        </Button>
+                      </>
+                    )}
 
-                    {/* Rest of your buttons */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <PaperclipIcon
-                        size={18}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 rounded-xl hover:bg-red-500/10 transition-all duration-200 group"
-                      onClick={() => setShowAlertModal(true)}
-                    >
-                      <BellIcon
-                        size={18}
-                        className="text-red-500 group-hover:text-red-600 transition-colors"
-                      />
-                    </Button>
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={
-                        (!text.trim() && stagedFiles.length === 0) ||
-                        isUploading
-                      }
-                      size="sm"
-                      className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                      <SendIcon size={18} />
-                    </Button>
+                    {text.trim() || stagedFiles.length > 0 ? (
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={isUploading}
+                        size="sm"
+                        className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50"
+                      >
+                        <SendIcon size={18} />
+                      </Button>
+                    ) : recordingState === 'recording' || recordingState === 'paused' ? (
+                      <>
+                        <Button onClick={handlePauseRecording} size="sm" variant="ghost" className="h-9 w-9 p-0 rounded-full">
+                          {recordingState === 'recording' ? <PauseIcon size={18} /> : <MicIcon size={18} />}
+                        </Button>
+                        <Button onClick={handleSendVoiceMessage} size="sm" className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg" disabled={recordingState === 'paused'}>
+                          <SendIcon size={18} />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        onClick={handleToggleRecording}
+                        size="sm"
+                        variant="ghost"
+                        className="h-9 w-9 p-0 rounded-full transition-all duration-300"
+                      >
+                        <MicIcon size={18} />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-        <AnimatePresence>
-          {activeThreadId && (
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: "28rem" }}
-              exit={{ width: 0 }}
-              transition={{ duration: 0.3 }}
-              className="overflow-hidden"
-            >
-              <ThreadView
-                isOpen={!!activeThreadId}
-                onClose={() => setActiveThreadId(null)}
-                threadId={activeThreadId}
-                messages={messages}
-                onReply={handleReplyInThread}
-                MessageBubbleComponent={MessageBubble}
-              />
-            </motion.div>
+          <AnimatePresence>
+            {activeThreadId && (
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "28rem" }}
+                exit={{ width: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <ThreadView
+                  isOpen={!!activeThreadId}
+                  onClose={() => setActiveThreadId(null)}
+                  threadId={activeThreadId}
+                  messages={messages}
+                  onReply={handleReplyInThread}
+                  MessageBubbleComponent={MessageBubble}
+                  sendReadReceipt={sendReadReceipt}
+                  allUsers={users}
+                  className="bg-background/70 dark:bg-gray-900/80 backdrop-blur-lg"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!activeThreadId && (
+            <div className="hidden lg:block w-72 backdrop-blur-lg bg-card/80 dark:bg-gray-900/50 border-l border-border/50 dark:border-gray-700/50 overflow-y-auto">
+              {/* AI Summary Panel */}
+              <div className="p-4 border-b border-border/30 dark:border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-foreground flex items-center">
+                    <div className="p-1.5 bg-primary/10 rounded-lg mr-2 border border-primary/20">
+                      <BellIcon className="h-4 w-4 text-primary" />
+                    </div>
+                    AI Assistant
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-1.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                  >
+                    <ChevronDownIcon
+                      size={16}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    />
+                  </Button>
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="backdrop-blur-sm bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 shadow-sm dark:bg-primary/10 dark:border-primary/20">
+                  <h4 className="font-semibold text-foreground mb-3 flex items-center">
+                    <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></div>
+                    Conversation Summary
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Patient in Room 302 (Mohammed Al-Farsi, 58) experienced a
+                    cardiac event with dropping blood pressure and irregular
+                    heartbeat. Emergency response team stabilized the patient.
+                    Current plan is to transfer to ICU for monitoring.
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
-
-        {!activeThreadId && (
-          <div className="hidden lg:block w-72 backdrop-blur-lg bg-card/80 border-l border-border/50 overflow-y-auto">
-            {/* AI Summary Panel */}
-            <div className="p-4 border-b border-border/30">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-foreground flex items-center">
-                  <div className="p-1.5 bg-primary/10 rounded-lg mr-2 border border-primary/20">
-                    <BellIcon className="h-4 w-4 text-primary" />
-                  </div>
-                  AI Assistant
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-1.5 rounded-xl hover:bg-accent/50 transition-all duration-200"
-                >
-                  <ChevronDownIcon
-                    size={16}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  />
-                </Button>
-              </div>
-            </div>
-            <div className="p-4">
-              <div className="backdrop-blur-sm bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 shadow-sm">
-                <h4 className="font-semibold text-foreground mb-3 flex items-center">
-                  <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></div>
-                  Conversation Summary
-                </h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Patient in Room 302 (Mohammed Al-Farsi, 58) experienced a
-                  cardiac event with dropping blood pressure and irregular
-                  heartbeat. Emergency response team stabilized the patient.
-                  Current plan is to transfer to ICU for monitoring.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         </div>
 
         {/* Critical Alert Modal */}
@@ -1992,6 +2326,14 @@ export default function Chat() {
           isOpen={isCreateChannelModalOpen}
           onClose={() => setCreateChannelModalOpen(false)}
           onChannelCreated={fetchChannels}
+        />
+
+        <ChannelMembersModal
+          isOpen={isMembersModalOpen}
+          onClose={() => setMembersModalOpen(false)}
+          users={users}
+          onlineUserIds={onlineUsers}
+          onViewProfile={(user) => setSelectedUser(user)}
         />
 
         <ManageChannelModal

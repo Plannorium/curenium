@@ -1,7 +1,7 @@
 "use client";
 import { Navbar } from '@/app/(dashboard)/components/Navbar';
 import { Sidebar } from '@/app/(dashboard)/components/Sidebar';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import Chat from '@/app/(dashboard)/components/Chat';
 import Alerts from '@/app/(dashboard)/components/Alerts';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
@@ -47,19 +47,21 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen bg-dark-100 dark:bg-dark-900">
       <div ref={sidebarRef}>
-        <Sidebar 
-          isOpen={isSidebarOpen} 
-          isCollapsed={isCollapsed} 
-          toggleCollapse={toggleCollapse} 
-          toggleSidebar={toggleSidebar} // Add this line
-          currentView={currentView}
-          onViewChange={handleViewChange}
-        />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Sidebar 
+            isOpen={isSidebarOpen} 
+            isCollapsed={isCollapsed} 
+            toggleCollapse={toggleCollapse} 
+            toggleSidebar={toggleSidebar}
+          />
+        </Suspense>
       </div>
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 p-2 md:px-4">
-          {views[currentView] || children}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 px-2 py-1 md:px-4 md:pl-7 md:py-3">
+          <Suspense fallback={<div>Loading...</div>}>
+            {views[currentView] || children}
+          </Suspense>
         </main>
       </div>
     </div>

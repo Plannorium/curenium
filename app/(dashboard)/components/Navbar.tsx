@@ -12,7 +12,8 @@ import {
   User,
   CreditCard,
   Settings,
-  Users
+  Users as UsersIcon,
+  PlusCircle
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import {
@@ -43,6 +44,11 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
   const { data: session } = useSession();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -63,178 +69,161 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   }, [session]);
 
   return (
-    <header className="relative backdrop-blur-xl bg-background/95 border-b border-border/50 py-4 px-6 flex items-center justify-between shadow-lg">
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
-      
-      <div className="relative flex items-center">
+    <header className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 py-3 px-6 flex items-center justify-between shadow-sm">
+      <div className="flex items-center">
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={toggleSidebar}
-          className="mr-4 p-2 rounded-lg hover:bg-accent/50 lg:hidden transition-all duration-200 backdrop-blur-sm"
+          className="mr-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
         >
-          <MenuIcon className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
+          <MenuIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         </Button>
-        <div className="flex items-center group">
-          <span className="text-xl font-bold text-foreground tracking-tight">Curenium</span>
-          <div className="h-1.5 w-6 bg-gradient-to-r from-primary to-primary/70 ml-2 rounded-full shadow-sm group-hover:shadow-primary/25 transition-all duration-300"></div>
+        <div className="relative hidden md:flex items-center bg-gray-100 dark:bg-gray-900 border border-transparent rounded-lg px-4 py-2 flex-1 max-w-xs hover:border-gray-300 dark:hover:border-gray-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+          <SearchIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-3" />
+          <input
+            type="text"
+            placeholder="Search..."
+            className="bg-transparent border-none focus:outline-none text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full text-sm font-medium"
+          />
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative hidden md:flex items-center backdrop-blur-sm bg-background/50 border border-border/60 rounded-xl px-4 py-2.5 flex-1 max-w-lg mx-6 hover:border-border transition-all duration-200 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10">
-        <SearchIcon className="h-4 w-4 text-muted-foreground mr-3 transition-colors" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full text-sm font-medium"
-        />
-      </div>
+      <div className="flex items-center space-x-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <PlusCircle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" align="end">
+            <DropdownMenuItem>New Patient</DropdownMenuItem>
+            <DropdownMenuItem>New Appointment</DropdownMenuItem>
+            <DropdownMenuItem>New Task</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      {/* Right Side Actions */}
-      <div className="relative flex items-center space-x-2">
-        {/* Theme Toggle */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200 backdrop-blur-sm group"
+          className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
         >
-          {theme === 'dark' ? (
-            <SunIcon className="h-5 w-5 text-muted-foreground group-hover:text-amber-500 transition-colors duration-200" />
+          {mounted && theme === 'dark' ? (
+            <SunIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           ) : (
-            <MoonIcon className="h-5 w-5 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
+            <MoonIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           )}
         </Button>
 
-        {/* Notifications */}
         <Button
           variant="ghost"
-          size="sm"
-          className="relative p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200 backdrop-blur-sm group"
+          size="icon"
+          className="relative rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
         >
-          <BellIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
-          <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full shadow-lg animate-pulse">
-            <span className="absolute inset-0 h-2.5 w-2.5 bg-red-500 rounded-full animate-ping opacity-75"></span>
-          </span>
+          <BellIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full"></span>
         </Button>
 
-        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="relative h-10 w-10 rounded-full hover:bg-accent/50 transition-all duration-200 backdrop-blur-sm ring-2 ring-transparent hover:ring-border/50"
+              className="relative h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 p-0"
             >
-              <Avatar className="h-9 w-9 ring-2 ring-border/20 transition-all duration-200 hover:ring-primary/30">
+              <Avatar className="h-9 w-9">
                 <AvatarImage 
                   src={userData?.image ?? session?.user?.image ?? ''} 
                   alt={userData?.fullName ?? session?.user?.name ?? session?.user?.email ?? ''} 
-                  className="object-cover"
                 />
-                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm border border-primary/20">
+                <AvatarFallback className="bg-primary text-white">
                   {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
-            className="w-64 backdrop-blur-xl bg-popover/95 border-border/50 shadow-2xl" 
-            align="end" 
-            forceMount
+            className="w-64 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" 
+            align="end"
           >
-            {/* User Info Header */}
             <DropdownMenuLabel className="font-normal p-4">
               <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10 ring-2 ring-border/20">
+                <Avatar className="h-10 w-10">
                   <AvatarImage 
                     src={userData?.image ?? session?.user?.image ?? ''} 
-                    className="object-cover"
                   />
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  <AvatarFallback className="bg-primary text-white">
                     {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col space-y-1 min-w-0">
-                  <p className="text-sm font-semibold leading-none text-foreground truncate">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     {userData?.fullName || session?.user?.name || session?.user?.email}
                   </p>
-                  {session?.user?.name && (
-                    <p className="text-xs leading-none text-muted-foreground truncate">
-                      {userData?.email || session?.user?.email}
-                    </p>
-                  )}
-                  <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20 w-fit">
-                    Online
-                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {userData?.email || session?.user?.email}
+                  </p>
                 </div>
               </div>
             </DropdownMenuLabel>
             
-            <DropdownMenuSeparator className="bg-border/50" />
+            <DropdownMenuSeparator className="bg-gray-200 dark:border-gray-800" />
             
             <DropdownMenuGroup className="p-1">
               <DropdownMenuItem asChild>
                 <Link 
                   href="/dashboard/settings/account"
-                  className="flex items-center px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-all duration-200 cursor-pointer group"
+                  className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <div className="p-1.5 bg-blue-500/10 rounded-md mr-3 group-hover:bg-blue-500/20 transition-colors">
-                    <User className="h-4 w-4 text-blue-600 dark:text-blue-500" />
-                  </div>
-                  <span className="font-medium">Profile</span>
+                  <User className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
+                  <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
               
               <DropdownMenuItem asChild>
                 <Link 
                   href="/dashboard/settings/billing"
-                  className="flex items-center px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-all duration-200 cursor-pointer group"
+                  className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <div className="p-1.5 bg-green-500/10 rounded-md mr-3 group-hover:bg-green-500/20 transition-colors">
-                    <CreditCard className="h-4 w-4 text-green-600 dark:text-green-500" />
-                  </div>
-                  <span className="font-medium">Billing</span>
+                  <CreditCard className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
+                  <span>Billing</span>
                 </Link>
               </DropdownMenuItem>
               
               <DropdownMenuItem asChild>
                 <Link 
                   href="/dashboard/settings"
-                  className="flex items-center px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-all duration-200 cursor-pointer group"
+                  className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <div className="p-1.5 bg-purple-500/10 rounded-md mr-3 group-hover:bg-purple-500/20 transition-colors">
-                    <Settings className="h-4 w-4 text-purple-600 dark:text-purple-500" />
-                  </div>
-                  <span className="font-medium">Settings</span>
+                  <Settings className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
+                  <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
               
               <DropdownMenuItem asChild>
                 <Link 
                   href="/dashboard/organization/team"
-                  className="flex items-center px-3 py-2.5 rounded-lg hover:bg-accent/50 transition-all duration-200 cursor-pointer group"
+                  className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <div className="p-1.5 bg-amber-500/10 rounded-md mr-3 group-hover:bg-amber-500/20 transition-colors">
-                    <Users className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                  </div>
-                  <span className="font-medium">Team</span>
+                  <UsersIcon className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
+                  <span>Team</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             
-            <DropdownMenuSeparator className="bg-border/50" />
+            <DropdownMenuSeparator className="bg-gray-200 dark:border-gray-800" />
             
             <div className="p-1">
               <DropdownMenuItem 
                 onClick={() => signOut()}
-                className="flex items-center px-3 py-2.5 rounded-lg hover:bg-red-500/10 transition-all duration-200 cursor-pointer group text-red-600 dark:text-red-500"
+                className="flex items-center px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-600 dark:text-red-500 cursor-pointer"
               >
-                <div className="p-1.5 bg-red-500/10 rounded-md mr-3 group-hover:bg-red-500/20 transition-colors">
-                  <LogOut className="h-4 w-4" />
-                </div>
-                <span className="font-medium">Log out</span>
+                <LogOut className="h-4 w-4 mr-3" />
+                <span>Log out</span>
               </DropdownMenuItem>
             </div>
           </DropdownMenuContent>

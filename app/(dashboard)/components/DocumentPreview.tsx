@@ -95,22 +95,22 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl lg:max-w-6xl w-full max-h-[90vh] overflow-auto transition-transform transform hover:scale-105" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg max-w-4xl lg:max-w-6xl w-full max-h-[90vh] overflow-auto transition-transform transform hover:scale-105" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold text-gray-800">{fileName}</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">{fileName}</h2>
           <div className="flex items-center space-x-2">
-            <button onClick={handleDownload} className="text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded p-2 transition duration-200">
+            <button onClick={handleDownload} className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded p-2 transition duration-200">
               <DownloadIcon className="w-5 h-5" />
             </button>
-            <button onClick={onClose} className="text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded p-2 transition duration-200">
+            <button onClick={onClose} className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded p-2 transition duration-200">
               <XIcon className="w-5 h-5" />
             </button>
           </div>
         </div>
-        <div className="max-h-[80vh] overflow-y-auto border-t border-gray-200 pt-4">
+        <div className="max-h-[80vh] overflow-y-auto border-t border-gray-200 dark:border-gray-700 pt-4">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
-              <p className="text-gray-600">Loading document...</p>
+              <p className="text-gray-600 dark:text-gray-400">Loading document...</p>
             </div>
           ) : signedUrl ? (
             isPdf ? (
@@ -134,18 +134,18 @@ const DocumentPreview = ({ file, onClose }: DocumentPreviewProps) => {
                 This is an embedded <a target='_blank' href='http://office.com'>Microsoft Office</a> document, powered by <a target='_blank' href='http://office.com/webapps'>Office Online</a>.
               </iframe>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
-                <p className="text-lg text-gray-700 font-medium">Unsupported File Type</p>
-                <p className="text-gray-500 mt-2">Preview is not available for this file type.</p>
+              <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-lg text-gray-700 dark:text-gray-200 font-medium">Unsupported File Type</p>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">Preview is not available for this file type.</p>
                 <button onClick={handleDownload} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
                   Download File
                 </button>
               </div>
             )
           ) : (
-            <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg">
-              <p className="text-lg text-gray-700 font-medium">Preview Unavailable</p>
-              <p className="text-gray-500 mt-2">Could not load the document preview.</p>
+            <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-lg text-gray-700 dark:text-gray-200 font-medium">Preview Unavailable</p>
+              <p className="text-gray-500 dark:text-gray-400 mt-2">Could not load the document preview.</p>
               <button onClick={handleDownload} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 Download File
               </button>

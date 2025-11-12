@@ -39,8 +39,8 @@ export default function ProfileForm() {
         } else {
           console.error("Failed to fetch profile");
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
+      } catch (_error) {
+        console.error("Error fetching profile:", _error);
       }
     }
 
@@ -62,7 +62,7 @@ export default function ProfileForm() {
       } else {
         toast.error("Failed to update profile.");
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("An error occurred while updating profile.");
     }
   }

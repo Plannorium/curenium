@@ -167,7 +167,7 @@ const ShiftView = () => {
           <AddShiftModal onShiftAdded={fetchShifts}>
             <Button 
               size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm cursor-pointer"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Shift
@@ -177,12 +177,12 @@ const ShiftView = () => {
       </div>
 
       {/* Date Navigation */}
-      <div className="bg-card border-b border-border px-6 py-3">
+      <div className="bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-b px-6 py-3">
         <div className="flex items-center justify-center gap-4">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" 
+            className="h-8 w-8 hover:bg-primary-50 dark:hover:bg-primary-900/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" 
             onClick={() => navigateDate('prev')}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -198,7 +198,7 @@ const ShiftView = () => {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" 
+            className="h-8 w-8 hover:bg-primary-50 dark:hover:bg-primary-900/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" 
             onClick={() => navigateDate('next')}
           >
             <ChevronRight className="h-4 w-4" />
@@ -208,7 +208,7 @@ const ShiftView = () => {
       
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Calendar Section */}
-        <div className="w-full md:w-1/3 lg:w-2/5 border-b md:border-b-0 md:border-r border-border p-0 overflow-y-auto mt-3 flex justify-center">
+        <div className="w-full md:w-1/3 lg:w-2/5 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-b md:border-b-0 md:border-r p-0 overflow-y-auto pt-2.5 flex justify-center">
           <div className="shift-calendar">
             <DayPicker
               mode="single"
@@ -224,15 +224,15 @@ const ShiftView = () => {
                 caption: "flex justify-center pt-1 relative items-center",
                 caption_label: "text-xs font-medium text-foreground",
                 nav: "hidden",
-                nav_button: "h-4 w-4 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-md transition-colors",
+                nav_button: "h-4 w-4 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/50 rounded-md transition-colors",
                 nav_button_previous: "absolute left-1",
                 nav_button_next: "absolute right-1",
                 table: "w-full border-collapse space-y-1",
                 head_row: "flex",
                 head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.6rem] justify-center",
                 row: "flex w-full mt-1",
-                cell: "relative p-0 text-center text-[0.7rem] focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary-50 dark:[&:has([aria-selected])]:bg-primary-950/30 [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
-                day: "h-2 w-2 p-0 font-normal aria-selected:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-md transition-colors",
+                cell: "relative p-0 text-center text-[0.7rem] focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary-50 dark:[&:has([aria-selected])]:bg-primary-900/50 [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
+                day: "h-2 w-2 p-0 font-normal aria-selected:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/50 rounded-md transition-colors",
                 day_range_end: "day-range-end",
                 day_selected: "bg-primary-600 text-primary-foreground hover:bg-primary-600 hover:text-primary-foreground focus:bg-primary-600 focus:text-primary-foreground",
                 day_today: "bg-accent text-accent-foreground font-semibold",
@@ -264,7 +264,7 @@ const ShiftView = () => {
         </div>
 
           {/* Shifts List */}
-        <div className="w-full md:w-2/3 lg:w-3/5 xl:w-1/2 border-b md:border-b-0 md:border-r border-border overflow-y-auto p-2">
+        <div className="w-full md:w-2/3 lg:w-3/5 xl:w-1/2 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-b md:border-b-0 md:border-r overflow-y-auto p-2">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">Today&apos;s Shifts</h2>
@@ -353,7 +353,7 @@ const ShiftView = () => {
                 <h3 className="text-lg font-medium text-foreground mb-2">No shifts scheduled</h3>
                 <p className="text-muted-foreground mb-6">No shifts are scheduled for this day.</p>
                 <AddShiftModal onShiftAdded={fetchShifts}>
-                  <Button variant="outline" size="sm">
+                  <Button className='cursor-pointer' variant="outline" size="sm">
                     <Plus className="w-4 h-4 mr-2" />
                     Schedule Shift
                   </Button>
@@ -364,7 +364,7 @@ const ShiftView = () => {
         </div>
 
         {/* On-Call Team Panel */}
-        <div className="hidden xl:block w-1/4 border-l border-border bg-muted/20 overflow-y-auto">
+        <div className="hidden xl:block w-1/4 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-l overflow-y-auto">
           <div className="p-6">
             <Card className="border-0 shadow-none bg-transparent">
               <CardHeader className="px-0 pb-4">

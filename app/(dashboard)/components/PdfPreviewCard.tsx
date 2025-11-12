@@ -51,14 +51,14 @@ export default function PdfPreviewCard({ file, onPreview }: Props) {
             )}
           </div>
         ) : (
-          <div className="w-32 h-40 flex items-center justify-center bg-gray-100 rounded-md">
+          <div className="w-32 h-40 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-md">
             <svg /* pdf icon */ width="40" height="40" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/></svg>
           </div>
         )}
 
         <div>
-          <div className="text-sm font-semibold truncate max-w-[18rem]">{filename}</div>
-          <div className="text-xs text-gray-500">Click to preview</div>
+          <div className="text-sm font-semibold truncate max-w-[18rem] dark:text-gray-100">{filename}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Click to preview</div>
         </div>
       </div>
   );

@@ -1,7 +1,19 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HomeIcon, MessageSquareIcon, BellIcon, CalendarIcon, UsersIcon, SettingsIcon, HeartPulseIcon, ClipboardListIcon, LogOutIcon, ChevronLeftIcon, XIcon } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import {
+  HomeIcon,
+  MessageSquareIcon,
+  BellIcon,
+  CalendarIcon,
+  UsersIcon,
+  SettingsIcon,
+  LogOutIcon,
+  ChevronLeftIcon,
+  XIcon,
+  Briefcase
+} from 'lucide-react';
 import { useRole } from '@/components/auth/RoleProvider';
 
 interface SidebarProps {
@@ -9,15 +21,12 @@ interface SidebarProps {
   isCollapsed: boolean;
   toggleCollapse: () => void;
   toggleSidebar: () => void;
-  currentView: string;
-  onViewChange: (view: string) => void;
 }
 
 interface NavItem {
   name: string;
   icon: React.ReactNode;
-  path?: string;
-  view?: string;
+  path: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -25,66 +34,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   toggleCollapse,
   toggleSidebar,
-  currentView,
-  onViewChange
 }) => {
   const { role } = useRole();
+  const pathname = usePathname();
 
-  const navItems: NavItem[] = [{
-    name: 'Home',
-    icon: <HomeIcon size={20} />,
-    path: '/dashboard'
-  }, {
-    name: 'Chat',
-    icon: <MessageSquareIcon size={20} />,
-    view: 'chat'
-  }, {
-    name: 'Alerts',
-    icon: <BellIcon size={20} />,
-    view: 'alerts'
-  }, {
-    name: 'Shifts & Notes',
-    icon: <CalendarIcon size={20} />,
-    view: 'shifts'
-  }];
+  const navItems: NavItem[] = [
+    { name: 'Home', icon: <HomeIcon size={20} />, path: '/dashboard' },
+    { name: 'Chat', icon: <MessageSquareIcon size={20} />, path: '/dashboard/chat' },
+    { name: 'Alerts', icon: <BellIcon size={20} />, path: '/dashboard/alerts' },
+    { name: 'Shifts', icon: <CalendarIcon size={20} />, path: '/dashboard/shifts' },
+    { name: 'Patients', icon: <UsersIcon size={20} />, path: '/dashboard/patients' },
+  ];
 
   if (role === 'admin') {
-    navItems.push({
-      name: 'Admin',
-      icon: <UsersIcon size={20} />,
-      view: 'admin'
-    });
+    navItems.push({ name: 'Admin', icon: <Briefcase size={20} />, path: '/dashboard/admin' });
   }
 
-  const channels = [{
-    name: 'Emergency Ward',
-    icon: <HeartPulseIcon size={16} />,
-    color: 'text-red-500'
-  }, {
-    name: 'Cardiology',
-    icon: <HeartPulseIcon size={16} />,
-    color: 'text-blue-500'
-  }, {
-    name: 'Pediatrics',
-    icon: <HeartPulseIcon size={16} />,
-    color: 'text-purple-500'
-  }, {
-    name: 'General',
-    icon: <ClipboardListIcon size={16} />,
-    color: 'text-green-500'
-  }];
+  const teams = [
+    { name: 'Clinical Team', color: 'bg-blue-500' },
+    { name: 'Cardiology', color: 'bg-red-500' },
+    { name: 'Pediatrics', color: 'bg-purple-500' },
+  ];
 
   return (
     <aside 
-      className={`fixed inset-y-0 left-0 z-50 backdrop-blur-xl bg-background/95 border-r border-border/50 shadow-2xl transition-all duration-300 ease-in-out flex flex-col
-      ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
+      className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 shadow-lg transition-all duration-300 ease-in-out flex flex-col
+      ${isCollapsed ? 'lg:w-24' : 'lg:w-64'}
       ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full'} lg:translate-x-0
     `}>
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
-      
-      <div className="relative flex-1 overflow-y-auto overflow-x-hidden p-4">
-        {/* Header with Logo and Collapse Button */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
         <div className={`mb-8 flex items-center ${isCollapsed ? 'lg:justify-center' : 'justify-between'}`}>
           <div className="flex items-center">
             <Image
@@ -94,136 +72,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
               height={32}
               className={`transition-all duration-300 h-8 ${isCollapsed ? 'w-8' : 'w-auto'}`}
             />
-            {!isCollapsed && (
-              <div className="ml-2 h-1 w-4 bg-gradient-to-r from-primary to-primary/70 rounded-full shadow-sm"></div>
-            )}
           </div>
           <button 
             onClick={toggleCollapse} 
-            className="hidden lg:flex items-center justify-center p-2 rounded-xl hover:bg-accent/50 backdrop-blur-sm transition-all duration-200 group"
+            className="hidden lg:flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <ChevronLeftIcon 
               size={18} 
-              className={`text-muted-foreground group-hover:text-foreground transition-all duration-300 ${isCollapsed ? 'rotate-180' : ''}`} 
+              className={`text-gray-500 dark:text-gray-400 transition-all duration-300 ${isCollapsed ? 'rotate-180' : ''}`} 
             />
           </button>
           <button 
             onClick={toggleSidebar} 
-            className="lg:hidden items-center justify-center p-2 rounded-xl hover:bg-accent/50 backdrop-blur-sm transition-all duration-200 group"
+            className="lg:hidden items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <XIcon 
               size={18} 
-              className={`text-muted-foreground group-hover:text-foreground transition-all duration-300`} 
+              className={`text-gray-500 dark:text-gray-400 transition-all duration-300`} 
             />
           </button>
         </div>
         
-        {/* Main Navigation */}
         <nav className="space-y-2 px-2">
           {navItems.map(item => {
-            const isActive = currentView === item.view;
-            
-            if (item.path) {
-              return (
-                <Link 
-                  key={item.name} 
-                  href={item.path} 
-                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-[1.02] ${isCollapsed ? 'lg:justify-center' : ''} ${
-                    isActive 
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg backdrop-blur-sm' 
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground backdrop-blur-sm'
-                  }`}
-                >
-                  <span className={`transition-colors duration-200 ${
-                    isActive 
-                      ? 'text-primary' 
-                      : 'text-muted-foreground group-hover:text-primary'
-                  }`}>
-                    {item.icon}
-                  </span>
-                  <span className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
-                    {item.name}
-                  </span>
-                  {isActive && !isCollapsed && (
-                    <div className="ml-auto h-2 w-2 bg-primary rounded-full shadow-sm"></div>
-                  )}
-                </Link>
-              );
-            }
-            
+            const isActive = pathname === item.path;
             return (
-              <button 
+              <Link
                 key={item.name} 
-                onClick={() => item.view && onViewChange(item.view)}
-                className={`group flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-[1.02] ${isCollapsed ? 'lg:justify-center' : ''} ${
+                href={item.path}
+                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''} ${
                   isActive 
-                    ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg backdrop-blur-sm' 
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground backdrop-blur-sm'
+                    ? 'bg-primary/10 text-primary' 
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
-                <span className={`transition-colors duration-200 ${
-                  isActive 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground group-hover:text-primary'
-                }`}>
+                <span className={`${isActive ? 'text-primary' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'}`}>
                   {item.icon}
                 </span>
                 <span className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
                   {item.name}
                 </span>
-                {isActive && !isCollapsed && (
-                  <div className="ml-auto h-2 w-2 bg-primary rounded-full shadow-sm animate-pulse"></div>
-                )}
-              </button>
+              </Link>
             );
           })}
         </nav>
 
-        {/* Channels Section */}
         <div className={`mt-8 px-2`}>
-          <h3 className={`px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider ${isCollapsed ? 'lg:hidden' : ''}`}>
-            Channels
+          <h3 className={`px-3 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? 'lg:hidden' : ''}`}>
+            Teams
           </h3>
           <div className="mt-3 space-y-1">
-            {channels.map(channel => (
+            {teams.map(team => (
               <button 
-                key={channel.name} 
-                className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-accent/50 backdrop-blur-sm transition-all duration-200 hover:scale-[1.01] ${isCollapsed ? 'lg:justify-center' : ''}`}
+                key={team.name} 
+                className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
               >
-                <span className={`${channel.color} transition-colors duration-200 group-hover:scale-110 ${isCollapsed ? '' : 'mr-3'}`}>
-                  {channel.icon}
+                <span className={`w-2 h-2 rounded-full ${team.color} ${isCollapsed ? '' : 'mr-3'}`}></span>
+                <span className={`text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white truncate whitespace-nowrap transition-colors duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
+                  {team.name}
                 </span>
-                <span className={`text-muted-foreground group-hover:text-foreground truncate whitespace-nowrap transition-colors duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
-                  {channel.name}
-                </span>
-                {!isCollapsed && (
-                  <div className="ml-auto flex items-center">
-                    <div className={`h-1.5 w-1.5 ${channel.color.replace('text-', 'bg-')} rounded-full opacity-60 group-hover:opacity-100 transition-opacity`}></div>
-                  </div>
-                )}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="relative p-4 border-t border-border/30 backdrop-blur-sm">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
         <div className="space-y-1">
           <Link 
-            href="/settings" 
-            className={`group flex items-center px-4 py-3 text-sm font-medium text-muted-foreground rounded-xl hover:bg-accent/50 hover:text-foreground backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] ${isCollapsed ? 'lg:justify-center' : ''}`}
+            href="/dashboard/settings" 
+            className={`group flex items-center px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
           >
-            <SettingsIcon size={18} className="text-muted-foreground group-hover:text-foreground transition-colors duration-200" />
+            <SettingsIcon size={18} className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
             <span className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
               Settings
             </span>
           </Link>
           
           <button 
-            className={`group flex w-full items-center px-4 py-3 text-sm font-medium text-muted-foreground rounded-xl hover:bg-red-500/10 hover:text-red-500 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] ${isCollapsed ? 'lg:justify-center' : ''}`}
+            className={`group flex w-full items-center px-4 py-3 text-sm font-medium text-gray-500 dark:text-gray-400 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
           >
-            <LogOutIcon size={18} className="text-muted-foreground group-hover:text-red-500 transition-colors duration-200" />
+            <LogOutIcon size={18} className="text-gray-400 dark:text-gray-500 group-hover:text-red-500" />
             <span className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
               Logout
             </span>

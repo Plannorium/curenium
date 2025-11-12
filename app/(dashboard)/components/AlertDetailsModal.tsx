@@ -1,80 +1,148 @@
 "use client";
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { BellIcon, XIcon, User, Clock } from 'lucide-react';
+import { X, User, Clock, MessageSquare, Tag, Users, Building } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Alert {
   _id: string;
   level: 'critical' | 'urgent' | 'info';
   message: string;
+  createdAt: string;
   createdBy: {
     _id: string;
     fullName: string;
     image?: string;
   };
-  createdAt: string;
+  // Assuming these fields might be available in the future
+  acknowledgedBy?: string[]; 
+  assignedTo?: string[];
+  channel?: string;
 }
 
 interface AlertDetailsModalProps {
-  alert: Alert;
+  alert: Alert | null;
   onClose: () => void;
 }
 
-const timeSince = (date: Date): string => {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " years ago";
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " months ago";
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " days ago";
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " hours ago";
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " minutes ago";
-    return Math.floor(seconds) + " seconds ago";
+const alertLevelConfig = {
+  critical: {
+    bgColor: 'bg-red-500/10 dark:bg-red-900/20',
+    textColor: 'text-red-500 dark:text-red-400',
+    borderColor: 'border-red-500/20 dark:border-red-500/30',
+    badge: 'bg-red-500/20 text-red-500 dark:text-red-400 border border-red-500/30',
+  },
+  urgent: {
+    bgColor: 'bg-amber-500/10 dark:bg-amber-900/20',
+    textColor: 'text-amber-500 dark:text-amber-400',
+    borderColor: 'border-amber-500/20 dark:border-amber-500/30',
+    badge: 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30',
+  },
+  info: {
+    bgColor: 'bg-blue-500/10 dark:bg-blue-900/20',
+    textColor: 'text-blue-500 dark:text-blue-400',
+    borderColor: 'border-blue-500/20 dark:border-blue-500/30',
+    badge: 'bg-blue-500/20 text-blue-500 dark:text-blue-400 border border-blue-500/30',
+  },
 };
 
-export const AlertDetailsModal: React.FC<AlertDetailsModalProps> = ({ alert, onClose }) => {
-  const alertColors = {
-    critical: 'red',
-    urgent: 'amber',
-    info: 'blue',
-  };
-  const color = alertColors[alert.level];
+const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | React.ReactNode }) => (
+  <div className="flex items-start space-x-3">
+    <Icon className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-1 flex-shrink-0" />
+    <div className="flex-1">
+      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+      <p className="text-sm text-gray-800 dark:text-gray-100 font-semibold">{value}</p>
+    </div>
+  </div>
+);
+
+export const AlertDetailsModal = ({ alert, onClose }: AlertDetailsModalProps) => {
+  if (!alert) return null;
+
+  const config = alertLevelConfig[alert.level];
+  const createdDate = new Date(alert.createdAt);
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <Card className={`max-w-md w-full backdrop-blur-xl bg-card/95 border-${color}-500/50 shadow-2xl shadow-${color}-500/10`} onClick={e => e.stopPropagation()}>
-        <CardHeader className="relative pb-4">
-          <div className="flex justify-between items-center">
-            <CardTitle className={`text-xl font-bold text-foreground flex items-center`}>
-              <div className={`p-2 bg-${color}-500/10 rounded-lg mr-3 border border-${color}-500/20`}>
-                <BellIcon size={20} className={`text-${color}-500`} />
-              </div>
-              Alert Details
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={onClose} className="p-2 rounded-xl hover:bg-accent/50">
-              <XIcon size={18} className="text-muted-foreground" />
-            </Button>
+    <Dialog open={!!alert} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className={`
+        sm:max-w-lg p-0 border-t-4 transition-colors duration-300
+        ${config.borderColor} ${config.bgColor}
+        bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg
+      `}>
+        <DialogHeader className="p-6 pb-4">
+          <DialogTitle className={`flex items-center text-xl font-bold ${config.textColor}`}>
+            Alert Details
+          </DialogTitle>
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </DialogHeader>
+
+        <div className="px-6 pb-6 space-y-6">
+          <div className="p-4 rounded-lg bg-gray-100/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/60">
+            <DetailItem 
+              icon={MessageSquare} 
+              label="Message" 
+              value={alert.message} 
+            />
           </div>
-        </CardHeader>
-        <CardContent className="relative space-y-4">
-          <CardDescription className="capitalize text-lg font-semibold">{alert.level} Alert</CardDescription>
-          <p className="text-base text-foreground leading-relaxed p-4 bg-background/50 border rounded-lg">{alert.message}</p>
-          <div className="flex items-center text-sm text-muted-foreground gap-4 pt-2">
-            <div className="flex items-center gap-2">
-              <User size={14} /> Sent by {alert.createdBy.fullName}
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock size={14} /> {timeSince(new Date(alert.createdAt))}
-            </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <DetailItem 
+              icon={Tag} 
+              label="Level" 
+              value={
+                <span className={`px-2 py-1 rounded-md text-xs font-semibold capitalize ${config.badge}`}>
+                  {alert.level}
+                </span>
+              } 
+            />
+            <DetailItem 
+              icon={Clock} 
+              label="Timestamp" 
+              value={`${createdDate.toLocaleDateString()} ${createdDate.toLocaleTimeString()}`} 
+            />
+            <DetailItem 
+              icon={User} 
+              label="Created By" 
+              value={
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={alert.createdBy.image} alt={alert.createdBy.fullName} />
+                    <AvatarFallback>{alert.createdBy.fullName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <span>{alert.createdBy.fullName}</span>
+                </div>
+              } 
+            />
+            {alert.channel && (
+              <DetailItem 
+                icon={Building} 
+                label="Channel" 
+                value={alert.channel} 
+              />
+            )}
+            {alert.assignedTo && (
+              <DetailItem 
+                icon={Users} 
+                label="Assigned To" 
+                value={alert.assignedTo.join(', ')} 
+              />
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800/60">
+          <Button onClick={onClose} variant="outline" className="w-full sm:w-auto">
+            Close
+          </Button>
+          <Button className="w-full sm:w-auto">
+            Acknowledge
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

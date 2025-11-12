@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Message from '@/models/Message';
 import dbConnect from '@/lib/dbConnect';
 import { getToken } from 'next-auth/jwt';
+import mongoose from 'mongoose';
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -30,10 +31,14 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { messageId } = await req.json() as { messageId: string };
+  const messageId = req.nextUrl.searchParams.get('messageId');
 
   if (!messageId) {
     return NextResponse.json({ error: 'Message ID is required' }, { status: 400 });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    return NextResponse.json({ error: 'Invalid Message ID format' }, { status: 400 });
   }
 
   try {
@@ -47,7 +52,7 @@ export async function DELETE(req: NextRequest) {
     const isOwner = message.userId.toString() === token.sub;
 
     if (!isAdmin && !isOwner) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'You are not authorized to delete this message.' }, { status: 403 });
     }
 
     message.text = '';
@@ -92,7 +97,7 @@ export async function PATCH(req: NextRequest) {
     const isOwner = message.userId.toString() === token.sub;
 
     if (!isOwner) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'You are not authorized to edit this message.' }, { status: 403 });
     }
 
     Object.assign(message, updateData);

@@ -1,20 +1,15 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
-
-export interface INote extends Document {
-  content: string;
-  author: mongoose.Types.ObjectId;
-  shift: mongoose.Types.ObjectId;
-}
-
-const NoteSchema: Schema = new Schema(
-  {
-    content: { type: String, required: true },
-    author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    shift: { type: Schema.Types.ObjectId, ref: 'Shift', required: true },
-  },
-  { timestamps: true }
-);
-
-const Note: Model<INote> = mongoose.models.Note || mongoose.model<INote>('Note', NoteSchema);
-
-export default Note;
+import mongoose, { Schema, models } from "mongoose" ; 
+ 
+ const NoteSchema = new Schema ( 
+   { 
+     orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true  }, 
+     patientId: { type: Schema.Types.ObjectId, ref: "Patient", required: true, index: true  }, 
+     author: { type: Schema.Types.ObjectId, ref: "User", required: true  }, 
+     role: { type: String  }, 
+     content: { type: String, required: true  }, 
+     visibility: { type: String, enum: ["private", "team", "public"], default: "team"  } 
+   }, 
+   { timestamps: true  } 
+ ); 
+ 
+ export default models.Note || mongoose.model("Note", NoteSchema );
