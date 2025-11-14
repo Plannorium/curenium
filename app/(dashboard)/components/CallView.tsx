@@ -12,6 +12,7 @@ import GestureWalkthrough from './GestureWalkthrough';
 import GestureFeedback from './GestureFeedback';
 import { toast } from 'sonner';
 import { GestureOverlay } from './GestureOverlay';
+import { useWindowSize } from '@/hooks/use-window-size';
 
 interface CallViewProps {
   localStream: MediaStream | null;
@@ -150,13 +151,21 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
     setIsPopupOpen(false);
   };
 
-  const buttonSize = variant === 'minimized' ? 'w-10 h-10' : 'w-14 h-14 sm:w-16 sm:h-16';
-  const iconSize = variant === 'minimized' ? 18 : 24;
+  const buttonSize = variant === 'minimized' ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-14 h-14 sm:w-16 sm:h-16';
+  const iconSize = variant === 'minimized' ? 20 : 24;
 
   return (
     <TooltipButton tooltip={isScreenSharing ? 'Screen sharing options' : 'Share screen'} forceHide={isPopupOpen}>
       <div className="relative" ref={popupRef}>
-        <Button onClick={handleMainButtonClick} variant="outline" size={variant === 'minimized' ? 'icon' : 'lg'} className={`${buttonSize} rounded-full ${isScreenSharing ? 'bg-blue-500/80 text-white' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'} cursor-pointer`}>
+        <Button
+          onClick={handleMainButtonClick}
+          size={variant === 'minimized' ? 'icon' : 'lg'}
+          className={`${buttonSize} rounded-full transition-colors cursor-pointer ${
+            isScreenSharing
+              ? 'bg-blue-500/90 text-white hover:bg-blue-600/90 border-transparent'
+              : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'
+          }`}
+        >
           <ScreenShare size={iconSize} />
         </Button>
 
@@ -182,6 +191,8 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
 };
 
 export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, onEndCall, userName, onToggleScreenShare, isScreenSharing, screenStream }) => {
+  const { width, height } = useWindowSize();
+  const isMobile = width < 768;
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -335,6 +346,36 @@ setIsReactionPickerOpen(false);
     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== newReaction.id)), 750);
   };
 
+  const chatPanel = (
+    <div className="h-full w-full bg-gray-900/90 backdrop-blur-lg border-l border-white/10 flex flex-col">
+      <div className="p-4 border-b border-white/10 flex items-center justify-between">
+        <h3 className="font-bold text-white">In-call messages</h3>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsChatOpen(false)} variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10"><Maximize2 size={16} /></Button>
+        </div>
+      </div>
+  
+      <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4">
+        {chatMessages.map(msg => (
+          <div key={msg.id} className="text-white/90 text-sm">
+            <div className="flex items-baseline gap-2">
+              <span className="font-bold">{msg.userName}</span>
+              <span className="text-xs text-white/50">{msg.timestamp}</span>
+            </div>
+            <p className="text-white/80">{msg.text}</p>
+          </div>
+        ))}
+      </div>
+    
+      <div className="p-4 border-t border-white/10">
+        <div className="flex items-center gap-2 bg-gray-800/70 rounded-lg p-2">
+          <input type="text" placeholder="Type a message..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} className="bg-transparent w-full text-white placeholder:text-white/50 focus:outline-none text-sm" />
+          <Button onClick={handleSendChatMessage} size="icon" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 w-8 h-8"><Send size={16} /></Button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (isMinimized) {
     return (
       <motion.div drag dragMomentum={false} className="fixed bottom-4 right-4 z-50 w-64 h-40 rounded-xl overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing">
@@ -360,10 +401,10 @@ setIsReactionPickerOpen(false);
 
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <TooltipButton tooltip={isMuted ? 'Unmute' : 'Mute'}>
-              <Button onClick={handleToggleMute} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white cursor-pointer">{isMuted ? <MicOff size={18} /> : <Mic size={18} />}</Button>
+              <Button onClick={handleToggleMute} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 text-white cursor-pointer">{isMuted ? <MicOff size={18} /> : <Mic size={18} />}</Button>
             </TooltipButton>
             <TooltipButton tooltip={isVideoOff ? 'Turn on camera' : 'Turn off camera'}>
-              <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 border-white/20 text-white cursor-pointer">{isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}</Button>
+              <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 text-white cursor-pointer">{isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}</Button>
             </TooltipButton>
             <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} />
             <TooltipButton tooltip="End call">
@@ -465,10 +506,11 @@ setIsReactionPickerOpen(false);
                   setShowGestureWalkthrough(true);
                 }
               }}
-              variant="outline"
               size="icon"
-              className={`rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14 ${
-                isGestureControlEnabled ? 'bg-green-500/80' : ''
+              className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${
+                isGestureControlEnabled
+                ? 'bg-green-500/90 text-white hover:bg-green-600/90'
+                : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'
               }`}
             >
               <Hand size={20} />
@@ -476,18 +518,18 @@ setIsReactionPickerOpen(false);
           </TooltipButton>
 
           <TooltipButton tooltip={isMuted ? 'Unmute' : 'Mute'}>
-            <Button onClick={handleToggleMute} variant="outline" size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14">{isMuted ? <MicOff size={20} /> : <Mic size={20} />}</Button>
+            <Button onClick={handleToggleMute} size="icon" className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${isMuted ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isMuted ? <MicOff size={20} /> : <Mic size={20} />}</Button>
           </TooltipButton>
 
           <TooltipButton tooltip={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}>
-            <Button onClick={handleToggleVideo} variant="outline" size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14">{isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}</Button>
+            <Button onClick={handleToggleVideo} size="icon" className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${isVideoOff ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}</Button>
           </TooltipButton>
 
           <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" />
 
           <div className="relative" ref={reactionPickerRef}>
             <TooltipButton tooltip="Send Reaction">
-              <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} variant="outline" size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14"><Smile size={20} /></Button>
+              <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14"><Smile size={20} /></Button>
             </TooltipButton>
 
             <AnimatePresence>
@@ -506,7 +548,7 @@ setIsReactionPickerOpen(false);
           </TooltipButton>
 
           <TooltipButton tooltip={isChatOpen ? 'Close Chat' : 'Open Chat'}>
-            <Button onClick={() => setIsChatOpen(!isChatOpen)} variant="outline" size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14"><MessageSquare size={20} /></Button>
+            <Button onClick={() => setIsChatOpen(!isChatOpen)} size="icon" className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${isChatOpen ? 'bg-blue-500/90 text-white hover:bg-blue-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}><MessageSquare size={20} /></Button>
           </TooltipButton>
         </div>
 
@@ -520,48 +562,28 @@ setIsReactionPickerOpen(false);
       <AnimatePresence>
         {isChatOpen && (
           <motion.div initial={{ x: '100%' }} animate={{ x: '0%' }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }} className="absolute top-0 right-0 h-full flex">
-            <ResizableBox
-              className="bg-transparent"
-              width={chatWidth}
-              height={typeof window !== 'undefined' ? window.innerHeight : 720}
-              axis="x"
-              minConstraints={[minChatWidth, 200]}
-              maxConstraints={[maxChatWidth, typeof window !== 'undefined' ? window.innerHeight : 2000]}
-              resizeHandles={["w"]}
-              onResizeStop={(e, data) => {
-                const w = data.size.width;
-                setChatWidth(Math.min(maxChatWidth, Math.max(minChatWidth, w)));
-              }}
-              handle={<div className="resizable-handle" /> as any}
-            >
-              <div className="h-full w-full bg-gray-900/90 backdrop-blur-lg border-l border-white/10 flex flex-col">
-                <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="font-bold text-white">In-call messages</h3>
-                  <div className="flex items-center gap-2">
-                    <Button onClick={() => setIsChatOpen(false)} variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10"><Maximize2 size={16} /></Button>
-                  </div>
-                </div>
-
-                <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4">
-                  {chatMessages.map(msg => (
-                    <div key={msg.id} className="text-white/90 text-sm">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-bold">{msg.userName}</span>
-                        <span className="text-xs text-white/50">{msg.timestamp}</span>
-                      </div>
-                      <p className="text-white/80">{msg.text}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-4 border-t border-white/10">
-                  <div className="flex items-center gap-2 bg-gray-800/70 rounded-lg p-2">
-                    <input type="text" placeholder="Type a message..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} className="bg-transparent w-full text-white placeholder:text-white/50 focus:outline-none text-sm" />
-                    <Button onClick={handleSendChatMessage} size="icon" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 w-8 h-8"><Send size={16} /></Button>
-                  </div>
-                </div>
+            {isMobile ? (
+              <div className="h-full w-screen bg-transparent flex flex-col">
+                {chatPanel}
               </div>
-            </ResizableBox>
+            ) : (
+              <ResizableBox
+                className="bg-transparent"
+                width={chatWidth}
+                height={height}
+                axis="x"
+                minConstraints={[minChatWidth, 200]}
+                maxConstraints={[maxChatWidth, height]}
+                resizeHandles={["w"]}
+                onResizeStop={(e, data) => {
+                  const w = data.size.width;
+                  setChatWidth(Math.min(maxChatWidth, Math.max(minChatWidth, w)));
+                }}
+                handle={<div className="resizable-handle" /> as any}
+              >
+                {chatPanel}
+              </ResizableBox>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

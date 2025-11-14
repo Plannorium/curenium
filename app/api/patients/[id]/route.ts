@@ -3,11 +3,13 @@ import dbConnect from "@/lib/dbConnect";
 import Patient, { IPatient } from "@/models/Patient";
 import { headers } from "next/headers";
 import { getSession } from "@/lib/session";
+import { Document } from 'mongoose';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   await dbConnect();
   const session = await getSession();
 
@@ -42,8 +44,9 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   await dbConnect();
   const session = await getSession();
   const headersList = await headers();
@@ -57,7 +60,7 @@ export async function PUT(
   const body = await req.json();
 
   try {
-    const patient: IPatient | null = await Patient.findOne({
+    const patient: (IPatient & Document) | null = await Patient.findOne({
       _id: patientId,
       orgId: session.user.organizationId,
     });
@@ -88,8 +91,9 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   await dbConnect();
   const session = await getSession();
   const headersList = await headers();
@@ -102,7 +106,7 @@ export async function DELETE(
   const { id: patientId } = params;
 
   try {
-    const patient: IPatient | null = await Patient.findOne({
+    const patient: (IPatient & Document) | null = await Patient.findOne({
       _id: patientId,
       orgId: session.user.organizationId,
     });

@@ -156,7 +156,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
       >
         {isPlaying ? "❚❚" : "►"}
       </Button>
-      <div className="max-w-[88%] lg:max-w-full flex-grow flex items-center h-8">
+      <div className="max-w-[88%] lg:max-w-full grow flex items-center h-8">
         <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
       </div>
       <div className="text-xs text-muted-foreground flex justify-start items-center gap-x-1.5">
@@ -219,6 +219,7 @@ interface MessageBubbleProps {
   onScrollToMessage: (messageId: string) => void;
   sendReadReceipt: (messageId: string) => void;
   voiceUploadProgress: Record<string, number>;
+  id: string;
 }
 
 const MessageBubble = ({
@@ -237,6 +238,7 @@ const MessageBubble = ({
   onScrollToMessage,
   sendReadReceipt,
   voiceUploadProgress,
+  id,
 }: MessageBubbleProps) => {
   const { data: session } = useSession();
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
@@ -409,6 +411,7 @@ const MessageBubble = ({
   // ---------- MAIN RENDER ----------
   return (
     <motion.div
+      id={id}
       ref={messageRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -416,7 +419,7 @@ const MessageBubble = ({
       transition={{ duration: 0.3 }}
       className={`group relative flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300`}
     >
-      <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-background/50 shadow-sm">
+      <Avatar className="h-8 w-8 shrink-0 ring-2 ring-background/50 shadow-sm">
         <AvatarImage src={user?.image || undefined} />
         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
           {(msg.fullName ?? "")
@@ -440,7 +443,7 @@ const MessageBubble = ({
         <div className={cn("flex flex-col relative items-start group")}>
           <div
             className={cn(
-              "relative group rounded-xl bg-gradient-to-br p-2 transition-all duration-200 max-w-full sm:max-w-[22rem] lg:max-w-[31.5rem]",
+              "relative group rounded-xl bg-linear-to-br p-2 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
               !isEmoji &&
                 `px-3 py-2 ${
                   isSender
@@ -449,7 +452,7 @@ const MessageBubble = ({
                 }`
             )}
           >
-            <div className="absolute top-0 right-0 mt-[-12px] mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700">
+            <div className="absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700">
               <div className="relative" ref={reactionPickerRef}>
                 <button
                   onClick={() => setReactionPickerOpen((p) => !p)}
@@ -530,7 +533,7 @@ const MessageBubble = ({
                     <p className="text-sm font-semibold text-foreground">
                       {msg.replyTo?.fullName || "Someone"}
                     </p>
-                    <p className="text-sm text-muted-foreground line-clamp-2 max-h-[40px] overflow-hidden">
+                    <p className="text-sm text-muted-foreground line-clamp-2 max-h-10 overflow-hidden">
                       {msg.replyTo.text ||
                         (Array.isArray(msg.replyTo.file)
                           ? msg.replyTo.file[0]?.name
@@ -545,7 +548,7 @@ const MessageBubble = ({
             {msg.deleted ? ( // This should be the first check
               <div className="flex items-center gap-2">
                 <Trash2 size={14} className="text-muted-foreground/80" />
-                <p className="text-sm leading-relaxed break-words text-muted-foreground italic">
+                <p className="text-sm leading-relaxed wrap-break-word text-muted-foreground italic">
                   message deleted by {msg.deleted.by}
                 </p>
               </div>
@@ -554,7 +557,7 @@ const MessageBubble = ({
                 {/* TEXT */}
                 {messageText && (
                   <p
-                    className={`text-[1rem] leading-relaxed break-words ${isEmoji ? "text-[4rem]" : "whitespace-pre-wrap"}`}
+                    className={`text-[1rem] leading-relaxed wrap-break-word ${isEmoji ? "text-[4rem]" : "whitespace-pre-wrap"}`}
                     dangerouslySetInnerHTML={{
                       // The user is requesting to make the emoji bigger, so I'm increasing the size from 6xl to 7xl.
                       __html: messageText.replace(
@@ -587,7 +590,7 @@ const MessageBubble = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 mt-0 min-h-[24px]">
+          <div className="flex items-center gap-1.5 mt-0 min-h-6">
             {msg.reactions && Object.keys(msg.reactions).length > 0 && (
               <>
                 {Object.entries(msg.reactions).map(
@@ -616,21 +619,11 @@ const MessageBubble = ({
 
 export default function Chat() {
   const { data: session } = useSession();
-  const fullName = session?.user?.name || "Anonymous";
-  const [activeRoom, setActiveRoom] = useState("general");
   const router = useRouter();
   const pathname = usePathname();
+  const fullName = session?.user?.name || "Anonymous";
   const searchParams = useSearchParams();
-
-
-  useEffect(() => {
-    const room = searchParams.get("room");
-    if (room) {
-      setActiveRoom(room);
-    } else {
-      setActiveRoom("general");
-    }
-  }, [searchParams]);
+  const activeRoom = searchParams.get("room") || "general";
   // const { messages, sendCombinedMessage, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
   const [text, setText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -638,6 +631,7 @@ export default function Chat() {
   const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<number[]>([]);
   const [currentResultIndex, setCurrentResultIndex] = useState(-1);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -652,6 +646,7 @@ export default function Chat() {
   const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
   const [isMembersModalOpen, setMembersModalOpen] = useState(false);
+
   const [isDmsOpen, setIsDmsOpen] = useState(true);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -959,11 +954,9 @@ export default function Chat() {
     }
   };
 
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const container = messagesContainerRef.current;
-    if (!container) return;
+    if (!container || searchResults.length > 0) return;
 
     const scrollToBottom = () => {
       container.scrollTop = container.scrollHeight;
@@ -1128,6 +1121,16 @@ export default function Chat() {
   const handleCloseSearch = () => {
     setShowSearch(false);
     setChatSearchQuery("");
+
+  useEffect(() => {
+    if (messagesContainerRef.current && searchResults.length > 0 && currentResultIndex >= 0) {
+      const messageIndex = searchResults[currentResultIndex];
+      const messageElement = messagesContainerRef.current.querySelector(`#message-${messageIndex}`);
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [currentResultIndex, searchResults]);
     setSearchResults([]);
     setCurrentResultIndex(-1);
   };
@@ -1485,7 +1488,7 @@ export default function Chat() {
     <>
       <div className="h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
         {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
 
         <ThreadView
           isOpen={!!activeThreadId}
@@ -1500,7 +1503,7 @@ export default function Chat() {
 
         <div className="relative flex-1 flex min-h-0">
           {/* Channel List Sidebar */}
-          <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 flex-shrink-0">
+          <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 shrink-0">
             <div className="p-4">
               <div className="relative" ref={emojiPickerRef}>
                 <input
@@ -1811,9 +1814,10 @@ export default function Chat() {
                       </Avatar>
                     )}
                   </div>
-                  <div className="md:hidden">
+                  {/* this is very important might be useful don't remove it */}
+                  {/* <div className="md:hidden">
                     <Users size={18} className="text-muted-foreground" />
-                  </div>
+                  </div> */}
                 </button>
               </div>
             </header>
@@ -1900,6 +1904,7 @@ export default function Chat() {
                         </div>
                       )}
                       <MessageBubble
+                        id={`message-${index}`}
                         msg={msg}
                         isSender={isSender}
                         user={user}
@@ -2046,7 +2051,7 @@ export default function Chat() {
                             />
                           ) : (
                             <div className="flex items-center gap-2 w-full h-16">
-                              <FileIcon className="h-8 w-8 text-primary flex-shrink-0" />
+                              <FileIcon className="h-8 w-8 text-primary shrink-0" />
                               <div className="flex-1 overflow-hidden">
                                 <p className="text-xs font-medium truncate">
                                   {file.name}
@@ -2112,7 +2117,7 @@ export default function Chat() {
                       rows={1}
                     />
                   ) : (
-                    <div className="w-full h-[2.125rem] flex items-center gap-4">
+                    <div className="w-full h-8.5 flex items-center gap-4">
                       {recordingState !== 'sending' && (
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground" onClick={handleCancelRecording}>
                           <Trash2 size={16} />

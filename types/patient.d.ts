@@ -1,5 +1,5 @@
 export interface Patient { 
-   _id: string; 
+   _id?: string; 
    orgId: string; 
    mrn?: string; 
    firstName: string; 
@@ -10,13 +10,13 @@ export interface Patient {
      phone?: string; 
      email?: string; 
    }; 
-  address: {
+  address?: {
     street: string;
     city: string;
     state: string;
     zip: string;
   };
-  emergencyContact: {
+  emergencyContact?: {
     name: string;
     phone: string;
     relationship: string;

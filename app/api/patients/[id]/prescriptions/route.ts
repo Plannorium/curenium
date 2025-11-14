@@ -6,7 +6,7 @@ import { Prescription as PrescriptionType } from "@/types/prescription";
  
  export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,6 +15,7 @@ import { Prescription as PrescriptionType } from "@/types/prescription";
   if (!allowed.includes(token.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const params = await paramsPromise;
   const body: PrescriptionType = await req.json();
   await connectDB();
   const p = await Prescription.create({

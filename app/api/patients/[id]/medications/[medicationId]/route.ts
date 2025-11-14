@@ -7,13 +7,14 @@ import { headers } from "next/headers";
 // GET a specific medication
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string; medicationId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; medicationId: string }> }
 ) {
   const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const params = await paramsPromise;
   await dbConnect();
 
   const { medicationId } = params;
@@ -33,13 +34,14 @@ export async function GET(
 // UPDATE a medication
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string; medicationId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; medicationId: string }> }
 ) {
   const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const params = await paramsPromise;
   await dbConnect();
 
   const { medicationId } = params;
@@ -54,7 +56,7 @@ export async function PUT(
     return NextResponse.json({ message: "Medication not found" }, { status: 404 });
   }
 
-  const headersList = headers();
+  const headersList = await headers();
   const ip = headersList.get("x-forwarded-for") ?? "::1";
 
   Object.assign(medication, body);
@@ -68,13 +70,14 @@ export async function PUT(
 // DELETE a medication (soft delete)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; medicationId: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string; medicationId: string }> }
 ) {
   const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const params = await paramsPromise;
   await dbConnect();
 
   const { medicationId } = params;
@@ -88,7 +91,7 @@ export async function DELETE(
     return NextResponse.json({ message: "Medication not found" }, { status: 404 });
   }
 
-  const headersList = headers();
+  const headersList = await headers();
   const ip = headersList.get("x-forwarded-for") ?? "::1";
 
   medication.deleted = true;

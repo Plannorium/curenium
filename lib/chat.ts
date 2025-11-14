@@ -4,7 +4,7 @@ export class ChatRoom {
   sessions: any[];
   messages: any[];
 
-  constructor(state: any, env: any) {
+  constructor(state: any) {
     this.state = state;
     this.sessions = [];
     this.messages = [];
@@ -13,14 +13,14 @@ export class ChatRoom {
     });
   }
 
-  async fetch(request: Request) {
+  async fetch(_request: Request) {
     // This part of the fetch is for WebSocket connections, which is correct.
     // We will handle the broadcast logic in the main worker entrypoint.
     return new Response("This endpoint is for WebSocket connections.", { status: 400 });
   }
 
   async handleMessageStatusUpdate(message: any) {
-    const { messageId, status, room } = message.payload;
+    const { messageId, status } = message.payload;
 
     // Find the original message and update its status
     const originalMessageIndex = this.messages.findIndex(m => m.id === messageId);

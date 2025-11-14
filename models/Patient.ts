@@ -3,7 +3,7 @@ import { Patient } from "@/types/patient";
 import { auditPlugin } from "@/lib/mongooseAuditPlugin";
 
 // Define the interface for the Patient document
-export interface IPatient extends Patient, Document {
+export interface IPatient extends Patient {
   _setAuditContext(userId: string, userRole: string, before?: any, meta?: any): void;
 }
 
@@ -29,6 +29,6 @@ const PatientSchema = new Schema(
 
 PatientSchema.plugin(auditPlugin, { targetType: "Patient" });
 
-const PatientModel = models.Patient || mongoose.model<IPatient>("Patient", PatientSchema);
+const PatientModel = models.Patient || mongoose.model<IPatient & Document>("Patient", PatientSchema);
 
-export default PatientModel as Model<IPatient>;
+export default PatientModel as Model<IPatient & Document>;

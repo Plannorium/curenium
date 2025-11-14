@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 
 interface PatientSearchProps {
   onSelectPatient: (patient: Patient) => void;
-  onCreateNew: () => void;
 }
 
-export default function PatientSearch({ onSelectPatient, onCreateNew }: PatientSearchProps) {
+export default function PatientSearch({ onSelectPatient }: PatientSearchProps) {
   const [query, setQuery] = useState("");
   const [debouncedQuery] = useDebounce(query, 300);
   const [results, setResults] = useState<Patient[]>([]);
@@ -43,7 +42,7 @@ export default function PatientSearch({ onSelectPatient, onCreateNew }: PatientS
           onChange={(e) => setQuery(e.target.value)} 
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 100)} // Delay to allow click on results
-          className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 text-sm"
+          className="flex-1 bg-transparent outline-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 text-sm shadow-none border-none"
         />
         {loading && <Loader2 className="h-5 w-5 animate-spin text-primary mr-3" />} 
       </div>
@@ -71,16 +70,7 @@ export default function PatientSearch({ onSelectPatient, onCreateNew }: PatientS
               {loading ? 'Searching...' : (debouncedQuery ? 'No patients found.' : 'Start typing to search.')}
             </div>
           )}
-          <div className="border-t border-gray-100 dark:border-gray-800 p-2">
-            <Button 
-              variant="ghost"
-              className="w-full justify-start text-sm" 
-              onClick={onCreateNew}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create New Patient
-            </Button>
-          </div>
+
         </div> 
       )}
     </div>

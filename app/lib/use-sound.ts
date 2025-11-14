@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 
 const audioFiles: { [key: string]: string } = {
   mute: '/sounds/mute.mp3',
@@ -19,7 +19,7 @@ const initAudio = () => {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     isInitialized = true;
     preloadSounds();
-  } catch (e) {
+  } catch (_e) { 
     console.error("Web Audio API is not supported in this browser");
   }
 };

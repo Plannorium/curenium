@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import dbConnect from "@/lib/dbConnect";
-import Medication, { IMedication } from "@/models/Medication";
+import Medication from "@/models/Medication";
 import Patient, { IPatient } from "@/models/Patient";
 import { headers } from "next/headers";
 import * as z from "zod";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const params = await paramsPromise;
   await dbConnect();
 
   const { id: patientId } = params;
@@ -50,13 +51,14 @@ const medicationSchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const params = await paramsPromise;
   await dbConnect();
 
   const { id: patientId } = params;

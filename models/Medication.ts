@@ -12,7 +12,7 @@ export interface IMedication extends Document, IAuditable {
   endDate?: Date;
   status: "active" | "inactive" | "discontinued";
   notes?: string;
-  deleted: boolean;
+  deleted?: boolean; // Make deleted optional for soft delete
 }
 
 const MedicationSchema = new Schema<IMedication>(

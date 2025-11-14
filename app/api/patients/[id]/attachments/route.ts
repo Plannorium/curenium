@@ -7,14 +7,15 @@ import { headers } from "next/headers";
 import * as z from "zod";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
   const session = await getSession();
+  const params = await paramsPromise;
 
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 }); 
   }
 
   const { id: patientId } = params;
@@ -55,11 +56,12 @@ const attachmentSchema = z.object({
 });
 
 export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
   const session = await getSession();
+  const params = await paramsPromise;
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for") ?? "::1";
 

@@ -10,8 +10,8 @@ export interface ILabResult extends Document, IAuditable {
   referenceRange: string;
   collectedDate: Date;
   reportedDate: Date;
-  notes?: string;
-  deleted: boolean;
+  notes?: string; // Optional notes field
+  deleted?: boolean; // Make deleted optional for soft delete
 }
 
 const LabResultSchema = new Schema<ILabResult>(

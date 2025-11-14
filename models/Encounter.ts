@@ -9,6 +9,7 @@ export interface IEncounter extends Document, IAuditable {
   notes: Schema.Types.ObjectId[];
   vitals: Schema.Types.ObjectId;
   provider: Schema.Types.ObjectId;
+  deleted?: boolean;
 }
 
 const EncounterSchema = new Schema<IEncounter>(
@@ -20,6 +21,7 @@ const EncounterSchema = new Schema<IEncounter>(
     notes: [{ type: Schema.Types.ObjectId, ref: "Note" }],
     vitals: { type: Schema.Types.ObjectId, ref: "Vital" },
     provider: { type: Schema.Types.ObjectId, ref: "User" },
+    deleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

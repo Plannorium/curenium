@@ -5,6 +5,7 @@ import { requireRole, ROLE } from "@/lib/rbac";
 import Patient, { IPatient } from "@/models/Patient";
 import { Patient as PatientInterface } from "@/types/patient";
 import connectToDB from "@/lib/dbConnect";
+import { Document } from 'mongoose';
  
  export async function GET(req: NextRequest) { 
    const { searchParams  } = new URL(req.url ); 
@@ -71,7 +72,7 @@ import connectToDB from "@/lib/dbConnect";
       newMrn = "MRN-1";
     }
 
-    const newPatient: IPatient = new Patient({
+    const newPatient = new Patient({
       ...body,
       orgId,
       mrn: newMrn,
