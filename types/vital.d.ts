@@ -1,7 +1,6 @@
-
-// /types/vital.d.ts
 export interface Vital {
   _id: string;
+  orgId: string;
   patientId: string;
   recordedAt: Date;
   bpSystolic?: number;
@@ -11,6 +10,9 @@ export interface Vital {
   temperature?: number;
   spo2?: number;
   notes?: string;
+  isUrgent?: boolean;
   createdAt: Date;
   updatedAt: Date;
+  height?: number;
+  weight?: number;
 }

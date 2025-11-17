@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
 import Organization from "@/models/Organization";
+import Channel from "@/models/Channel";
 import bcrypt from "bcryptjs";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth/next";
@@ -37,6 +38,15 @@ export async function POST(req: Request) {
       verified: true,
     });
     await user.save();
+
+    // Create a default "general" channel and add the user to it
+    const generalChannel = new Channel({
+      name: "general",
+      organizationId: organization._id,
+      members: [user._id],
+      isDefault: true,
+    });
+    await generalChannel.save();
 
     return NextResponse.json({
       message: "Organization and admin created successfully",

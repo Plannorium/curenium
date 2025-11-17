@@ -1,5 +1,6 @@
 import mongoose, { Schema, models, Model } from "mongoose";
 import { Vital } from "@/types/vital";
+import { AuditLogPlugin, IAuditable } from "./AuditLog";
 
 const VitalSchema = new Schema(
   {
@@ -10,6 +11,11 @@ const VitalSchema = new Schema(
       required: true,
       index: true,
     },
+    recordedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     recordedAt: { type: Date, required: true, default: Date.now },
     bpSystolic: Number,
     bpDiastolic: Number,
@@ -18,6 +24,7 @@ const VitalSchema = new Schema(
     temperature: Number,
     spo2: Number,
     notes: String,
+    isUrgent: { type: Boolean, default: false },
     height: Number,
     weight: Number,
     bmi: Number,
@@ -25,6 +32,9 @@ const VitalSchema = new Schema(
   { timestamps: true }
 );
 
-const VitalModel = models.Vital || mongoose.model<Vital>("Vital", VitalSchema);
+VitalSchema.plugin(AuditLogPlugin);
 
-export default VitalModel as Model<Vital>;
+const VitalModel =
+  models.Vital || mongoose.model<Vital & IAuditable>("Vital", VitalSchema);
+
+export default VitalModel as Model<Vital & IAuditable>;

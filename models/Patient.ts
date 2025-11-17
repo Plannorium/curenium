@@ -23,11 +23,16 @@ const PatientSchema = new Schema(
     primaryPhysician: { type: Schema.Types.ObjectId, ref: "User" },
     metadata: Object,
     deleted: { type: Boolean, default: false },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
 
 PatientSchema.plugin(auditPlugin, { targetType: "Patient" });
+
+PatientSchema.virtual("fullName").get(function () {
+  return `${this.firstName} ${this.lastName}`;
+});
 
 const PatientModel = models.Patient || mongoose.model<IPatient & Document>("Patient", PatientSchema);
 

@@ -3,17 +3,19 @@ import mongoose, { Document, Model } from "mongoose";
 export interface IUser extends Document {
   _id: mongoose.Schema.Types.ObjectId;
   fullName: string;
+  email: string;
+  online?: boolean;
+  password?: string; // For migration purposes
+  passwordHash?: string;
+  role: "admin" | "doctor" | "patient" | "user" | "nurse" | "manager" | "staff" | "labtech" | "reception";
+  organizationId: mongoose.Schema.Types.ObjectId;
   username?: string;
   bio?: string;
   urls?: string[];
-  email: string;
   image?: string;
-  passwordHash?: string;
   emailVerified?: Date | null;
   emailVerificationToken?: string;
   emailVerificationTokenExpires?: Date;
-  role: "admin" | "doctor" | "nurse" | "manager" | "staff" | "labtech" | "reception";
-  organizationId: mongoose.Schema.Types.ObjectId;
   provider?: string;
   providerAccountId?: string;
   verified: boolean;
@@ -40,6 +42,7 @@ const UserSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true },
     username: { type: String, sparse: true },
+    online: { type: Boolean, default: false },
     bio: { type: String },
     urls: { type: [String] },
     email: { type: String, unique: true, required: true },

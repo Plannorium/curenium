@@ -22,6 +22,10 @@ interface CallViewProps {
   onToggleScreenShare: () => void;
   isScreenSharing: boolean;
   screenStream: MediaStream | null;
+  isMuted: boolean;
+  isVideoOff: boolean;
+  onToggleMute: () => void;
+  onToggleVideo: () => void;
 }
 
 interface CallChatMessage {
@@ -90,11 +94,11 @@ const VideoTile = forwardRef<HTMLVideoElement, { stream: MediaStream; isMuted: b
     .slice(0, 2);
 
   return (
-    <div className={`relative rounded-lg overflow-hidden h-[78%] flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-1 ring-white/4'} bg-black`}> 
+    <div className={`relative rounded-lg overflow-hidden w-full h-full aspect-video flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-1 ring-white/4'} bg-black`}>
       {stream && !isVideoOff ? (
         <video ref={videoRef} autoPlay playsInline muted={!!isLocal} className={`w-full h-full ${isScreenShare ? 'object-contain' : 'object-cover'} ${isLocal ? 'scale-x-[-1]' : ''}`} />
       ) : (
-        <div className="flex flex-col items-center justify-center text-white bg-gray-800 w-full h-full p-4">
+        <div className="flex flex-col items-center justify-center text-white bg-gray-800 w-full h-full p-4 absolute inset-0">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-3">
             <span className="text-3xl font-bold text-primary">{userInitials}</span>
           </div>
@@ -190,11 +194,9 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
   );
 };
 
-export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, onEndCall, userName, onToggleScreenShare, isScreenSharing, screenStream }) => {
+export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, onEndCall, userName, onToggleScreenShare, isScreenSharing, screenStream, isMuted, isVideoOff, onToggleMute, onToggleVideo }) => {
   const { width, height } = useWindowSize();
   const isMobile = width < 768;
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -221,19 +223,17 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   const handleToggleMute = useCallback(() => {
     if (localStream) {
       const newMuted = !isMuted;
-      localStream.getAudioTracks().forEach(track => track.enabled = !newMuted);
-      setIsMuted(newMuted);
+      localStream.getAudioTracks().forEach(track => track.enabled = !newMuted); onToggleMute();
       playSound(newMuted ? 'mute' : 'unmute');
     }
-  }, [localStream, isMuted, playSound]);
+  }, [localStream, isMuted, playSound, onToggleMute]);
 
   const handleToggleVideo = useCallback(() => {
     if (localStream) {
-      localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-      setIsVideoOff(!isVideoOff);
+      localStream.getVideoTracks().forEach(track => track.enabled = isVideoOff); onToggleVideo();
       playSound('mute'); // Using 'mute' as a generic 'tick' sound
     }
-  }, [localStream, isVideoOff, playSound]);
+  }, [localStream, isVideoOff, playSound, onToggleVideo]);
 
   const callStateRef = useRef({ isMuted, isVideoOff });
   useEffect(() => {
@@ -561,19 +561,18 @@ setIsReactionPickerOpen(false);
 
       <AnimatePresence>
         {isChatOpen && (
-          <motion.div initial={{ x: '100%' }} animate={{ x: '0%' }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }} className="absolute top-0 right-0 h-full flex">
+          <motion.div initial={{ x: '100%' }} animate={{ x: '0%' }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }} className="absolute top-1 right-1 bottom-1 flex h-full">
             {isMobile ? (
               <div className="h-full w-screen bg-transparent flex flex-col">
                 {chatPanel}
               </div>
             ) : (
               <ResizableBox
-                className="bg-transparent"
+                className="bg-transparent h-full"
                 width={chatWidth}
-                height={height}
                 axis="x"
-                minConstraints={[minChatWidth, 200]}
-                maxConstraints={[maxChatWidth, height]}
+                minConstraints={[minChatWidth, 0]}
+                maxConstraints={[maxChatWidth, 0]}
                 resizeHandles={["w"]}
                 onResizeStop={(e, data) => {
                   const w = data.size.width;

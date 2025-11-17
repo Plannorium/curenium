@@ -4,6 +4,7 @@ export interface Patient {
    mrn?: string; 
    firstName: string; 
    lastName: string; 
+   fullName?: string;
    dob?: string; 
    gender?: "male" | "female" | "other"; 
    contact: { 

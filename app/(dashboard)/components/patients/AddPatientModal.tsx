@@ -13,6 +13,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { Patient } from '@/types/patient';
 import { PatientFormData } from './PatientForm';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 
 interface AddPatientModalProps {
   onPatientAdded: (patient: Patient) => void;
@@ -20,6 +21,7 @@ interface AddPatientModalProps {
 }
 
 const AddPatientModal: React.FC<AddPatientModalProps> = ({ onPatientAdded, children }) => {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +49,10 @@ const AddPatientModal: React.FC<AddPatientModalProps> = ({ onPatientAdded, child
       setIsSubmitting(false);
     }
   };
+
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'receptionist') {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

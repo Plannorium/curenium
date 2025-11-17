@@ -126,6 +126,44 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.6);
   }
+
+  .premium-calendar .rdp-day {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .premium-calendar .rdp-day_hasAppointment {
+    position: relative;
+  }
+
+  .premium-calendar .rdp-day_hasAppointment::after {
+    content: '';
+    position: absolute;
+    bottom: 0.25em;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0.3em;
+    height: 0.3em;
+    border-radius: 50%;
+    background-color: var(--primary);
+  }
+
+  .dark .premium-calendar .rdp-day_hasAppointment::after {
+    background-color: var(--color-accent-400);
+  }
+
+  .premium-calendar .rdp-day_selected {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border-radius: 0.375rem;
+  }
+  
+  .premium-calendar .rdp-day_selected.rdp-day_hasAppointment::after {
+      background-color: var(--primary-foreground);
+  }
+
+  .dark .premium-calendar .rdp-day_selected.rdp-day_hasAppointment::after {
+      background-color: var(--primary-foreground);
+  }
 }
 
 @layer base {

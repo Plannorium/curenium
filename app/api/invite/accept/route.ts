@@ -3,6 +3,7 @@ import dbConnect from '@/lib/dbConnect';
 import Invite from '@/models/Invite';
 import User from '@/models/User';
 import Organization from '@/models/Organization';
+import Channel from '@/models/Channel';
 import bcrypt from 'bcryptjs';
 import { sendWelcomeEmail, sendAddedToOrgEmail } from '@/lib/resendEmail';
 
@@ -44,6 +45,15 @@ export async function POST(req: NextRequest) {
       existingUser.organizationId = invite.organizationId;
       await existingUser.save();
 
+      // Add user to default channels
+      const defaultChannels = await Channel.find({ organizationId: invite.organizationId, isDefault: true });
+      for (const channel of defaultChannels) {
+        if (!channel.members.includes(existingUser._id)) {
+          channel.members.push(existingUser._id);
+          await channel.save();
+        }
+      }
+
       invite.status = 'accepted';
       invite.acceptedAt = new Date();
       await invite.save();
@@ -76,6 +86,15 @@ export async function POST(req: NextRequest) {
       });
 
       await newUser.save();
+
+      // Add user to default channels
+      const defaultChannels = await Channel.find({ organizationId: invite.organizationId, isDefault: true });
+      for (const channel of defaultChannels) {
+        if (!channel.members.includes(newUser._id)) {
+          channel.members.push(newUser._id);
+          await channel.save();
+        }
+      }
 
       invite.status = 'accepted';
       invite.acceptedAt = new Date();

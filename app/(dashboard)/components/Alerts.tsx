@@ -10,6 +10,7 @@ interface Alert {
   level: 'critical' | 'urgent' | 'info';
   message: string;
   createdAt: string;
+  patientId?: string;
   createdBy: {
     _id: string;
     fullName: string;

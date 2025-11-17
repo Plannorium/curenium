@@ -56,6 +56,7 @@ interface WebSocketMessage {
     | "auth"
     | "reaction"
     | "alert_notification"
+    | "vitals_update"
     | "message_status_update";
   isTyping?: boolean;
   fullName?: string;
@@ -77,9 +78,13 @@ export const useChat = (room: string) => {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const ws = useRef<WebSocket | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
   const retryCount = useRef(0);
   const retryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingMessageRef = useRef<Message | null>(null);
+
+  const getWs = () => ws.current;
 
   const _sendMessage = useCallback((payload: any) => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
@@ -177,23 +182,23 @@ export const useChat = (room: string) => {
             console.log("Received message:", message);
 
             // Handle optimistic message confirmation (for text, files, voice, etc.)
-            if (message.type === "message" && message.optimisticId) {
-              setMessages((prevMessages) =>
-                prevMessages.map((m) =>
-                  m.id === message.optimisticId
-                    ? {
-                        ...m,
-                        ...message, // Replace with the full message from the server
-                        id: message.id || message._id, // Use real DB ID
-                        file: message.files || message.file, // Use real file object
-                        status: "sent",
-                      }
-                    : m
-                )
-              );
-              pendingMessageRef.current = null; // Clear ref used for text messages
-              return; // IMPORTANT: Stop further processing to prevent duplicates
-            }
+            // if (message.type === "message" && message.optimisticId) {
+            //   setMessages((prevMessages) =>
+            //     prevMessages.map((m) =>
+            //       m.id === message.optimisticId
+            //         ? {
+            //             ...m,
+            //             ...message, // Replace with the full message from the server
+            //             id: message.id || message._id, // Use real DB ID
+            //             file: message.files || message.file, // Use real file object
+            //             status: "sent",
+            //           }
+            //         : m
+            //     )
+            //   );
+            //   pendingMessageRef.current = null; // Clear ref used for text messages
+            //   return; // IMPORTANT: Stop further processing to prevent duplicates
+            // }
 
             // Handle other incoming websocket events
             if (message.type === "typing") {
@@ -252,6 +257,8 @@ export const useChat = (room: string) => {
               } else {
                 console.warn("Received incomplete message:", message);
               }
+            } else if (message.type === "vitals_update") {
+              toast.info("Vitals updated for a patient.");
             } else if (
               message.type === "alert_notification" &&
               message.alert
@@ -463,24 +470,24 @@ export const useChat = (room: string) => {
       }
 
       // --- Optimistic Update for text messages ---
-      if (!optimisticId && !isVoiceMessage && (text || (uploadedFiles && uploadedFiles.length > 0))) {
-        const tempId = `temp-text-${crypto.randomUUID()}`;
-        const optimisticMessage: Message = {
-            id: tempId,
-            text: text,
-            userId: (session.user as any)._id,
-            fullName: session.user.name || "You",
-            userImage: session.user.image,
-            threadId: threadId,
-            file: uploadedFiles,
-            replyTo: replyTo as any,
-            status: "sent",
-            createdAt: new Date().toISOString(),
-        };
-        pendingMessageRef.current = { ...optimisticMessage, id: tempId }; // Use the tempId
-        setMessages((prev) => [...prev, optimisticMessage]);
-        optimisticId = tempId; // Use this ID for replacement
-      }
+      // if (!optimisticId && !isVoiceMessage && (text || (uploadedFiles && uploadedFiles.length > 0))) {
+      //   const tempId = `temp-text-${crypto.randomUUID()}`;
+      //   const optimisticMessage: Message = {
+      //       id: tempId,
+      //       text: text,
+      //       userId: (session.user as any)._id,
+      //       fullName: session.user.name || "You",
+      //       userImage: session.user.image,
+      //       threadId: threadId,
+      //       file: uploadedFiles,
+      //       replyTo: replyTo as any,
+      //       status: "sent",
+      //       createdAt: new Date().toISOString(),
+      //   };
+      //   pendingMessageRef.current = { ...optimisticMessage, id: tempId }; // Use the tempId
+      //   setMessages((prev) => [...prev, optimisticMessage]);
+      //   optimisticId = tempId; // Use this ID for replacement
+      // }
       // ------------------------------------------
 
       const filesWithThumbnails = uploadedFiles
@@ -656,15 +663,20 @@ export const useChat = (room: string) => {
 
   return {
     messages,
+    isMuted,
+    isVideoOff,
     setMessages, // Make sure to return setMessages
     typingUsers,
     onlineUsers,
     sendCombinedMessage, // ✅ new function
     sendPayload,
     sendTyping,
+    setIsMuted,
+    setIsVideoOff,
     uploadFile,
     startCall,
     sendReadReceipt,
     deleteMessage,
+    getWs,
   };
 };

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "./ImageLightbox";
+import { Input } from "@/components/ui/input";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,33 +14,32 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { MicIcon } from "lucide-react";
 import {
-  SendIcon,
-  PaperclipIcon,
   BellIcon,
-  SmileIcon,
-  InfoIcon,
-  SearchIcon,
   ChevronDownIcon,
-  ChevronDown,
-  XIcon,
-  Users,
-  PauseIcon,
-  CornerUpLeft,
-  MessageCircle,
-  FileIcon,
-  VideoIcon,
-  Loader2,
-  Plus,
-  Eye,
   Copy,
+  CornerUpLeft,
   Download,
   ExternalLink,
-  ReplyIcon,
-  MoreHorizontal,
-  Trash2,
+  Eye,
+  FileIcon,
+  Loader2,
+  MessageCircle,
   MessageSquare,
+  MicIcon,
+  MoreHorizontal,
+  PaperclipIcon,
+  PauseIcon,
+  Plus,
+  ReplyIcon,
+  Search,
+  SearchIcon,
+  SendIcon,
+  SmileIcon,
+  Trash2,
+  Users,
+  VideoIcon,
+  XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,9 +65,11 @@ import SoundPalette from "./SoundPalette";
 import { MessageSquareText } from "lucide-react"; // Import MessageSquareText
 import { ThreadView } from "./ThreadView";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useChatContext } from "@/contexts/ChatContext";
 import PdfPreviewCard from "./PdfPreviewCard";
 import AudioVisualizer from "./AudioVisualizer";
 import LiveAudioVisualizer from "./LiveAudioVisualizer";
+import { IUser } from "@/models/User";
 
 interface User {
   id: string;
@@ -97,6 +98,17 @@ interface Channel {
   id: string; // for compatibility if used elsewhere
   name: string;
   members: string[];
+}
+
+interface DM {
+  _id: string;
+  participants: IUser[];
+  room: string;
+  messages: any[]; // You might want to type this more strictly
+}
+
+interface DMRoom {
+  dm: DM;
 }
 
 const AudioPlayer = ({ src }: { src: string }) => {
@@ -354,7 +366,9 @@ const MessageBubble = ({
         {nonImages.map((f: any, i: number) => (
           <React.Fragment key={i}>
             {(() => {
-              const isVoiceMessage = f.type?.startsWith("audio/") || (f.resource_type === "video" && f.url.endsWith(".webm"));
+              const isVoiceMessage =
+                f.type?.startsWith("audio/") ||
+                (f.resource_type === "video" && f.url.endsWith(".webm"));
               if (isVoiceMessage) {
                 // Normal player when upload is finished
                 if (f.url) return <AudioPlayer src={f.url} />;
@@ -362,10 +376,17 @@ const MessageBubble = ({
               }
 
               if (f.type === "application/pdf" || f.name?.endsWith(".pdf")) {
-                return <PdfPreviewCard file={f} onPreview={() => openDocPreview(f)} />;
+                return (
+                  <PdfPreviewCard
+                    file={f}
+                    onPreview={() => openDocPreview(f)}
+                  />
+                );
               }
 
-              return <FileAttachment file={f} onPreview={() => openDocPreview(f)} />;
+              return (
+                <FileAttachment file={f} onPreview={() => openDocPreview(f)} />
+              );
             })()}
           </React.Fragment>
         ))}
@@ -391,10 +412,10 @@ const MessageBubble = ({
       >
         <button
           onClick={() => onAlertClick(alert)}
-          className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-500/5 dark:border-${color}-500/20 dark:hover:bg-${color}-500/10 dark:hover:border-${color}-500/30`}
+          className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-900/20 dark:border-${color}-500/20 dark:hover:bg-${color}-900/30 dark:hover:border-${color}-500/30`}
         >
           <div
-            className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20 dark:bg-${color}-500/5 dark:border-${color}-500/10`}
+            className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20 dark:bg-${color}-900/20 dark:border-${color}-500/30`}
           >
             <BellIcon size={24} className={`text-${color}-500 animate-pulse`} />
           </div>
@@ -445,7 +466,7 @@ const MessageBubble = ({
             className={cn(
               "relative group rounded-xl bg-linear-to-br p-2 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
               !isEmoji &&
-                `px-3 py-2 ${
+                `px-2.5 py-1.5 ${
                   isSender
                     ? "from-primary/20 to-primary/10 border-primary/90 bg-card dark:bg-gray-900/80 border-r dark:border-gray-700/50"
                     : "bg-card border-border/40 dark:bg-gray-800/50 dark:border-gray-700/50"
@@ -508,7 +529,7 @@ const MessageBubble = ({
                       : msg.replyTo.file;
                     if (!fileData) return null;
 
-                    if ( 
+                    if (
                       fileData.type?.startsWith("image") ||
                       fileData.thumbnailUrl
                     ) {
@@ -635,9 +656,14 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [recentDms, setRecentDms] = useState<any[]>([]); // Add this line
+  const { recentDms, setRecentDms, addRecentDm } = useChatContext();
+  const currentUser = useMemo(() => {
+    if (!session?.user?._id || !users.length) return null;
+    return users.find((u) => u._id === session?.user?._id);
+  }, [session?.user?._id, users]);
   const [lightbox, setLightbox] = useState<{
     images: Array<{ url: string; name: string }>;
     initialIndex: number;
@@ -645,6 +671,7 @@ export default function Chat() {
   const [isCreateChannelModalOpen, setCreateChannelModalOpen] = useState(false);
   const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
+  const [isPermissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [isMembersModalOpen, setMembersModalOpen] = useState(false);
 
   const [isDmsOpen, setIsDmsOpen] = useState(true);
@@ -652,13 +679,19 @@ export default function Chat() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingMessage, setDeletingMessage] = useState<any | null>(null);
 
-  const [voiceUploadProgress, setVoiceUploadProgress] = useState<Record<string, number>>({});
+  const [voiceUploadProgress, setVoiceUploadProgress] = useState<
+    Record<string, number>
+  >({});
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'paused' | 'sending'>('idle');
+  const [recordingState, setRecordingState] = useState<
+    "idle" | "recording" | "paused" | "sending"
+  >("idle");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(
+    null
+  );
 
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
@@ -667,7 +700,14 @@ export default function Chat() {
   };
 
   const handleReplyInThread = (threadId: string, content: string) => {
-    sendCombinedMessage(content, undefined, false, undefined, undefined, threadId);
+    sendCombinedMessage(
+      content,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      threadId
+    );
   };
 
   const [stagedFilePreviews, setStagedFilePreviews] = useState<string[]>([]);
@@ -699,6 +739,8 @@ export default function Chat() {
   const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
   const {
     messages,
+    isMuted,
+    isVideoOff,
     setMessages,
     sendCombinedMessage,
     uploadFile,
@@ -709,9 +751,43 @@ export default function Chat() {
     startCall,
     sendReadReceipt,
     deleteMessage,
+    setIsMuted,
+    setIsVideoOff,
+    getWs,
   } = useChat(activeRoom);
 
   const prevMessagesLengthRef = useRef(messages.length);
+
+  useEffect(() => {
+    const ws = getWs();
+    if (!ws || session?.user.role !== "doctor" || "admin") return;
+
+    const handleVitalsMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "vitals.recorded") {
+          toast.info(`New vitals recorded for ${data.payload.patientName}`, {
+            description: `Click to view`,
+            action: {
+              label: "View",
+              onClick: () => {
+                // redirect to patient's page
+                window.location.href = `/dashboard/patients/${data.payload.patientId}`;
+              },
+            },
+          });
+        }
+      } catch (error) {
+        // Not a JSON message, ignore
+      }
+    };
+
+    ws.addEventListener("message", handleVitalsMessage);
+
+    return () => {
+      ws.removeEventListener("message", handleVitalsMessage);
+    };
+  }, [getWs, session]);
 
   // Play sound on new message received
   useEffect(() => {
@@ -727,11 +803,11 @@ export default function Chat() {
     prevMessagesLengthRef.current = messages.length;
   }, [messages, session?.user?._id]);
 
-  const handleStartChat = (userId: string) => {
-    console.log(`Starting chat with user ${userId}`);
+  const handleStartChat = (roomId: string) => {
+    if (!roomId) return;
+    handleRoomChange(roomId);
+    setIsNewChatDialogOpen(false);
     setSelectedUser(null);
-    // Here you would typically switch to a direct message room
-    // For now, we'll just log the action
   };
 
   const handleAlertClick = (alert: AlertMessage) => {
@@ -740,7 +816,14 @@ export default function Chat() {
 
   const handleThreadReply = (threadId: string, content: string) => {
     if (session?.user) {
-    sendCombinedMessage(content, undefined, false, undefined, undefined, threadId);
+      sendCombinedMessage(
+        content,
+        undefined,
+        false,
+        undefined,
+        undefined,
+        threadId
+      );
     }
   };
 
@@ -802,7 +885,9 @@ export default function Chat() {
   const handleToggleRecording = async () => {
     if (recordingState === "idle") {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         setRecordingStream(stream);
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
@@ -816,18 +901,19 @@ export default function Chat() {
         mediaRecorder.onstop = async () => {
           if (audioChunksRef.current.length === 0) return;
           const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-          const file = new File([blob], "voice-message.webm", { type: "audio/webm" });
- 
+          const file = new File([blob], "voice-message.webm", {
+            type: "audio/webm",
+          });
+
           try {
             // First, upload the file and wait for the response.
             const uploadedFile = await uploadFile(file, (progress) => {
               // We can still track progress if we want to add a non-optimistic UI later.
               console.log(`Voice message upload progress: ${progress}%`);
             });
-            
+
             // Once the upload is complete, send the message with the file details.
             sendCombinedMessage("", [uploadedFile], true);
-            
           } catch (error) {
             console.error("Error sending voice message:", error);
             alert("Failed to send voice message.");
@@ -835,7 +921,9 @@ export default function Chat() {
             setRecordingState("idle");
             setRecordingStream(null);
             if (mediaRecorderRef.current) {
-              mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+              mediaRecorderRef.current.stream
+                .getTracks()
+                .forEach((track) => track.stop());
             }
             audioChunksRef.current = [];
           }
@@ -845,25 +933,30 @@ export default function Chat() {
         setRecordingState("recording");
       } catch (error) {
         console.error("Error starting recording:", error);
-        alert("Could not start recording. Please check microphone permissions.");
+        alert(
+          "Could not start recording. Please check microphone permissions."
+        );
       }
     }
   };
 
   const handleSendVoiceMessage = async () => {
-    if (mediaRecorderRef.current && (recordingState === "recording" || recordingState === "paused")) {
+    if (
+      mediaRecorderRef.current &&
+      (recordingState === "recording" || recordingState === "paused")
+    ) {
       setRecordingState("sending");
       mediaRecorderRef.current.stop();
     }
   };
 
   const handlePauseRecording = () => {
-    if (mediaRecorderRef.current?.state === 'recording') {
+    if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.pause();
-      setRecordingState('paused');
-    } else if (mediaRecorderRef.current?.state === 'paused') {
+      setRecordingState("paused");
+    } else if (mediaRecorderRef.current?.state === "paused") {
       mediaRecorderRef.current.resume();
-      setRecordingState('recording');
+      setRecordingState("recording");
     }
   };
 
@@ -877,7 +970,7 @@ export default function Chat() {
     }
     audioContextRef.current = null;
     recordingStream?.getTracks().forEach((track) => track.stop());
-    setRecordingState('idle');
+    setRecordingState("idle");
     setRecordingStream(null);
     audioChunksRef.current = [];
   };
@@ -999,16 +1092,6 @@ export default function Chat() {
   }, [messages]);
 
   useEffect(() => {
-    if (currentResultIndex !== -1 && searchResults.length > 0) {
-      const messageIndex = searchResults[currentResultIndex];
-      messageRefs.current[messageIndex]?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [currentResultIndex, searchResults]);
-
-  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         emojiPickerRef.current &&
@@ -1060,19 +1143,21 @@ export default function Chat() {
 
   useEffect(() => {
     const fetchRecentDms = async () => {
-      try {
-        const response = await fetch("/api/messages/recent");
-        if (response.ok) {
-          const data: Message[] = await response.json();
-          setRecentDms(data);
+      if (session?.user?.id) {
+        try {
+          const response = await fetch(`/api/users/${session.user.id}/dms`);
+          if (response.ok) {
+            const data: { dms: DM[] } = await response.json();
+            setRecentDms(data.dms);
+          }
+        } catch (error) {
+          console.error("Failed to fetch recent DMs:", error);
         }
-      } catch (error) {
-        console.error("Failed to fetch recent DMs:", error);
       }
     };
 
     fetchRecentDms();
-  }, []);
+  }, [session, setRecentDms]);
 
   const openDocPreview = (file: any) => {
     setSelectedDoc(file);
@@ -1121,27 +1206,33 @@ export default function Chat() {
   const handleCloseSearch = () => {
     setShowSearch(false);
     setChatSearchQuery("");
-
-  useEffect(() => {
-    if (messagesContainerRef.current && searchResults.length > 0 && currentResultIndex >= 0) {
-      const messageIndex = searchResults[currentResultIndex];
-      const messageElement = messagesContainerRef.current.querySelector(`#message-${messageIndex}`);
-      if (messageElement) {
-        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  }, [currentResultIndex, searchResults]);
     setSearchResults([]);
     setCurrentResultIndex(-1);
   };
 
-  const handleEmojiClick = (emojiData: EmojiClickData, event: MouseEvent) => {
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
     setText((prevText) => {
       const newText = prevText + emojiData.emoji;
       return newText;
     });
     textareaRef.current?.focus();
   };
+
+  useEffect(() => {
+    if (
+      messagesContainerRef.current &&
+      searchResults.length > 0 &&
+      currentResultIndex >= 0
+    ) {
+      const messageIndex = searchResults[currentResultIndex];
+      const messageElement = messagesContainerRef.current.querySelector(
+        `#message-${messageIndex}`
+      );
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [currentResultIndex, searchResults]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1328,7 +1419,7 @@ export default function Chat() {
         if (stagedFiles.length > 0) {
           const uploadPromises = stagedFiles.map((file) =>
             uploadFile(file, (progress) => {
-              setUploadProgress((prev) => ({ ...prev, [file.name]: progress }))
+              setUploadProgress((prev) => ({ ...prev, [file.name]: progress }));
             })
           );
           const uploadedFiles = await Promise.all(uploadPromises);
@@ -1339,7 +1430,12 @@ export default function Chat() {
           setUploadProgress(newProgress);
 
           // Use sendCombinedMessage to send text and files together
-          await sendCombinedMessage(text.trim(), uploadedFiles, false, replyToMessage);
+          await sendCombinedMessage(
+            text.trim(),
+            uploadedFiles,
+            false,
+            replyToMessage
+          );
           setStagedFiles([]);
           setUploadProgress({});
           setStagedFilePreviews([]);
@@ -1410,6 +1506,10 @@ export default function Chat() {
         audio: hasAudio,
       });
 
+      stream.getAudioTracks().forEach((track) => (track.enabled = false));
+      stream.getVideoTracks().forEach((track) => (track.enabled = false));
+      setIsMuted(true);
+      setIsVideoOff(true);
       setLocalStream(stream);
       playSound("callStart");
       setIsCallActive(true);
@@ -1461,6 +1561,43 @@ export default function Chat() {
     }
   };
 
+  const isDmRoom = useMemo(() => activeRoom.includes("--"), [activeRoom]);
+  const currentChannel = useMemo(
+    () =>
+      channels.find(
+      (c) => c.name.trim().toLowerCase().replace(/\s+/g, "-") === activeRoom
+    ),
+    [channels, activeRoom]
+  );
+
+  const channelUsers = useMemo(() => {
+    if (activeRoom === "general") {
+      return users;
+    }
+    if (isDmRoom) {
+      const userIds = activeRoom.split("--");
+      return users.filter((u) => userIds.includes(u._id));
+    }
+    if (currentChannel) {
+      return users.filter((u) => currentChannel.members.includes(u._id));
+    }
+    return []; // Fallback for unknown rooms
+  }, [activeRoom, isDmRoom, currentChannel, users]);
+
+  const otherUser = useMemo(() => {
+    if (!isDmRoom) return null;
+    return channelUsers.find((u) => u._id !== session?.user?._id);
+  }, [isDmRoom, channelUsers, session?.user?._id]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(
+      (user) =>
+        user._id !== session?.user?._id &&
+        (!searchQuery ||
+          user.fullName.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [users, searchQuery, session?.user?._id]);
+
   if (!session)
     return (
       <div className="flex items-center justify-center h-full backdrop-blur-sm bg-card/50 rounded-2xl border border-border/50">
@@ -1473,19 +1610,121 @@ export default function Chat() {
       </div>
     );
 
-  const handleRoomChange = (room: string) => {
+  const handleRoomChange = async (room: string) => {
     router.push(`${pathname}?room=${room}`);
-  };
+    setSearchQuery("");
 
-  const createDirectRoom = (userId1: string, userId2: string) => {
-    const sortedIds = [userId1, userId2].sort();
-    return sortedIds.join("-");
+    if (room.includes("--")) {
+      const userIds = room.split("--");
+      if (userIds.length === 2 && userIds[0] !== userIds[1]) {
+        const otherUserId = userIds.find((id) => id !== session?.user?._id);
+        if (otherUserId) {
+          const dmExists = recentDms.some((dm) => dm.room === room);
+          if (!dmExists) {
+            try {
+              const res = await fetch(`/api/users/${session?.user?._id}/dms`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ receiverId: otherUserId }),
+              });
+              if (res.ok) {
+                const newDm: DMRoom = await res.json();
+                addRecentDm(newDm.dm);
+              } else {
+                console.error("Failed to create DM room");
+              }
+            } catch (error) {
+              console.error("Error creating DM room:", error);
+            }
+          }
+        }
+      }
+    }
   };
-
-  const currentUser = users.find((u) => u._id === session?.user?._id);
 
   return (
     <>
+      <Dialog
+        open={isNewChatDialogOpen}
+        onOpenChange={(isOpen) => {
+          setIsNewChatDialogOpen(isOpen);
+          if (!isOpen) {
+            setSearchQuery("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md g-background/80 dark:bg-slate-900/80 border-border/30 shadow-2xl rounded-2xl">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-xl font-bold">New Message</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Search for people in your organization to start a conversation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-1 pt-0">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name..."
+                className="w-full bg-transparent border-2 border-border/30 focus:border-primary/50 transition-all duration-300 rounded-xl pl-10 pr-4 py-2.5 text-base"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="mt-4 space-y-1.5 max-h-[50vh] overflow-y-auto no-scrollbar">
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <button
+                    key={user._id}
+                    onClick={() => {
+                      const room = [session?.user?._id, user._id]
+                        .sort()
+                        .join("--");
+                      handleRoomChange(room);
+                      setIsNewChatDialogOpen(false);
+                    }}
+                    className="w-full flex items-center p-2.5 rounded-xl hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-all duration-200 text-left cursor-pointer"
+                  >
+                    <div className="relative mr-3">
+                      <Avatar className="h-9 w-9 border-2 border-border/20 dark:border-gray-700/50">
+                        <AvatarImage src={user.image || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                          {user.fullName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {onlineUsers.includes(user._id) && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-base text-foreground">
+                        {user.fullName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold text-foreground">
+                    No users found
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try adjusting your search or invite new members to your
+                    organization.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
@@ -1570,7 +1809,10 @@ export default function Chat() {
                         key={channel._id}
                         className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
                           activeRoom ===
-                          channel.name.toLowerCase().replace(/ /g, "-")
+                          channel.name
+                            .trim()
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
@@ -1579,14 +1821,20 @@ export default function Chat() {
                           className="flex cursor-pointer items-center flex-1 text-left"
                           onClick={() =>
                             handleRoomChange(
-                              channel.name.toLowerCase().replace(/ /g, "-")
+                              channel.name
+                                .trim()
+                                .toLowerCase()
+                                .replace(/\s+/g, "-")
                             )
                           }
                         >
                           <span
                             className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
                               activeRoom ===
-                              channel.name.toLowerCase().replace(/ /g, "-")
+                              channel.name
+                                .trim()
+                                .toLowerCase()
+                                .replace(/\s+/g, "-")
                                 ? "bg-primary"
                                 : "bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity"
                             }`}
@@ -1644,12 +1892,11 @@ export default function Chat() {
                     <button
                       onClick={() =>
                         handleRoomChange(
-                          createDirectRoom(currentUser._id, currentUser._id)
+                          `${currentUser._id}-${currentUser._id}`
                         )
                       }
                       className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-                        activeRoom ===
-                        createDirectRoom(currentUser._id, currentUser._id)
+                        activeRoom === `${currentUser._id}-${currentUser._id}`
                           ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
                           : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
                       }`}
@@ -1665,6 +1912,9 @@ export default function Chat() {
                               .slice(0, 2)}
                           </AvatarFallback>
                         </Avatar>
+                        {onlineUsers.includes(currentUser._id) && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
+                        )}
                       </div>
                       <div className="flex flex-col items-start">
                         <span className="text-xs text-muted-foreground -mt-1">
@@ -1674,14 +1924,25 @@ export default function Chat() {
                     </button>
                   )}
                   {recentDms
-                    .map((dm) => {
-                      const otherUserId = dm.room
-                        .split("-")
-                        .find((id) => id !== session?.user?._id);
-                      const user = users.find((u) => u._id === otherUserId);
-                      return { ...dm, user };
-                    })
-                    .filter((dm) => dm.user && dm.room.includes("-"))
+                    .slice(0, 5)
+                    .reduce(
+                      (acc, dm) => {
+                        // Find the other user in the DM
+                        const otherUser = dm.participants.find(
+                          (p) => p._id.toString() !== session?.user?._id
+                        );
+
+                        if (otherUser) {
+                          acc.push({
+                            ...dm,
+                            user: otherUser,
+                            room: dm.room,
+                          } as DM & { user: IUser; room: string });
+                        }
+                        return acc;
+                      },
+                      [] as Array<DM & { user: IUser; room: string }>
+                    )
                     .filter(
                       (dm) =>
                         !searchQuery ||
@@ -1691,13 +1952,12 @@ export default function Chat() {
                             .includes(searchQuery.toLowerCase()))
                     )
                     .map((dm) => {
-                      if (!dm.user) return null;
                       const room = dm.room;
                       const user = dm.user;
 
                       return (
                         <button
-                          key={dm._id}
+                          key={(dm as any)._id}
                           onClick={() => handleRoomChange(room)}
                           className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
                             activeRoom === room
@@ -1716,7 +1976,7 @@ export default function Chat() {
                                   .slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
-                            {onlineUsers.includes(user._id) && (
+                            {onlineUsers.includes(user._id.toString()) && (
                               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
                             )}
                           </div>
@@ -1724,6 +1984,17 @@ export default function Chat() {
                         </button>
                       );
                     })}
+                  <button
+                    onClick={() => setIsNewChatDialogOpen(true)}
+                    className="group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
+                  >
+                    <div className="relative mr-3">
+                      <div className="h-6 w-6 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
+                        <Plus className="h-4 w-4" />
+                      </div>
+                    </div>
+                    Start a new chat
+                  </button>
                 </div>
               )}
             </div>
@@ -1740,30 +2011,53 @@ export default function Chat() {
                 onToggleScreenShare={handleToggleScreenShare}
                 isScreenSharing={isScreenSharing}
                 screenStream={screenStream}
+                isMuted={isMuted}
+                isVideoOff={isVideoOff}
+                onToggleMute={() => setIsMuted(!isMuted)} onToggleVideo={() => setIsVideoOff(!isVideoOff)}
               />
             )}
             {/* Chat Header */}
-            <header className="flex items-center justify-between p-4 border-b border-border/50 dark:border-gray-700/50 bg-background/30 dark:bg-transparent backdrop-blur-sm z-10">
+            <header className="flex items-center justify-between p-3 lg:p-4 border-b border-border/50 dark:border-gray-700/50 bg-background/30 dark:bg-transparent backdrop-blur-sm z-10">
               <div className="flex items-center overflow-hidden">
                 <h2 className="text-base font-bold text-foreground cursor-pointer truncate">
-                  {activeRoom === "general"
-                    ? "General"
-                    : channels.find(
-                        (c) =>
-                          c.name.toLowerCase().replace(/ /g, "-") === activeRoom
-                      )?.name ||
-                      (users &&
-                        users.find(
-                          (u) =>
-                            createDirectRoom(
-                              session?.user?._id || "",
-                              u._id
-                            ) === activeRoom
-                        )?.fullName) ||
-                      "Chat"}
+                  {activeRoom === 'general'
+                    ? 'General'
+                    : activeRoom === `${session?.user?._id}-${session?.user?._id}`
+                    ? currentUser?.fullName || session?.user?.name || 'Personal Space'
+                    : isDmRoom
+                    ? channelUsers.find((u) => u._id !== session?.user?._id)
+                        ?.fullName || 'Chat'
+                    : currentChannel?.name || 'Chat'}
                 </h2>
-                <div className="ml-3 bg-green-500/10 text-green-600 dark:text-green-400 text-xs px-3 py-1 rounded-full font-semibold border border-green-500/20 hidden md:block">
-                  {onlineUsers.length} online
+                <div className="flex items-center ml-3">
+                  <div
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-full mr-2",
+                      isDmRoom
+                        ? otherUser && onlineUsers.includes(otherUser._id)
+                          ? "bg-green-500"
+                          : "bg-gray-400"
+                        : onlineUsers.length > 0
+                          ? "bg-green-500"
+                          : "bg-gray-400"
+                    )}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {isDmRoom ? (
+                      <span className="hidden md:inline">
+                        {otherUser && onlineUsers.includes(otherUser._id)
+                          ? "Online"
+                          : "Offline"}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-foreground">
+                          {onlineUsers.length}
+                        </span>
+                        <span className="hidden md:inline ml-1">online</span>
+                      </>
+                    )}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center space-x-1 md:space-x-2">
@@ -1782,7 +2076,7 @@ export default function Chat() {
                   variant="ghost"
                   size="sm"
                   className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200 cursor-pointer"
-                  onClick={handleStartCall}
+                  onClick={() => setPermissionDialogOpen(true)}
                   disabled={!session}
                 >
                   <VideoIcon
@@ -1794,30 +2088,67 @@ export default function Chat() {
 
                 {/* Members Display */}
                 <button
-                  onClick={() => setMembersModalOpen(true)}
+                  onClick={() => {
+                    if (isDmRoom) {
+                      const otherUser = channelUsers.find(
+                        (u) => u._id !== session?.user?._id
+                      );
+                      if (otherUser) setSelectedUser(otherUser);
+                    } else {
+                      setMembersModalOpen(true);
+                    }
+                  }}
                   className="flex items-center group"
                 >
                   <div className="flex items-center -space-x-2 pr-2 transition-all duration-300 group-hover:-space-x-1">
-                    {users.slice(0, 4).map((user) => (
-                      <Avatar key={user.id || user._id} className="h-8 w-8 border-2 border-background group-hover:z-10 transition-all duration-200">
-                        <AvatarImage src={user.image || undefined} />
+                    {isDmRoom ? (
+                      <Avatar className="h-7 w-7 lg:h-8 lg:w-8 border-2 border-background group-hover:z-10 transition-all duration-200">
+                        <AvatarImage
+                          src={
+                            channelUsers.find(
+                              (u) => u._id !== session?.user?._id
+                            )?.image || undefined
+                          }
+                        />
                         <AvatarFallback className="text-xs font-semibold">
-                          {(user.fullName || "").split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          {(
+                            channelUsers.find(
+                              (u) => u._id !== session?.user?._id
+                            )?.fullName || ""
+                          )
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                    ))}
-                    {users.length > 4 && (
-                      <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
-                        <AvatarFallback className="text-xs font-semibold bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                          +{users.length - 4}
-                        </AvatarFallback>
-                      </Avatar>
+                    ) : (
+                      <>
+                        {channelUsers.slice(0, 4).map((user) => (
+                          <Avatar
+                            key={user.id || user._id}
+                            className="h-7 w-7 lg:h-8 lg:w-8 border-2 border-background group-hover:z-10 transition-all duration-200"
+                          >
+                            <AvatarImage src={user.image || undefined} />
+                            <AvatarFallback className="text-xs font-semibold">
+                              {(user.fullName || "")
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                        {channelUsers.length > 4 && (
+                          <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
+                            <AvatarFallback className="text-xs font-semibold bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                              +{channelUsers.length - 4}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </>
                     )}
                   </div>
-                  {/* this is very important might be useful don't remove it */}
-                  {/* <div className="md:hidden">
-                    <Users size={18} className="text-muted-foreground" />
-                  </div> */}
                 </button>
               </div>
             </header>
@@ -1983,7 +2314,7 @@ export default function Chat() {
             {/* Message Input */}
             <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4 dark:border-gray-700/50 dark:bg-transparent">
               {replyingTo && (
-                  <div className="mb-2 p-2 border-l-2 border-primary bg-background/50 dark:bg-gray-800/50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                <div className="mb-2 p-2 border-l-2 border-primary bg-background/50 dark:bg-gray-800/50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2 overflow-hidden">
                       {replyingTo.file && !Array.isArray(replyingTo.file) && (
@@ -2106,7 +2437,7 @@ export default function Chat() {
                     className="hidden"
                     multiple
                   />
-                  {recordingState === 'idle' ? (
+                  {recordingState === "idle" ? (
                     <textarea
                       ref={textareaRef}
                       value={text}
@@ -2118,25 +2449,36 @@ export default function Chat() {
                     />
                   ) : (
                     <div className="w-full h-8.5 flex items-center gap-4">
-                      {recordingState !== 'sending' && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground" onClick={handleCancelRecording}>
+                      {recordingState !== "sending" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full text-muted-foreground"
+                          onClick={handleCancelRecording}
+                        >
                           <Trash2 size={16} />
                         </Button>
                       )}
-                      <LiveAudioVisualizer stream={recordingStream} isRecording={recordingState === 'recording'} isSending={recordingState === 'sending'} />
-                      {recordingState === 'sending' && (
+                      <LiveAudioVisualizer
+                        stream={recordingStream}
+                        isRecording={recordingState === "recording"}
+                        isSending={recordingState === "sending"}
+                      />
+                      {recordingState === "sending" && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Sending…
                         </div>
                       )}
-                      {recordingState === 'paused' && (
-                        <div className="text-sm text-muted-foreground animate-pulse">Paused</div>
+                      {recordingState === "paused" && (
+                        <div className="text-sm text-muted-foreground animate-pulse">
+                          Paused
+                        </div>
                       )}
                     </div>
                   )}
                   <div className="flex items-center space-x-1 ml-3">
-                    {recordingState === 'idle' && (
+                    {recordingState === "idle" && (
                       <>
                         <div className="relative">
                           <Button
@@ -2199,12 +2541,27 @@ export default function Chat() {
                       >
                         <SendIcon size={18} />
                       </Button>
-                    ) : recordingState === 'recording' || recordingState === 'paused' ? (
+                    ) : recordingState === "recording" ||
+                      recordingState === "paused" ? (
                       <>
-                        <Button onClick={handlePauseRecording} size="sm" variant="ghost" className="h-9 w-9 p-0 rounded-full">
-                          {recordingState === 'recording' ? <PauseIcon size={18} /> : <MicIcon size={18} />}
+                        <Button
+                          onClick={handlePauseRecording}
+                          size="sm"
+                          variant="ghost"
+                          className="h-9 w-9 p-0 rounded-full"
+                        >
+                          {recordingState === "recording" ? (
+                            <PauseIcon size={18} />
+                          ) : (
+                            <MicIcon size={18} />
+                          )}
                         </Button>
-                        <Button onClick={handleSendVoiceMessage} size="sm" className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg" disabled={recordingState === 'paused'}>
+                        <Button
+                          onClick={handleSendVoiceMessage}
+                          size="sm"
+                          className="h-9 w-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+                          disabled={recordingState === "paused"}
+                        >
                           <SendIcon size={18} />
                         </Button>
                       </>
@@ -2336,7 +2693,7 @@ export default function Chat() {
         <ChannelMembersModal
           isOpen={isMembersModalOpen}
           onClose={() => setMembersModalOpen(false)}
-          users={users}
+          users={channelUsers}
           onlineUserIds={onlineUsers}
           onViewProfile={(user) => setSelectedUser(user)}
         />
@@ -2399,6 +2756,34 @@ export default function Chat() {
           )}
         </AnimatePresence>
       </div>
+
+      <Dialog open={isPermissionDialogOpen} onOpenChange={setPermissionDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card/90 backdrop-blur-lg border-border/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <VideoIcon className="text-primary" />
+              Start a Sync Call
+            </DialogTitle>
+            <DialogDescription>
+              To start a call, we need access to your camera and microphone. Your browser will ask you for permission.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setPermissionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setPermissionDialogOpen(false);
+                handleStartCall();
+              }}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Allow Access
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* --- Sound Palette for Development/Testing --- */}
       {/* In a real app, might conditionally render this based on user role */}

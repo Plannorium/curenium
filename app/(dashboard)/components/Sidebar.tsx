@@ -7,7 +7,7 @@ import {
   MessageSquareIcon,
   BellIcon,
   CalendarIcon,
-  UsersIcon,
+  Stethoscope,
   SettingsIcon,
   LogOutIcon,
   ChevronLeftIcon,
@@ -18,6 +18,7 @@ import {
 import { useSession } from 'next-auth/react';
 import { useRole } from '@/components/auth/RoleProvider';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useChatContext } from '@/contexts/ChatContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -41,14 +42,10 @@ interface User {
   _id: string;
   fullName: string;
   image?: string;
+  online?: boolean;
 }
 
-interface DirectMessage {
-  _id: string;
-  text: string;
-  sender: User;
-  receiver: User;
-}
+
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
@@ -62,7 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const searchParams = useSearchParams();
   const activeRoom = searchParams.get('room');
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
+  const { recentDms } = useChatContext();
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const getInitials = (name: string | undefined) => {
@@ -91,22 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     };
 
-    const fetchDirectMessages = async () => {
-      if (session?.user?.id) {
-        try {
-          const res = await fetch(`/api/users/${session.user.id}/dms`);
-          if (res.ok) {
-            const data = await res.json() as { dms: DirectMessage[] };
-            setDirectMessages(data.dms);
-          }
-        } catch (error) {
-          console.error('Failed to fetch direct messages', error);
-        }
-      }
-    };
 
-    fetchChannels();
-    fetchDirectMessages();
 
     const fetchCurrentUser = async () => {
       if (session?.user?.id) {
@@ -115,7 +98,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           if (res.ok) {
             const data: { user: User } = await res.json();
             setCurrentUser(data.user as User);
-            console.log(data, "c-user")
           }
         } catch (error) {
           console.error('Failed to fetch current user', error);
@@ -123,6 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     };
 
+    fetchChannels();
     fetchCurrentUser();
   }, [session]);
 
@@ -131,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Chat', icon: <MessageSquareIcon size={20} />, path: '/dashboard/chat' },
     { name: 'Alerts', icon: <BellIcon size={20} />, path: '/dashboard/alerts' },
     { name: 'Shifts', icon: <CalendarIcon size={20} />, path: '/dashboard/shifts' },
-    { name: 'EHR', icon: <UsersIcon size={20} />, path: '/dashboard/ehr/patients' },
+    { name: 'EHR', icon: <Stethoscope size={20} />, path: '/dashboard/ehr/patients' },
   ];
 
   if (role === 'admin') {
@@ -149,10 +132,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="mt-3 space-y-1">
           <Link
             href="/dashboard/ehr/patients"
-            className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
+            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+              pathname === '/dashboard/ehr/patients'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+            } ${isCollapsed ? 'lg:justify-center' : ''}`}
           >
-            <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white truncate whitespace-nowrap transition-colors duration-200">
+            <span className="truncate whitespace-nowrap transition-colors duration-200">
               Patients
+            </span>
+          </Link>
+          <Link
+            href="/dashboard/ehr/appointments"
+            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+              pathname === '/dashboard/ehr/appointments'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+            } ${isCollapsed ? 'lg:justify-center' : ''}`}
+          >
+            <span className="truncate whitespace-nowrap transition-colors duration-200">
+              Appointments
+            </span>
+          </Link>
+          <Link
+            href="/dashboard/ehr/audit-logs"
+            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+              pathname === '/dashboard/ehr/audit-logs'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+            } ${isCollapsed ? 'lg:justify-center' : ''}`}
+          >
+            <span className="truncate whitespace-nowrap transition-colors duration-200">
+              Audit Logs
             </span>
           </Link>
           {/* Additional role-based navigation items will go here */}
@@ -169,27 +180,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Link
             key="general"
             href={`/dashboard/chat?room=general`}
-            className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              activeRoom === 'general'
+            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeRoom === 'general' || !activeRoom
                 ? 'bg-primary/10 text-primary'
                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             } ${isCollapsed ? 'lg:justify-center' : ''}`}
           >
             <span className={`font-bold ${isCollapsed ? 'lg:hidden' : ''}`}>#</span>
-            <span className={`ml-2 text-gray-500 dark:text-gray-400 truncate whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>General</span>
+            <span className={`ml-2 truncate whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>General</span>
           </Link>
           {channels.map(channel => (
             <Link
               key={channel._id}
               href={`/dashboard/chat?room=${channel.name.toLowerCase().replace(/\s/g, '')}`}
-              className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                 activeRoom === `${channel.name.toLowerCase().replace(/\s/g, '')}`
                   ? 'bg-primary/10 text-primary'
                   : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               } ${isCollapsed ? 'lg:justify-center' : ''}`}
             >
               <span className={`font-bold ${isCollapsed ? 'lg:hidden' : ''}`}>#</span>
-              <span className={`ml-2 text-gray-500 dark:text-gray-400 truncate whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>{channel.name}</span>
+              <span className={`ml-2 truncate whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>{channel.name}</span>
             </Link>
           ))}
         </div>
@@ -200,10 +211,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Link
             key="notes-to-self"
             href={`/dashboard/chat?room=${session?.user?.id}-${session?.user?.id}`}
-            className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
               activeRoom === `${session?.user?.id}-${session?.user?.id}`
-                ? 'bg-primary/10'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
             } ${isCollapsed ? 'lg:justify-center' : ''}`}
           >
             <div className="relative">
@@ -211,36 +222,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <AvatarImage src={currentUser?.image || undefined} alt="Your avatar" />
                 <AvatarFallback>{getInitials(currentUser?.fullName)}</AvatarFallback>
               </Avatar>
-              <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-950"></span>
+              {currentUser?.online && (
+                <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-950" />
+              )}
             </div>
             <div className={`ml-3 overflow-hidden ${isCollapsed ? 'lg:hidden' : ''}`}>
-              <p className={`font-semibold truncate ${activeRoom === `${session?.user?.id}-${session?.user?.id}` ? 'text-primary' : 'text-gray-700 dark:text-gray-200'}`}>Notes to self</p>
+              <p className={`font-semibold truncate`}>Notes to self</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Personal space</p>
             </div>
           </Link>
-          {directMessages.map(dm => {
-            const otherUser = dm.sender._id === session?.user?.id ? dm.receiver : dm.sender;
-            const isActive = activeRoom === otherUser._id;
+          {recentDms.slice(0, 3).map((dm) => {
+            const otherUser = dm.participants.find(
+              (p) => p._id.toString() !== session?.user?.id
+            );
+
+            if (!otherUser) {
+              console.warn(
+                "Could not determine other user for DM, skipping render:",
+                dm
+              );
+              return null;
+            }
+
+            const roomHref = dm.room || [session?.user?.id, otherUser._id].sort().join('--');
+            const isActive = activeRoom === roomHref;
+
             return (
               <Link
                 key={dm._id}
-                href={`/dashboard/chat?room=${otherUser._id}`}
-                className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                href={`/dashboard/chat?room=${roomHref}`}
+                className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? 'bg-primary/10'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                 } ${isCollapsed ? 'lg:justify-center' : ''}`}
               >
                 <div className="relative">
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="w-7 h-7 md:w-8 md:h-8">
                     <AvatarImage src={otherUser.image || undefined} alt={otherUser.fullName} />
                     <AvatarFallback>{getInitials(otherUser.fullName)}</AvatarFallback>
                   </Avatar>
-                  <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-950"></span>
+                  {otherUser.online && (
+                    <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-950" />
+                  )}
                 </div>
                 <div className={`ml-3 overflow-hidden ${isCollapsed ? 'lg:hidden' : ''}`}>
-                  <p className={`font-semibold truncate ${isActive ? 'text-primary' : 'text-gray-700 dark:text-gray-200'}`}>{otherUser.fullName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{dm.text}</p>
+                  <p className={`text-[0.925rem] md:text-base font-semibold truncate`}>{otherUser.fullName}</p>
+                  <p className="text-[0.7rem] md:text-xs text-gray-500 dark:text-gray-400 truncate">{dm.text}</p>
                 </div>
               </Link>
             );
@@ -263,7 +291,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {teams.map(team => (
             <button
               key={team.name}
-              className={`group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
+              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
             >
               <span className={`w-2 h-2 rounded-full ${team.color} ${isCollapsed ? '' : 'mr-3'}`}></span>
               <span className={`text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white truncate whitespace-nowrap transition-colors duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>

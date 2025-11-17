@@ -3,14 +3,16 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, User, Clock, MessageSquare, Tag, Users, Building } from 'lucide-react';
+import { X, User, Clock, MessageSquare, Tag, Users, Building, ArrowUpRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 interface Alert {
   _id: string;
   level: 'critical' | 'urgent' | 'info';
   message: string;
   createdAt: string;
+  patientId?: string;
   createdBy: {
     _id: string;
     fullName: string;
@@ -138,9 +140,14 @@ export const AlertDetailsModal = ({ alert, onClose }: AlertDetailsModalProps) =>
           <Button onClick={onClose} variant="outline" className="w-full sm:w-auto">
             Close
           </Button>
-          <Button className="w-full sm:w-auto">
-            Acknowledge
-          </Button>
+          {alert.patientId && (
+            <Link href={`/dashboard/ehr/patients/${alert.patientId}`} passHref>
+              <Button className="w-full sm:w-auto">
+                <ArrowUpRight className="h-4 w-4 mr-2" />
+                View Patient
+              </Button>
+            </Link>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

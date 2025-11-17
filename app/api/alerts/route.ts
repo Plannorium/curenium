@@ -100,13 +100,14 @@ export async function GET(request: Request) {
 
     await dbConnect();
     try {
-        // Filter alerts where the current user is a recipient or if recipients list is empty (broadcast)
-        const alerts = await Alert.find({ 
-          organizationId: session.user.organizationId,
-          $or: [{ recipients: { $in: [session.user.id] } }, { recipients: { $size: 0 } }]
-        }).sort({ createdAt: -1 }).limit(20);
+        const alerts = await Alert.find({ organizationId: token.organizationId })
+          .populate('createdBy', 'fullName image')
+          .sort({ createdAt: -1 })
+          .lean();
+
         return NextResponse.json({ alerts });
     } catch (error) {
+        console.error("Failed to fetch alerts:", error);
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
 }

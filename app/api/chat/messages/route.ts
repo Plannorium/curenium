@@ -4,6 +4,9 @@ import Message from '@/models/Message';
 import dbConnect from '@/lib/dbConnect';
 import { getToken } from 'next-auth/jwt';
 import mongoose from 'mongoose';
+import { getSession } from "next-auth/react";
+import { sendWebSocketMessage } from "@/lib/websockets";
+import Alert from "@/models/Alert";
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -109,5 +112,62 @@ export async function PATCH(req: NextRequest) {
   } catch (error) {
     console.error('Failed to update message:', error);
     return NextResponse.json({ error: 'Failed to update message' }, { status: 500 });
+  }
+}
+
+
+interface AlertMessage {
+  type: "alert";
+  content: string;
+  level: "info" | "warning" | "urgent";
+  recipients: string[];
+}
+
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req });
+  if (!token) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  try {
+    await dbConnect();
+    const body: unknown = await req.json();
+
+    if ((body as AlertMessage).type === "alert") {
+      const { content, level, recipients } = body as AlertMessage;
+      const alert = new Alert({
+        content,
+        level,
+        createdBy: token.sub,
+        recipients,
+      });
+      await alert.save();
+
+      const populatedAlert = await Alert.findById(alert._id).populate(
+        "createdBy",
+        "name email"
+      );
+
+      sendWebSocketMessage({
+        type: "alert_notification",
+        payload: populatedAlert,
+      }, 'default', await getToken({ req, raw: true }));
+
+      return new Response(JSON.stringify(populatedAlert), { status: 201 });
+    } else {
+      const { content } = body as { content: string };
+      const message = new Message({
+        message: content,
+        userId: token.sub,
+        createdAt: new Date(),
+      });
+  
+      await message.save();
+  
+      return NextResponse.json(message);
+    }
+  } catch (error) {
+    console.error("Failed to process message:", error);
+    return NextResponse.json({ error: "Failed to process message" }, { status: 500 });
   }
 }

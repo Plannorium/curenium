@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { requireRole, ROLE } from "@/lib/rbac";
 import Patient, { IPatient } from "@/models/Patient";
+import AuditLog from "@/models/AuditLog";
 import { Patient as PatientInterface } from "@/types/patient";
 import connectToDB from "@/lib/dbConnect";
 import { Document } from 'mongoose';
@@ -76,10 +77,19 @@ import { Document } from 'mongoose';
       ...body,
       orgId,
       mrn: newMrn,
+      createdBy: session.user.id,
     });
 
     newPatient._setAuditContext(session.user.id, session.user.role, null, { ip: req.headers.get("x-forwarded-for") });
     await newPatient.save();
+
+    await AuditLog.create({
+      orgId: session.user.organizationId,
+      userId: session.user.id,
+      action: 'patient.create',
+      targetId: newPatient._id,
+      targetType: 'Patient',
+    });
  
      return NextResponse.json(newPatient, { status: 201  }); 
    } catch (error) { 

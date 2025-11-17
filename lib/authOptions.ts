@@ -23,13 +23,28 @@ export const authOptions: NextAuthOptions = {
                   throw new Error("No user found with this email");
                 }
 
-                if (!user.passwordHash) {
-                  // This case can happen if the user signed up with an OAuth provider
-                  // and is now trying to sign in with credentials.
-                  throw new Error("Please sign in using your social account");
-                }
+                let isValid = false;
 
-                const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+                if (user.passwordHash) {
+                  // User has a hashed password, compare it
+                  isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+                } else if (user.password) {
+                  // This is a legacy user with a plain-text password.
+                  // This is a temporary measure for migration.
+                  // IMPORTANT: This block should be removed after all users have migrated.
+                  isValid = user.password === credentials.password;
+                  if (isValid) {
+                    // Migrate to hashed password
+                    const salt = await bcrypt.genSalt(10);
+                    user.passwordHash = await bcrypt.hash(user.password, salt);
+                    user.password = undefined; // Remove plain-text password
+                    await user.save();
+                  }
+                } else {
+                  // No password or passwordHash found.
+                  // This can happen if the user signed up with an OAuth provider.
+                  throw new Error("Please sign in using your social account or contact support.");
+                }
 
                 if (!isValid) {
                   throw new Error("Incorrect password");

@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -45,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { data: session } = useSession();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
@@ -79,33 +81,35 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
         >
           <MenuIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         </Button>
-        <div className="relative hidden md:flex items-center bg-gray-100 dark:bg-gray-900 border border-transparent rounded-lg px-4 py-2 flex-1 max-w-xs hover:border-gray-300 dark:hover:border-gray-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+        {/* <div className="relative hidden md:flex items-center bg-gray-100 dark:bg-gray-900 border border-transparent rounded-lg px-4 py-2 flex-1 max-w-xs hover:border-gray-300 dark:hover:border-gray-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
           <SearchIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-3" />
           <input
             type="text"
             placeholder="Search..."
             className="bg-transparent border-none focus:outline-none text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full text-sm font-medium"
           />
-        </div>
+        </div> */}
       </div>
 
       <div className="flex items-center space-x-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <PlusCircle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" align="end">
-            <DropdownMenuItem>New Patient</DropdownMenuItem>
-            <DropdownMenuItem>New Appointment</DropdownMenuItem>
-            <DropdownMenuItem>New Task</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {mounted && pathname.startsWith('/dashboard/ehr') && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <PlusCircle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" align="end">
+              <DropdownMenuItem>New Patient</DropdownMenuItem>
+              <DropdownMenuItem>New Appointment</DropdownMenuItem>
+              <DropdownMenuItem>New Task</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         <Button
           variant="ghost"
