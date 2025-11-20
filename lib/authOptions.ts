@@ -66,8 +66,35 @@ export const authOptions: NextAuthOptions = {
                 };
               }
         })
-    ],
-    pages: {
-        signIn: '/login',
+  ],
+  pages: {
+    signIn: '/login',
+  },
+  // Add minimal callbacks so credentials-only imports can also provide
+  // consistent token/session shaping if used directly elsewhere.
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        // copy common fields from authorize()'s returned user
+        token.id = (user as any).id ?? token.id;
+        token._id = (user as any)._id ?? token._id;
+        token.name = (user as any).fullName ?? token.name;
+        token.role = (user as any).role ?? token.role;
+        token.organizationId = (user as any).organizationId ?? token.organizationId;
+        token.picture = (user as any).image ?? token.picture;
+      }
+      return token;
     },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user._id = token._id as string;
+        session.user.fullName = token.name as string;
+        session.user.role = token.role as string;
+        session.user.organizationId = token.organizationId as string;
+        session.user.image = token.picture as string;
+      }
+      return session;
+    }
+  }
 };

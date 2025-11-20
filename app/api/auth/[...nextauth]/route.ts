@@ -62,6 +62,8 @@ export const authOptions: NextAuthOptions = {
     },
     async signIn({ user, account, profile, email, credentials }) {
       try {
+        // DEBUG: indicate signIn callback reached (do not log secrets)
+        console.debug('[nextauth] signIn callback', { email: user?.email, provider: account?.provider });
         await dbConnect();
         const existingUser = await User.findOne({ email: user.email });
 
@@ -87,6 +89,8 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async jwt({ token, user }) {
+      // DEBUG: jwt callback entry
+      console.debug('[nextauth] jwt callback - user present:', !!user, 'token id before:', token.id);
       if (user) {
         // On initial sign-in, fetch the user from the DB to get authoritative data
         await dbConnect();
@@ -112,9 +116,13 @@ export const authOptions: NextAuthOptions = {
       }).setProtectedHeader({ alg: 'HS256' }).sign(secret);
 
       token.accessToken = customToken; // Attach our new signed token to the NextAuth token
+      // DEBUG: created customToken (only log length, not contents)
+      try { console.debug('[nextauth] created customToken length:', customToken?.length); } catch {}
       return token;
     },
     async session({ session, token }) {
+      // DEBUG: session callback entry
+      console.debug('[nextauth] session callback', { email: session?.user?.email, tokenId: token?.id });
       // The session callback receives the token from the jwt callback.
       // Now, we can add the data to the client-side session object.
       if (session.user) {

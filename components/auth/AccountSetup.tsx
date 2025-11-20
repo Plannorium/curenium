@@ -41,15 +41,18 @@ export const AccountSetup: React.FC = () => {
 
     if (res.ok && data.user) {
       const signInResponse = await signIn('credentials', {
-        redirect: false,
         email: email,
         password: password,
+        redirect: true,
+        callbackUrl: '/dashboard',
       });
 
-      if (signInResponse?.ok) {
-        router.push('/dashboard');
-      } else {
-        setError(signInResponse?.error || 'Sign-in failed after registration.');
+      // If signIn is successful with redirect: true, the user will be navigated
+      // to the callbackUrl and this part of the code will not be reached.
+      // If it fails, NextAuth will handle showing an error on the login page,
+      // but we can set a local error for immediate feedback if needed.
+      if (signInResponse?.error) {
+        setError('Sign-in failed after registration. Please try logging in manually.');
       }
     } else {
       setError(data.message || 'An error occurred during registration.');
