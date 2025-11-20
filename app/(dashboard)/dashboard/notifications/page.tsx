@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNotifications } from "@/hooks/use-notifications";
 import NotificationItem from "../../components/NotificationItem";
-import Loader from "@/components/Loader";
+import { Loader } from "@/components/ui/Loader";
 import { Bell, CheckCircle, Clock, AlertTriangle, MessageSquare, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

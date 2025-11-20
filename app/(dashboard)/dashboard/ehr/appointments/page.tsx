@@ -8,7 +8,7 @@ import BookAppointmentModal from "@/app/(dashboard)/components/patients/BookAppo
 import { useSession } from "next-auth/react";
 import { PopulatedAppointment } from "@/types/appointment";
 import AppointmentCard from "@/app/(dashboard)/components/appointments/AppointmentCard";
-import Loader from "@/components/Loader";
+import { Loader } from "@/components/ui/Loader";
 
 const AppointmentsPage = () => {
   const { data: session } = useSession();
