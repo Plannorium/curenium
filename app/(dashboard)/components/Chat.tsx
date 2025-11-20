@@ -2408,7 +2408,7 @@ export default function Chat() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
+      <div className="h-[calc(100vh-7.5rem)] lg:h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
 
@@ -2687,7 +2687,7 @@ export default function Chat() {
           </div>
 
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-background dark:bg-gray-900/80 border-l border-r border-border/50 dark:border-gray-700/50">
+          <div className="flex-1 h-full flex flex-col overflow-hidden bg-background dark:bg-gray-900/80 border-l border-r border-border/50 dark:border-gray-700/50">
             {isCallActive && callRef.current && (
               <Call
                 callId={callRef.current.id}
@@ -2882,7 +2882,7 @@ export default function Chat() {
             {/* Chat Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(91vh-250px)] md:max-h-none"
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(98vh-250px)] md:max-h-none"
             >
               {messages
                 .filter((msg) => !msg.threadId)

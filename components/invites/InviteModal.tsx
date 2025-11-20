@@ -20,7 +20,7 @@ interface InviteModalProps {
 
 export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInviteCreated }) => {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('staff');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -120,6 +120,7 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInv
                 <option value="reception">Reception - Patient intake</option>
                 <option value="manager">Manager - Department oversight</option>
                 <option value="staff">Staff - Basic access</option>
+                <option value="user">User - Basic access</option>
               </select>
             </div>
           </div>

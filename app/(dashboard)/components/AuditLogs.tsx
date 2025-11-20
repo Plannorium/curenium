@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { Loader } from '@/components/ui/Loader';
 
 const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
 
@@ -16,7 +17,7 @@ const AuditLogs = () => {
   );
 
   if (error) return <div className="text-sm text-muted-foreground">Failed to load audit logs</div>;
-  if (!auditLogs) return <div className="text-sm text-muted-foreground">Loading...</div>;
+  if (!auditLogs) return <Loader variant="minimal" />;
 
   const recentLogs = auditLogs.slice(0, 4); // Show only recent 5
 

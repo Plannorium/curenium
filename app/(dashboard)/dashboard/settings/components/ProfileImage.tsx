@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export const ProfileImage = () => {
   const { data: session, update } = useSession();
@@ -78,7 +79,14 @@ export const ProfileImage = () => {
         </label>
         {file && (
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Uploading...' : 'Save'}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              'Save'
+            )}
           </Button>
         )}
       </div>

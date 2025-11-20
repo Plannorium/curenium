@@ -20,7 +20,7 @@ const InviteSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "doctor", "nurse", "manager", "staff", "labtech", "reception"],
+      enum: ["admin", "doctor", "nurse", "manager", "staff", "labtech", "reception", "user"],
     },
     token: { type: String, required: true },
     status: {
