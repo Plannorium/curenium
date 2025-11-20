@@ -62,13 +62,13 @@
 
    return ( 
      <div className ="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in-50"> 
-       <div className ="relative bg-card border rounded-xl shadow-2xl w-full max-w-sm m-4"> 
+       <div className ="relative w-full max-w-sm m-4"> 
          <div className ="absolute top-2 right-2"> 
            <Button variant ="ghost" size ="sm" className ="p-2 rounded-full" onClick ={onClose}> 
              <XIcon size ={18} /> 
            </Button> 
          </div> 
-         <div className ="p-8 bg-background/85 dark:bg-slate-900/80 border-border/30 "> 
+         <div className ="p-8 bg-background/85 dark:bg-slate-900/80 rounded-xl shadow-2xl border-border/30 "> 
            <div className ="flex flex-col items-center text-center"> 
              <Avatar className ="h-24 w-24 border-4 border-background shadow-lg"> 
                <AvatarImage src ={ user .image || undefined} /> 

@@ -80,7 +80,7 @@ import { Document } from 'mongoose';
       createdBy: session.user.id,
     });
 
-    newPatient._setAuditContext(session.user.id, session.user.role, null, { ip: req.headers.get("x-forwarded-for") });
+    newPatient._setAuditContext(session.user.id || "", session.user.role || "", null, { ip: req.headers.get("x-forwarded-for") || "unknown" });
     await newPatient.save();
 
     await AuditLog.create({

@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 
 interface AudioVisualizerProps {
-  audioRef: React.RefObject<HTMLAudioElement>;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
   isPlaying: boolean;
 }
 

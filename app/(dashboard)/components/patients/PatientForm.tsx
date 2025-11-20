@@ -57,7 +57,7 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
     resolver: zodResolver(formSchema),
     defaultValues: patient ? {
       ...patient,
-      dob: patient.dob.split('T')[0], // Format date for input
+      dob: patient.dob?.split('T')[0], // Format date for input
     } : {
       firstName: "",
       lastName: "",

@@ -97,7 +97,7 @@ export const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-muted-foreground hover:text-foreground hover:bg-primary/10 dark:hover:bg-slate-700 rounded-full"
+                    className="text-muted-foreground hover:text-foreground hover:bg-primary/10 dark:hover:bg-slate-700 rounded-full cursor-pointer"
                     onClick={() => {
                       onViewProfile(user);
                       onClose();

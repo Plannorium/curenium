@@ -61,7 +61,7 @@ export async function DELETE(req: NextRequest) {
     message.text = '';
     message.file = undefined;
     message.deleted = {
-      by: isAdmin ? token.name : 'user',
+      by: isAdmin ? (token.name || 'admin') : 'user',
       at: new Date(),
     };
 

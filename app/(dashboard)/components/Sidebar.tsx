@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import dynamic from 'next/dynamic';
+const Image = dynamic(() => import('next/image'), { ssr: false });
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   HomeIcon,
@@ -19,6 +20,7 @@ import { useSession } from 'next-auth/react';
 import { useRole } from '@/components/auth/RoleProvider';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useChatContext } from '@/contexts/ChatContext';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -55,9 +57,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { data: session } = useSession();
   const { role } = useRole();
+  const { theme } = useTheme();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeRoom = searchParams.get('room');
+  const activeRoom = searchParams?.get('room');
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
 
@@ -121,9 +124,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     navItems.push({ name: 'Admin', icon: <Briefcase size={20} />, path: '/dashboard/admin' });
   }
 
-  let teamsContent = null;
+  let teamsContent: React.ReactNode = null;
 
-  if (pathname.startsWith('/dashboard/ehr')) {
+  if (pathname && pathname.startsWith('/dashboard/ehr')) {
     teamsContent = (
       <>
         <h3 className={`px-3 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? 'lg:hidden' : ''}`}>
@@ -170,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </>
     );
-  } else if (pathname.startsWith('/dashboard/chat')) {
+  } else if (pathname && pathname.startsWith('/dashboard/chat')) {
     teamsContent = (
       <>
         <h3 className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? 'lg:text-center' : ''}`}>
@@ -312,18 +315,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     `}>
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
         <div className={`mb-8 flex items-center ${isCollapsed ? 'lg:justify-center' : 'justify-between'}`}>
-          <div className="flex items-center">
+          <Link href={"/"} className="flex items-center">
             <Image
-              src="/curenium-logo-bg-none.png"
+              src={theme === 'dark' ? "/curenium-logo-d.png" : "/curenium-logo.png"}
               alt="Curenium Logo"
               width={32}
               height={32}
               className={`transition-all duration-300 h-8 ${isCollapsed ? 'w-8' : 'w-auto'}`}
             />
-          </div>
+          </Link>
           <button 
             onClick={toggleCollapse} 
-            className="hidden lg:flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            className={`hidden lg:flex items-center justify-center p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${isCollapsed ? 'relative left-[12]' : ''}`}
           >
             <ChevronLeftIcon 
               size={18} 

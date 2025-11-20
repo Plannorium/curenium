@@ -1,6 +1,3 @@
-
-import { toast } from "sonner";
-
 let ws: WebSocket | null = null;
 let retryCount = 0;
 const maxRetries = 3;

@@ -26,6 +26,7 @@ interface ThreadViewProps {
   onReply: (threadId: string, content: string) => void;
   MessageBubbleComponent: React.ComponentType<any>;
   sendReadReceipt: (messageId: string) => void;
+  onJoinCall: (callId: string) => void;
   allUsers: User[];
   className?: string;
 }
@@ -38,6 +39,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   onReply,
   MessageBubbleComponent,
   sendReadReceipt,
+  onJoinCall,
   allUsers,
   className,
 }) => {
@@ -97,6 +99,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                       isSender={false} // This is context-dependent, assuming parent is not the sender
                       showTime={true}
                       sendReadReceipt={sendReadReceipt}
+                      onJoinCall={onJoinCall}
                     />
                   </div>
                 );
@@ -113,6 +116,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                   isSender={false}
                   showTime={true}
                   sendReadReceipt={sendReadReceipt}
+                  onJoinCall={onJoinCall}
                   user={user}
                 />;
               })}

@@ -20,6 +20,10 @@ import {
   Copy,
   CornerUpLeft,
   Download,
+  PhoneIcon,
+  UsersIcon,
+  UserPlus,
+  MessageSquareText,
   ExternalLink,
   Eye,
   FileIcon,
@@ -30,6 +34,7 @@ import {
   MoreHorizontal,
   PaperclipIcon,
   PauseIcon,
+  Phone,
   Plus,
   ReplyIcon,
   Search,
@@ -49,8 +54,8 @@ import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { FileAttachment } from "./FileAttachment";
 import DocumentPreview from "./DocumentPreview";
-import { startMeshCall } from "@/app/lib/simple-call-client";
-import { CallView } from "./CallView";
+import { startMeshCall, joinMeshCall } from "@/app/lib/simple-call-client";
+import { getCallById } from "@/app/lib/calls";
 import { ReactionPicker } from "./ReactionPicker";
 import { ReactionDetailsModal } from "./ReactionDetailsModal";
 import { AnimatePresence } from "framer-motion";
@@ -62,7 +67,7 @@ import { CreateChannelModal } from "./CreateChannelModal";
 import { ManageChannelModal } from "./ManageChannelModal";
 import { ChannelMembersModal } from "./ChannelMembersModal";
 import SoundPalette from "./SoundPalette";
-import { MessageSquareText } from "lucide-react"; // Import MessageSquareText
+import Call from "./Call";
 import { ThreadView } from "./ThreadView";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useChatContext } from "@/contexts/ChatContext";
@@ -231,8 +236,13 @@ interface MessageBubbleProps {
   onScrollToMessage: (messageId: string) => void;
   sendReadReceipt: (messageId: string) => void;
   voiceUploadProgress: Record<string, number>;
+  onJoinCall: (callId: string) => void;
   id: string;
+  isCallActive: boolean;
+  users: User[];
+  onMentionClick: (user: User) => void;
 }
+
 
 const MessageBubble = ({
   msg,
@@ -250,7 +260,11 @@ const MessageBubble = ({
   onScrollToMessage,
   sendReadReceipt,
   voiceUploadProgress,
+    onJoinCall,
+    isCallActive,
   id,
+  users,
+  onMentionClick,
 }: MessageBubbleProps) => {
   const { data: session } = useSession();
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
@@ -258,6 +272,73 @@ const MessageBubble = ({
   const messageRef = useRef<HTMLDivElement>(null);
   const messageText = msg.text || msg.content;
   const isEmoji = isSingleEmoji(messageText);
+
+  // Function to parse message text and render mentions as clickable elements
+  const renderMessageWithMentions = (text: string) => {
+    if (!text) return text;
+
+    // Split text by mentions and regular text
+    const parts = text.split(/(@\w+)/g);
+
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        // This is a mention
+        const mentionText = part.slice(1); // Remove the @ symbol
+        const mentionedUser = users.find(u =>
+          u.fullName.toLowerCase().startsWith(mentionText.toLowerCase()) ||
+          u.fullName.split(' ')[0].toLowerCase() === mentionText.toLowerCase()
+        );
+
+        if (mentionedUser) {
+          return (
+            <span
+              key={index}
+              className="mention-tag bg-primary/10 text-primary px-1 py-0.5 rounded-md cursor-pointer hover:bg-primary/20 transition-colors"
+              onClick={() => onMentionClick(mentionedUser)}
+            >
+              {part}
+            </span>
+          );
+        }
+      }
+
+      // Check for links in regular text
+      const linkRegex = /(https?:\/\/[^\s]+)/g;
+      const linkParts = part.split(linkRegex);
+
+      return linkParts.map((linkPart, linkIndex) => {
+        if (linkRegex.test(linkPart)) {
+          return (
+            <a
+              key={`${index}-${linkIndex}`}
+              href={linkPart}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              {linkPart}
+            </a>
+          );
+        }
+        return linkPart;
+      });
+    });
+  };
+  const [duration, setDuration] = useState<string | null>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (msg.type === 'call_invitation' && msg.createdAt && !msg.callEnded) {
+      const startTime = new Date(msg.createdAt).getTime();
+      interval = setInterval(() => {
+        const diff = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = String(Math.floor(diff / 60)).padStart(2, '0');
+        const seconds = String(diff % 60).padStart(2, '0');
+        setDuration(`${minutes}:${seconds}`);
+      }, 1000);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [msg.type, msg.createdAt, msg.callEnded]);
 
   useEffect(() => {
     if (!messageRef.current || isSender || msg.status === "read") return;
@@ -300,7 +381,10 @@ const MessageBubble = ({
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "";
+    : new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
   // ---------- IMAGE GALLERY ----------
   const renderImages = () => {
@@ -394,7 +478,79 @@ const MessageBubble = ({
     );
   };
 
+  if (msg.type === "call_invitation") {
+    const callEnded = msg.callEnded;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="group relative flex items-start gap-3"
+      >
+        <div className="shrink-0 pt-1">
+          <div className="w-8 h-8 flex items-center justify-center bg-card dark:bg-gray-800 rounded-lg border border-border/50 shadow-sm">
+            <PhoneIcon className="w-4 h-4 text-muted-foreground" />
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-baseline gap-2">
+            <span className="font-semibold text-foreground text-sm">
+              A call started
+            </span>
+            <span className="text-xs text-muted-foreground">{timeString}</span>
+          </div>
+          <div className="mt-1 p-4 rounded-lg bg-card/50 dark:bg-gray-800/30 border border-border/30 max-w-md">
+            {callEnded ? (
+              <div className="text-sm text-muted-foreground">
+                Call ended. Duration: {msg.duration}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-foreground">
+                    {isSender ? "You started a call." : `${user?.fullName} started a call.`}
+                  </p>
+                  {duration && (
+                    <span className="text-sm font-mono text-green-400 animate-pulse">{duration}</span>
+                  )}
+                </div>
+                <Button
+                  onClick={() => onJoinCall(msg.callId)}
+                  className="w-full mt-3 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <PhoneIcon className="w-4 h-4 mr-2" />
+                  Join Call
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (msg.type === "alert_notification" && msg.alert) {
+    if (msg.alert?.type === "call_started" && !isCallActive) {
+      return (
+        <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+          <div className="text-left">
+            <p className="font-medium text-green-400">
+              {msg.alert.callerName} started a call
+            </p>
+            <p className="text-sm text-gray-400">Click to join</p>
+          </div>
+          <Button
+            onClick={() => onJoinCall(msg.alert.callId)}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Phone className="w-4 h-4 mr-2" />
+            Join Call
+          </Button>
+        </div>
+      );
+    }
     const alert: AlertMessage = msg.alert;
     const alertColors = {
       critical: "red",
@@ -408,22 +564,22 @@ const MessageBubble = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full flex justify-center"
+        className="w-full flex justify-center rounded-full"
       >
         <button
           onClick={() => onAlertClick(alert)}
-          className={`w-full max-w-lg text-left group relative flex items-center p-4 rounded-xl transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-900/20 dark:border-${color}-500/20 dark:hover:bg-${color}-900/30 dark:hover:border-${color}-500/30`}
+          className={`w-full max-w-xs lg:max-w-md text-center group relative flex justify-center items-center p-2.5 lg:p-3 rounded-full transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-900/20 dark:border-${color}-500/20 dark:hover:bg-${color}-900/30 dark:hover:border-${color}-500/30`}
         >
           <div
-            className={`p-2 bg-${color}-500/10 rounded-lg mr-4 border border-${color}-500/20 dark:bg-${color}-900/20 dark:border-${color}-500/30`}
+            className={`p-1.5 lg:p-2 bg-${color}-500/10 rounded-lg mr-3 lg:mr-4 border border-${color}-500/20 dark:bg-${color}-900/20 dark:border-${color}-500/30`}
           >
-            <BellIcon size={24} className={`text-${color}-500 animate-pulse`} />
+            <BellIcon size={22} className={`text-${color}-500 animate-pulse`} />
           </div>
-          <div className="flex-1">
-            <p className={`font-bold text-sm text-${color}-500 uppercase`}>
+          <div className="text-left">
+            <p className={`font-bold text-xs lg:text-sm text-${color}-500 uppercase`}>
               {alert.level} Alert
             </p>
-            <p className="font-medium text-foreground">{alert.message}</p>
+            {/* <p className="font-medium text-foreground">{alert.message}</p> */}
           </div>
         </button>
       </motion.div>
@@ -464,11 +620,11 @@ const MessageBubble = ({
         <div className={cn("flex flex-col relative items-start group")}>
           <div
             className={cn(
-              "relative group rounded-xl bg-linear-to-br p-2 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
+              "relative group rounded-xl bg-linear-to-br p-3 lg:p-4 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
               !isEmoji &&
                 `px-2.5 py-1.5 ${
                   isSender
-                    ? "from-primary/20 to-primary/10 border-primary/90 bg-card dark:bg-gray-900/80 border-r dark:border-gray-700/50"
+                    ? "from-primary/0 to-primary/10 border-primary/90 bg-card dark:bg-gray-900/80 border-r dark:border-gray-700/50"
                     : "bg-card border-border/40 dark:bg-gray-800/50 dark:border-gray-700/50"
                 }`
             )}
@@ -579,14 +735,9 @@ const MessageBubble = ({
                 {messageText && (
                   <p
                     className={`text-[1rem] leading-relaxed wrap-break-word ${isEmoji ? "text-[4rem]" : "whitespace-pre-wrap"}`}
-                    dangerouslySetInnerHTML={{
-                      // The user is requesting to make the emoji bigger, so I'm increasing the size from 6xl to 7xl.
-                      __html: messageText.replace(
-                        /(https?:\/\/[^\s]+)/g,
-                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>'
-                      ),
-                    }}
-                  />
+                  >
+                    {renderMessageWithMentions(messageText)}
+                  </p>
                 )}
 
                 {/* IMAGES */}
@@ -644,7 +795,7 @@ export default function Chat() {
   const pathname = usePathname();
   const fullName = session?.user?.name || "Anonymous";
   const searchParams = useSearchParams();
-  const activeRoom = searchParams.get("room") || "general";
+  const activeRoom = searchParams?.get("room") || "general";
   // const { messages, sendCombinedMessage, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
   const [text, setText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -656,6 +807,7 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isCallActive, setIsCallActive] = useState(false);
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -720,11 +872,14 @@ export default function Chat() {
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{
     [key: string]: number;
   }>({});
-  const [isCallActive, setIsCallActive] = useState(false);
+  const [callStartTime, setCallStartTime] = useState<number | null>(null);
+  const [callRoom, setCallRoom] = useState<string | null>(null);
+
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<
     Record<string, { stream: MediaStream; name: string }>
@@ -733,9 +888,12 @@ export default function Chat() {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const callRef = useRef<{
     endCall: () => void;
+    id: string;
+
     replaceTrack: (track: MediaStreamTrack) => void;
   } | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [usersToInvite, setUsersToInvite] = useState<User[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
   const {
     messages,
@@ -749,12 +907,45 @@ export default function Chat() {
     sendTyping,
     sendPayload,
     startCall,
+    sendCallInvitation,
+    sendCallEnd,
     sendReadReceipt,
     deleteMessage,
     setIsMuted,
     setIsVideoOff,
     getWs,
   } = useChat(activeRoom);
+
+
+  const handleToggleMute = () => {
+    setIsMuted((prev) => {
+      const newMuted = !prev;
+      if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.enabled = !newMuted;
+        }
+      }
+      return newMuted;
+    });
+    playSound(!isMuted ? 'mute' : 'unmute');
+  };
+
+
+  const handleToggleVideo = () => {
+    setIsVideoOff((prev) => {
+      const newVideoOff = !prev;
+      if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = !newVideoOff;
+        }
+      }
+      return newVideoOff;
+    });
+    playSound('mute'); // Using 'mute' as a generic 'tick' sound
+  };
+
 
   const prevMessagesLengthRef = useRef(messages.length);
 
@@ -803,6 +994,7 @@ export default function Chat() {
     prevMessagesLengthRef.current = messages.length;
   }, [messages, session?.user?._id]);
 
+
   const handleStartChat = (roomId: string) => {
     if (!roomId) return;
     handleRoomChange(roomId);
@@ -810,11 +1002,13 @@ export default function Chat() {
     setSelectedUser(null);
   };
 
+
   const handleAlertClick = (alert: AlertMessage) => {
     setSelectedAlert(alert);
   };
 
   const handleThreadReply = (threadId: string, content: string) => {
+
     if (session?.user) {
       sendCombinedMessage(
         content,
@@ -826,6 +1020,7 @@ export default function Chat() {
       );
     }
   };
+
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -843,6 +1038,15 @@ export default function Chat() {
     users: any[];
   } | null>(null);
 
+  // Scroll position caching per room
+  const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
+  const [hasUserScrolledUp, setHasUserScrolledUp] = useState(false);
+
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionIndex, setMentionIndex] = useState(-1);
+
+
   const handleReaction = (messageId: string, emoji: string) => {
     if (!session?.user) return;
     sendPayload({
@@ -856,6 +1060,7 @@ export default function Chat() {
     });
   };
 
+
   const handleReactionClick = (
     messageId: string,
     emoji: string,
@@ -863,6 +1068,7 @@ export default function Chat() {
   ) => {
     setActiveReactionDetails({ messageId, emoji, users });
   };
+
 
   const handleScrollToMessage = (messageId: string) => {
     const messageIndex = messages.findIndex((m) => m.id === messageId);
@@ -874,6 +1080,7 @@ export default function Chat() {
     }
   };
 
+
   const handleDeleteMessage = async (messageId: string) => {
     const messageToDelete = messages.find((m) => m.id === messageId);
     if (messageToDelete) {
@@ -881,6 +1088,7 @@ export default function Chat() {
       setShowDeleteConfirm(true);
     }
   };
+
 
   const handleToggleRecording = async () => {
     if (recordingState === "idle") {
@@ -940,6 +1148,7 @@ export default function Chat() {
     }
   };
 
+
   const handleSendVoiceMessage = async () => {
     if (
       mediaRecorderRef.current &&
@@ -950,6 +1159,7 @@ export default function Chat() {
     }
   };
 
+
   const handlePauseRecording = () => {
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.pause();
@@ -959,6 +1169,7 @@ export default function Chat() {
       setRecordingState("recording");
     }
   };
+
 
   const handleCancelRecording = () => {
     if (mediaRecorderRef.current) {
@@ -975,6 +1186,7 @@ export default function Chat() {
     audioChunksRef.current = [];
   };
 
+
   const confirmDeleteMessage = async () => {
     if (deletingMessage) {
       await deleteMessage(deletingMessage.id);
@@ -983,7 +1195,9 @@ export default function Chat() {
     }
   };
 
+
   const handleEndCall = () => {
+    playSound('callEnd');
     if (callRef.current) {
       callRef.current.endCall();
       callRef.current = null;
@@ -994,12 +1208,33 @@ export default function Chat() {
     if (screenStream) {
       screenStream.getTracks().forEach((track) => track.stop());
     }
+
+    if (callStartTime) {
+      const durationInSeconds = Math.floor((Date.now() - callStartTime) / 1000);
+      const minutes = Math.floor(durationInSeconds / 60);
+      const seconds = durationInSeconds % 60;
+      const durationString = `${minutes}m ${seconds}s`;
+
+      // Send call_end message to update the message in the database
+      if (callRef.current && (callRef.current as any).id) {
+        sendCallEnd((callRef.current as any).id, durationString, callRoom || undefined);
+      }
+
+      setMessages(prev => prev.map(m =>
+        m.id === callRef.current?.id
+          ? { ...m, callEnded: true, duration: durationString }
+          : m
+      ));
+    }
+
     setLocalStream(null);
     setRemoteStreams({});
     setIsCallActive(false);
     setIsScreenSharing(false);
     setScreenStream(null);
+    setCallRoom(null); // Reset call room
   };
+
 
   const handleToggleScreenShare = async () => {
     if (isScreenSharing) {
@@ -1047,30 +1282,82 @@ export default function Chat() {
     }
   };
 
+
+  // Save scroll position when changing rooms
   useEffect(() => {
     const container = messagesContainerRef.current;
-    if (!container || searchResults.length > 0) return;
+    if (!container) return;
 
-    const scrollToBottom = () => {
-      container.scrollTop = container.scrollHeight;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      // Save scroll position for current room
+      setScrollPositions(prev => ({
+        ...prev,
+        [activeRoom]: scrollTop
+      }));
+
+      // Track if user has scrolled up
+      setHasUserScrolledUp(distanceFromBottom > 150);
     };
 
-    scrollToBottom();
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [activeRoom]);
 
-    const observer = new MutationObserver(scrollToBottom);
+  // Restore scroll position when entering a room, or scroll to bottom if no cached position
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || messages.length === 0) return;
+
+    const cachedPosition = scrollPositions[activeRoom];
+
+    if (cachedPosition !== undefined) {
+      // Restore cached position
+      container.scrollTop = cachedPosition;
+    } else {
+      // No cached position, scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [activeRoom, messages.length, scrollPositions]);
+
+  // Keep user near bottom when new messages arrive, but don't fight modals
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const shouldScrollToBottom = !hasUserScrolledUp;
+
+    const scrollIfNeeded = () => {
+      if (shouldScrollToBottom && !isDocModalOpen && lightbox === null) {
+        container.scrollTop = container.scrollHeight;
+      }
+    };
+
+    // Only auto-scroll for new messages if user hasn't scrolled up
+    if (!hasUserScrolledUp) {
+      scrollIfNeeded();
+    }
+
+    const observer = new MutationObserver(() => {
+      if (!hasUserScrolledUp) {
+        scrollIfNeeded();
+      }
+    });
+
     observer.observe(container, {
       childList: true,
       subtree: true,
-      attributes: true,
+      attributes: false,
+      characterData: false,
     });
-
-    const timer = setTimeout(scrollToBottom, 300);
 
     return () => {
       observer.disconnect();
-      clearTimeout(timer);
     };
-  }, [messages]);
+  }, [messages, isDocModalOpen, lightbox, hasUserScrolledUp]);
+
 
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
@@ -1083,6 +1370,10 @@ export default function Chat() {
         container.scrollHeight - container.scrollTop <=
         container.clientHeight + 200;
       setShowScrollToBottom(!isNearBottom && messages.length > 5);
+
+      // Update scroll up state
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      setHasUserScrolledUp(distanceFromBottom > 150);
     };
 
     container.addEventListener("scroll", handleScroll);
@@ -1090,6 +1381,7 @@ export default function Chat() {
 
     return () => container.removeEventListener("scroll", handleScroll);
   }, [messages]);
+
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1106,6 +1398,7 @@ export default function Chat() {
     };
   }, [emojiPickerRef]);
 
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -1121,6 +1414,7 @@ export default function Chat() {
 
     fetchUsers();
   }, []);
+
 
   const fetchChannels = async () => {
     try {
@@ -1141,6 +1435,7 @@ export default function Chat() {
     fetchChannels();
   }, []);
 
+
   useEffect(() => {
     const fetchRecentDms = async () => {
       if (session?.user?.id) {
@@ -1159,10 +1454,12 @@ export default function Chat() {
     fetchRecentDms();
   }, [session, setRecentDms]);
 
+
   const openDocPreview = (file: any) => {
     setSelectedDoc(file);
     setIsDocModalOpen(true);
   };
+
 
   const closeDocPreview = () => {
     setIsDocModalOpen(false);
@@ -1218,6 +1515,29 @@ export default function Chat() {
     textareaRef.current?.focus();
   };
 
+  const handleMentionSelect = (user: User) => {
+    const cursorPosition = textareaRef.current?.selectionStart || text.length;
+    const textBeforeCursor = text.substring(0, cursorPosition);
+    const textAfterCursor = text.substring(cursorPosition);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+
+    if (mentionMatch) {
+      const beforeMention = textBeforeCursor.substring(0, mentionMatch.index);
+      const firstName = user.fullName.split(' ')[0];
+      const newText = beforeMention + `@${firstName} ` + textAfterCursor;
+      setText(newText);
+      setShowMentions(false);
+      setMentionQuery("");
+      // Focus and set cursor after the mention
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        const newCursorPos = beforeMention.length + `@${firstName} `.length;
+        textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
+  };
+
+
   useEffect(() => {
     if (
       messagesContainerRef.current &&
@@ -1234,21 +1554,6 @@ export default function Chat() {
     }
   }, [currentResultIndex, searchResults]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target as Node)
-      ) {
-        setShowEmojiPicker(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1265,6 +1570,23 @@ export default function Chat() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
 
   interface ConversionProgress {
     status: "queued" | "converting" | "uploading" | "completed" | "failed";
@@ -1278,6 +1600,7 @@ export default function Chat() {
     status: string;
     pdfUrl?: string;
   }
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1445,6 +1768,13 @@ export default function Chat() {
         setReplyingTo(null);
         playSound("messageSent");
         setText("");
+
+        // Always scroll to bottom when sending a message
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+          }
+        }, 100);
       } catch (error) {
         console.error("Error sending message or file:", error);
         alert("Failed to send message or file.");
@@ -1459,10 +1789,12 @@ export default function Chat() {
     }
   };
 
+
   const handleReply = (message: any) => {
     setReplyingTo(message);
     textareaRef.current?.focus();
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1471,8 +1803,24 @@ export default function Chat() {
     }
   };
 
+
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+    const value = e.target.value;
+    setText(value);
+
+    // Handle mentions
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setShowMentions(true);
+      setMentionIndex(-1);
+    } else {
+      setShowMentions(false);
+      setMentionQuery("");
+    }
 
     if (!typingTimeoutRef.current) {
       sendTyping(true);
@@ -1485,6 +1833,77 @@ export default function Chat() {
       typingTimeoutRef.current = null;
     }, 3000);
   };
+
+
+  const handleJoinCall = async (callId: string) => {
+    try {
+      const callDetails = await getCallById(callId);
+      if (!callDetails) {
+        toast.error("Call details not found.");
+        return;
+      }
+
+      // Navigate to the call page
+      router.push(`/call/${callId}`);
+
+      initAudio(); // Ensure audio is ready
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasVideo = devices.some((device) => device.kind === "videoinput");
+      const hasAudio = devices.some((device) => device.kind === "audioinput");
+
+      if (!hasVideo && !hasAudio) {
+        alert(
+          "No camera or microphone found. Please connect a device and grant permission to make a call."
+        );
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: hasVideo,
+        audio: hasAudio,
+      });
+
+      stream.getAudioTracks().forEach((track) => (track.enabled = false));
+      stream.getVideoTracks().forEach((track) => (track.enabled = false));
+      setIsMuted(true);
+      setIsVideoOff(true);
+      setLocalStream(stream);
+      playSound("callStart");
+      setCallStartTime(Date.now());
+      setCallRoom(activeRoom); // Store the room where the call started
+      setIsCallActive(true);
+
+      if (session?.user?.token) {
+        const call = await joinMeshCall({
+          callId: callId,
+          localStream: stream,
+          token: session.user.token,
+          userName: session?.user?.fullName || "Anonymous",
+          onRemoteStream: (remoteStream, peerId, userName) => {
+            setRemoteStreams((prev) => ({
+              ...prev,
+              [peerId]: { stream: remoteStream, name: userName },
+            }));
+          },
+          onParticipantLeft: (peerId) => {
+            setRemoteStreams((prev) => {
+              const newStreams = { ...prev };
+              delete newStreams[peerId];
+              return newStreams;
+            });
+          },
+        });
+        callRef.current = call;
+        if (typeof window !== "undefined") {
+          window.history.replaceState(null, "", `/call/${callId}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error joining call:", error);
+      toast.error("Failed to join call.");
+    }
+  };
+
 
   const handleStartCall = async () => {
     initAudio(); // Ensure audio is ready
@@ -1533,9 +1952,18 @@ export default function Chat() {
               return newStreams;
             });
           },
-          startCall: startCall,
+          onCallStarted: (callId) => {
+            // Send call invitation to the chat room via WebSocket
+            sendCallInvitation(activeRoom, callId);
+            if (typeof window !== "undefined") {
+              window.history.replaceState(null, "", `/call/${callId}`);
+            }
+            callRef.current = { ...call, id: callId };
+          },
         });
-        callRef.current = call;
+        if (call) {
+          callRef.current = call;
+        }
       }
     } catch (error) {
       console.error("Error starting call:", error);
@@ -1561,14 +1989,54 @@ export default function Chat() {
     }
   };
 
+  const handleSendCallInvitations = async () => {
+    if (session?.user && usersToInvite.length > 0 && callRef.current ) {
+      const callId = (callRef.current as any).id as string;
+      if (callId) {
+        if (isDmRoom) {
+          // DM call: Send invites to selected users via DM
+          for (const user of usersToInvite) {
+            // Create a DM room ID
+            const dmRoomId = [session.user._id, user._id].sort().join("--");
+
+            // Send the invitation to that specific DM room
+            await sendCallInvitation(dmRoomId, callId);
+
+            // Also add this DM to the recent DMs list if it's not there
+            const dmExists = recentDms.some((dm) => dm.room === dmRoomId);
+            if (!dmExists) {
+              // This assumes you have a way to create/add a DM room.
+              // We can use the logic from handleRoomChange.
+              addRecentDm({ participants: [session.user as any, user], room: dmRoomId, messages: [], _id: dmRoomId });
+            }
+          }
+        } else {
+          // Channel call: Send a single invite to the channel
+          // This sends the invitation to the active room (channel).
+          if (activeRoom) {
+            await sendCallInvitation(activeRoom, callId);
+          }
+        }
+        toast.success(`Invites sent to ${usersToInvite.length} user(s).`);
+        setUsersToInvite([]);
+        setIsNewChatDialogOpen(false);
+      }
+    }
+  };
+  const handleInviteToCall = () => {
+    // For now, this will open the new chat dialog to select users to invite.
+    setIsNewChatDialogOpen(true);
+  };
+
   const isDmRoom = useMemo(() => activeRoom.includes("--"), [activeRoom]);
   const currentChannel = useMemo(
     () =>
       channels.find(
-      (c) => c.name.trim().toLowerCase().replace(/\s+/g, "-") === activeRoom
-    ),
+        (c) => c.name.trim().toLowerCase().replace(/\s+/g, "-") === activeRoom
+      ),
     [channels, activeRoom]
   );
+
 
   const channelUsers = useMemo(() => {
     if (activeRoom === "general") {
@@ -1584,6 +2052,14 @@ export default function Chat() {
     return []; // Fallback for unknown rooms
   }, [activeRoom, isDmRoom, currentChannel, users]);
 
+  const filteredMentionUsers = useMemo(() => {
+    if (!mentionQuery) return channelUsers.slice(0, 5);
+    return channelUsers.filter(user =>
+      user.fullName.toLowerCase().includes(mentionQuery.toLowerCase())
+    ).slice(0, 5);
+  }, [mentionQuery, channelUsers]);
+
+
   const otherUser = useMemo(() => {
     if (!isDmRoom) return null;
     return channelUsers.find((u) => u._id !== session?.user?._id);
@@ -1598,6 +2074,7 @@ export default function Chat() {
     );
   }, [users, searchQuery, session?.user?._id]);
 
+
   if (!session)
     return (
       <div className="flex items-center justify-center h-full backdrop-blur-sm bg-card/50 rounded-2xl border border-border/50">
@@ -1609,6 +2086,7 @@ export default function Chat() {
         </div>
       </div>
     );
+
 
   const handleRoomChange = async (room: string) => {
     router.push(`${pathname}?room=${room}`);
@@ -1642,6 +2120,7 @@ export default function Chat() {
     }
   };
 
+
   return (
     <>
       <Dialog
@@ -1660,6 +2139,7 @@ export default function Chat() {
               Search for people in your organization to start a conversation.
             </DialogDescription>
           </DialogHeader>
+
           <div className="px-1 pt-0">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1670,6 +2150,7 @@ export default function Chat() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+
             <div className="mt-4 space-y-1.5 max-h-[50vh] overflow-y-auto no-scrollbar">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
@@ -1677,10 +2158,11 @@ export default function Chat() {
                     key={user._id}
                     onClick={() => {
                       const room = [session?.user?._id, user._id]
-                        .sort()
-                        .join("--");
-                      handleRoomChange(room);
-                      setIsNewChatDialogOpen(false);
+                      .sort()
+                      .join("--");
+                      //handleRoomChange(room);
+                      //setIsNewChatDialogOpen(false);
+                      setUsersToInvite((prev) => [...prev, user]);
                     }}
                     className="w-full flex items-center p-2.5 rounded-xl hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-all duration-200 text-left cursor-pointer"
                   >
@@ -1711,6 +2193,14 @@ export default function Chat() {
                 ))
               ) : (
                 <div className="text-center py-12">
+                  <Button
+                    onClick={handleSendCallInvitations}
+                    disabled={usersToInvite.length === 0}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                  >
+                    Invite
+                  </Button>
+
                   <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold text-foreground">
                     No users found
@@ -1723,9 +2213,17 @@ export default function Chat() {
               )}
             </div>
           </div>
+            <DialogFooter>
+            <Button type="submit" onClick={handleSendCallInvitations}
+              disabled={usersToInvite.length === 0}
+            >
+              Invite
+            </Button>
+          </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog >
       <div className="h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
+
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
 
@@ -1737,8 +2235,10 @@ export default function Chat() {
           onReply={handleReplyInThread}
           MessageBubbleComponent={MessageBubble}
           sendReadReceipt={sendReadReceipt}
+          onJoinCall={handleJoinCall}
           allUsers={users}
         />
+
 
         <div className="relative flex-1 flex min-h-0">
           {/* Channel List Sidebar */}
@@ -1746,6 +2246,7 @@ export default function Chat() {
             <div className="p-4">
               <div className="relative" ref={emojiPickerRef}>
                 <input
+
                   type="text"
                   placeholder="Search conversations"
                   className="backdrop-blur-sm bg-background/50 dark:bg-gray-800/50 border border-border/60 dark:border-gray-700/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
@@ -1759,6 +2260,7 @@ export default function Chat() {
             </div>
 
             <div className="px-3 pb-2">
+
               <button
                 onClick={() => setIsChannelsOpen(!isChannelsOpen)}
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
@@ -1775,6 +2277,7 @@ export default function Chat() {
                 />
               </button>
               {isChannelsOpen && (
+
                 <div className="mt-2 space-y-1">
                   <div
                     className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
@@ -1784,6 +2287,7 @@ export default function Chat() {
                     }`}
                   >
                     <button
+
                       className="flex cursor-pointer items-center flex-1 text-left"
                       onClick={() => handleRoomChange("general")}
                     >
@@ -1797,6 +2301,7 @@ export default function Chat() {
                       General
                     </button>
                     {/* No manage button for the general channel */}
+
                   </div>
                   {channels
                     .filter((channel) =>
@@ -1804,20 +2309,19 @@ export default function Chat() {
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase())
                     )
+
                     .map((channel) => (
                       <div
                         key={channel._id}
                         className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
                           activeRoom ===
-                          channel.name
-                            .trim()
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")
+                          channel.name.trim().toLowerCase().replace(/\s+/g, "-")
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         <button
+
                           className="flex cursor-pointer items-center flex-1 text-left"
                           onClick={() =>
                             handleRoomChange(
@@ -1842,6 +2346,7 @@ export default function Chat() {
                           {channel.name}
                         </button>
                         <button
+
                           onClick={(e) => {
                             e.stopPropagation();
                             setManagingChannel(channel);
@@ -1852,6 +2357,7 @@ export default function Chat() {
                         </button>
                       </div>
                     ))}
+
                   <div className="px-3 cursor-pointer">
                     <button
                       onClick={() => setCreateChannelModalOpen(true)}
@@ -1865,6 +2371,7 @@ export default function Chat() {
                     </button>
                   </div>
                 </div>
+
               )}
             </div>
 
@@ -1872,6 +2379,7 @@ export default function Chat() {
             <div className="px-3 pb-2 mt-6">
               <button
                 onClick={() => setIsDmsOpen(!isDmsOpen)}
+
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
               >
                 <h3 className="flex items-center">
@@ -1885,6 +2393,7 @@ export default function Chat() {
                   }`}
                 />
               </button>
+
               {isDmsOpen && (
                 <div className="mt-2 space-y-1">
                   {/* Self-chat / Notes to self */}
@@ -1892,6 +2401,7 @@ export default function Chat() {
                     <button
                       onClick={() =>
                         handleRoomChange(
+
                           `${currentUser._id}-${currentUser._id}`
                         )
                       }
@@ -1913,6 +2423,7 @@ export default function Chat() {
                           </AvatarFallback>
                         </Avatar>
                         {onlineUsers.includes(currentUser._id) && (
+
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
                         )}
                       </div>
@@ -1923,6 +2434,7 @@ export default function Chat() {
                       </div>
                     </button>
                   )}
+
                   {recentDms
                     .slice(0, 5)
                     .reduce(
@@ -1953,6 +2465,7 @@ export default function Chat() {
                     )
                     .map((dm) => {
                       const room = dm.room;
+
                       const user = dm.user;
 
                       return (
@@ -1960,6 +2473,7 @@ export default function Chat() {
                           key={(dm as any)._id}
                           onClick={() => handleRoomChange(room)}
                           className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+
                             activeRoom === room
                               ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
                               : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
@@ -1983,6 +2497,7 @@ export default function Chat() {
                           {user.fullName}
                         </button>
                       );
+
                     })}
                   <button
                     onClick={() => setIsNewChatDialogOpen(true)}
@@ -1996,38 +2511,47 @@ export default function Chat() {
                     Start a new chat
                   </button>
                 </div>
+
               )}
             </div>
           </div>
 
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden bg-background dark:bg-gray-900/80 border-l border-r border-border/50 dark:border-gray-700/50">
-            {isCallActive && localStream && (
-              <CallView
-                localStream={localStream}
-                remoteStreams={remoteStreams}
+      {isCallActive && callRef.current && (
+        <Call
+          callId={callRef.current.id}
+          localStream={localStream}
+          remoteStreams={remoteStreams}
                 onEndCall={handleEndCall}
-                userName={fullName.split(" ")[0]}
+                userName={session?.user?.name || ""}
                 onToggleScreenShare={handleToggleScreenShare}
                 isScreenSharing={isScreenSharing}
                 screenStream={screenStream}
                 isMuted={isMuted}
                 isVideoOff={isVideoOff}
-                onToggleMute={() => setIsMuted(!isMuted)} onToggleVideo={() => setIsVideoOff(!isVideoOff)}
+                onToggleMute={handleToggleMute}
+                onToggleVideo={handleToggleVideo}
+                onInvite={handleInviteToCall}
               />
+
             )}
+
             {/* Chat Header */}
             <header className="flex items-center justify-between p-3 lg:p-4 border-b border-border/50 dark:border-gray-700/50 bg-background/30 dark:bg-transparent backdrop-blur-sm z-10">
               <div className="flex items-center overflow-hidden">
                 <h2 className="text-base font-bold text-foreground cursor-pointer truncate">
-                  {activeRoom === 'general'
-                    ? 'General'
-                    : activeRoom === `${session?.user?._id}-${session?.user?._id}`
-                    ? currentUser?.fullName || session?.user?.name || 'Personal Space'
-                    : isDmRoom
-                    ? channelUsers.find((u) => u._id !== session?.user?._id)
-                        ?.fullName || 'Chat'
-                    : currentChannel?.name || 'Chat'}
+                  {activeRoom === "general"
+                    ? "General"
+                    : activeRoom ===
+                        `${session?.user?._id}-${session?.user?._id}`
+                      ? currentUser?.fullName ||
+                        session?.user?.name ||
+                        "Personal Space"
+                      : isDmRoom
+                        ? channelUsers.find((u) => u._id !== session?.user?._id)
+                            ?.fullName || "Chat"
+                        : currentChannel?.name || "Chat"}
                 </h2>
                 <div className="flex items-center ml-3">
                   <div
@@ -2050,12 +2574,7 @@ export default function Chat() {
                           : "Offline"}
                       </span>
                     ) : (
-                      <>
-                        <span className="font-semibold text-foreground">
-                          {onlineUsers.length}
-                        </span>
-                        <span className="hidden md:inline ml-1">online</span>
-                      </>
+                      `${onlineUsers.length} Online`
                     )}
                   </span>
                 </div>
@@ -2063,27 +2582,22 @@ export default function Chat() {
               <div className="flex items-center space-x-1 md:space-x-2">
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="p-2.5 cursor-pointer rounded-xl hover:bg-accent/50 transition-all duration-200"
-                  onClick={() => setShowSearch(true)}
+                  size="icon"
+                  className="p-2 rounded-xl hover:bg-accent/50"
+                  onClick={() => {
+                    initAudio(); // Initialize audio context on user interaction
+                    setPermissionDialogOpen(true);
+                  }}
                 >
-                  <SearchIcon
-                    size={18}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  />
+                  <PhoneIcon size={18} className="text-muted-foreground" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="p-2.5 rounded-xl hover:bg-accent/50 transition-all duration-200 cursor-pointer"
-                  onClick={() => setPermissionDialogOpen(true)}
-                  disabled={!session}
+                  size="icon"
+                  className="p-2 rounded-xl hover:bg-accent/50"
+                  onClick={() => setShowSearch(true)}
                 >
-                  <VideoIcon
-                    size={18}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  />
-                  <span className="ml-2 hidden md:inline">Sync</span>
+                  <SearchIcon size={18} className="text-muted-foreground" />
                 </Button>
 
                 {/* Members Display */}
@@ -2098,7 +2612,8 @@ export default function Chat() {
                       setMembersModalOpen(true);
                     }
                   }}
-                  className="flex items-center group"
+                  className="flex items-center group cursor-pointer"
+
                 >
                   <div className="flex items-center -space-x-2 pr-2 transition-all duration-300 group-hover:-space-x-1">
                     {isDmRoom ? (
@@ -2126,6 +2641,7 @@ export default function Chat() {
                       <>
                         {channelUsers.slice(0, 4).map((user) => (
                           <Avatar
+
                             key={user.id || user._id}
                             className="h-7 w-7 lg:h-8 lg:w-8 border-2 border-background group-hover:z-10 transition-all duration-200"
                           >
@@ -2141,6 +2657,7 @@ export default function Chat() {
                         ))}
                         {channelUsers.length > 4 && (
                           <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
+
                             <AvatarFallback className="text-xs font-semibold bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-colors">
                               +{channelUsers.length - 4}
                             </AvatarFallback>
@@ -2152,6 +2669,7 @@ export default function Chat() {
                 </button>
               </div>
             </header>
+
 
             {/* Search Bar */}
             {showSearch && (
@@ -2198,6 +2716,7 @@ export default function Chat() {
               </div>
             )}
 
+
             {/* Chat Messages */}
             <div
               ref={messagesContainerRef}
@@ -2205,6 +2724,7 @@ export default function Chat() {
             >
               {messages
                 .filter((msg) => !msg.threadId)
+
                 .map((msg, index) => {
                   const isSender = msg.userId === session?.user?._id;
                   const user = users.find((u) => u._id === msg.userId);
@@ -2212,8 +2732,9 @@ export default function Chat() {
                   const showTimeSeparator =
                     index === 0 ||
                     (prevMsg &&
-                      new Date(msg.createdAt).toDateString() !==
-                        new Date(prevMsg.createdAt).toDateString());
+                      new Date(msg.createdAt || Date.now()).toDateString() !==
+                        new Date(prevMsg.createdAt || Date.now()).toDateString());
+
 
                   return (
                     <div
@@ -2221,19 +2742,31 @@ export default function Chat() {
                       ref={(el) => {
                         messageRefs.current[index] = el;
                       }}
+
                       className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? "bg-primary/10 rounded-lg" : "") : ""}`}
                     >
                       {showTimeSeparator && (
                         <div className="flex items-center justify-center my-4">
                           <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
-                            {new Date(msg.createdAt).toLocaleDateString([], {
-                              weekday: "long",
-                              month: "short",
-                              day: "numeric",
-                            })}
+                            {(() => {
+                              try {
+                                const msgDate = new Date(msg.createdAt || Date.now());
+                                if (isNaN(msgDate.getTime())) {
+                                  return "Today";
+                                }
+                                return msgDate.toLocaleDateString([], {
+                                  weekday: "long",
+                                  month: "short",
+                                  day: "numeric",
+                                });
+                              } catch (error) {
+                                return "Today";
+                              }
+                            })()}
                           </div>
                         </div>
                       )}
+
                       <MessageBubble
                         id={`message-${index}`}
                         msg={msg}
@@ -2251,9 +2784,14 @@ export default function Chat() {
                         onScrollToMessage={handleScrollToMessage}
                         sendReadReceipt={sendReadReceipt}
                         voiceUploadProgress={voiceUploadProgress}
+                        onJoinCall={handleJoinCall}
+                        isCallActive={isCallActive}
+                        users={users}
+                        onMentionClick={setSelectedUser}
                       />
                     </div>
                   );
+
                 })}
               <div ref={bottomRef} />
             </div>
@@ -2266,10 +2804,12 @@ export default function Chat() {
                       top: messagesContainerRef.current.scrollHeight,
                       behavior: "smooth",
                     });
+                    setHasUserScrolledUp(false);
                   }
                 }}
                 className="fixed bottom-24 right-8 bg-primary text-white rounded-full p-3 shadow-lg z-50 animate-bounce"
               >
+
                 <ChevronDownIcon size={20} />
               </button>
             )}
@@ -2277,6 +2817,7 @@ export default function Chat() {
             {/* Delete Confirmation Modal */}
             <Dialog
               open={showDeleteConfirm}
+
               onOpenChange={setShowDeleteConfirm}
             >
               <DialogContent>
@@ -2301,6 +2842,7 @@ export default function Chat() {
               </DialogContent>
             </Dialog>
 
+
             {/* Typing Indicator */}
             <div className="h-6 px-4 pb-2 flex items-center">
               {typingUsers.length > 0 && (
@@ -2311,6 +2853,7 @@ export default function Chat() {
               )}
             </div>
 
+
             {/* Message Input */}
             <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4 dark:border-gray-700/50 dark:bg-transparent">
               {replyingTo && (
@@ -2318,6 +2861,7 @@ export default function Chat() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2 overflow-hidden">
                       {replyingTo.file && !Array.isArray(replyingTo.file) && (
+
                         <>
                           {replyingTo.file.type?.startsWith("image") ||
                           replyingTo.file.thumbnailUrl ? (
@@ -2355,6 +2899,7 @@ export default function Chat() {
                       </div>
                     </div>
                     <Button
+
                       variant="ghost"
                       size="sm"
                       className="p-1 h-6 w-6"
@@ -2365,6 +2910,7 @@ export default function Chat() {
                   </div>
                 </div>
               )}
+
               {stagedFiles.length > 0 && (
                 <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50 dark:bg-gray-800/50">
                   <p className="text-sm font-semibold mb-2 px-2">
@@ -2373,6 +2919,7 @@ export default function Chat() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {stagedFiles.map((file, index) => (
                       <div key={index} className="flex flex-col gap-2">
+
                         <div className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2 h-24 justify-between">
                           {stagedFilePreviews[index] ? (
                             <img
@@ -2395,6 +2942,7 @@ export default function Chat() {
                           )}
                           {!isUploading && (
                             <Button
+
                               variant="ghost"
                               size="sm"
                               className="absolute top-1 right-1 h-6 w-6 p-1 opacity-50 group-hover:opacity-100 transition-opacity"
@@ -2405,6 +2953,7 @@ export default function Chat() {
                           )}
                           {isUploading &&
                             uploadProgress[file.name] !== undefined && (
+
                               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative mt-auto">
                                 <Progress
                                   value={
@@ -2422,6 +2971,7 @@ export default function Chat() {
                               </div>
                             )}
                         </div>
+
                       </div>
                     ))}
                   </div>
@@ -2430,6 +2980,7 @@ export default function Chat() {
 
               <div className="relative">
                 <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/50 dark:border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
+
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -2438,6 +2989,7 @@ export default function Chat() {
                     multiple
                   />
                   {recordingState === "idle" ? (
+
                     <textarea
                       ref={textareaRef}
                       value={text}
@@ -2448,6 +3000,7 @@ export default function Chat() {
                       rows={1}
                     />
                   ) : (
+
                     <div className="w-full h-8.5 flex items-center gap-4">
                       {recordingState !== "sending" && (
                         <Button
@@ -2465,6 +3018,7 @@ export default function Chat() {
                         isSending={recordingState === "sending"}
                       />
                       {recordingState === "sending" && (
+
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Sending…
@@ -2472,9 +3026,38 @@ export default function Chat() {
                       )}
                       {recordingState === "paused" && (
                         <div className="text-sm text-muted-foreground animate-pulse">
+
                           Paused
                         </div>
                       )}
+                    </div>
+                  )}
+                  {showMentions && filteredMentionUsers.length > 0 && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-card/95 backdrop-blur-lg border border-border/50 rounded-xl shadow-xl max-h-64 overflow-y-auto z-50 min-w-72 max-w-80">
+                      <div className="p-2 border-b border-border/30">
+                        <p className="text-xs font-medium text-muted-foreground px-2">Mention users</p>
+                      </div>
+                      {filteredMentionUsers.map((user, index) => (
+                        <button
+                          key={user._id}
+                          onClick={() => handleMentionSelect(user)}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-accent/60 transition-all duration-150 text-left rounded-lg mx-1 my-0.5"
+                        >
+                          <Avatar className="h-8 w-8 ring-2 ring-background/50">
+                            <AvatarImage src={user.image || undefined} />
+                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                              {user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-foreground truncate">{user.fullName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          </div>
+                          {onlineUsers.includes(user._id) && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full shrink-0"></div>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   )}
                   <div className="flex items-center space-x-1 ml-3">
@@ -2598,6 +3181,7 @@ export default function Chat() {
                   onReply={handleReplyInThread}
                   MessageBubbleComponent={MessageBubble}
                   sendReadReceipt={sendReadReceipt}
+                  onJoinCall={handleJoinCall}
                   allUsers={users}
                   className="bg-background/70 dark:bg-gray-900/80 backdrop-blur-lg"
                 />
@@ -2664,9 +3248,10 @@ export default function Chat() {
               : // This is a placeholder. In a real app, you'd get actual channel members.
                 // For now, sending to a "channel" from chat sends to all users.
                 activeRoom !== "general"
-                ? users
-                : undefined
+              ? users
+              : undefined
           }
+          currentRoom={activeRoom}
         />
 
         {/* Alert Details Modal */}
@@ -2689,6 +3274,9 @@ export default function Chat() {
           onClose={() => setCreateChannelModalOpen(false)}
           onChannelCreated={fetchChannels}
         />
+            <Dialog open={isPermissionDialogOpen} onOpenChange={setPermissionDialogOpen}>
+              {/* Dialog content here */}
+            </Dialog>
 
         <ChannelMembersModal
           isOpen={isMembersModalOpen}
@@ -2731,7 +3319,7 @@ export default function Chat() {
               emoji={activeReactionDetails.emoji}
               users={activeReactionDetails.users}
               allUsers={users}
-              currentUserId={session?.user?.id}
+              currentUserId={session?.user?.id || undefined}
               onRemoveReaction={handleReaction}
               onAddReaction={(emoji) =>
                 handleReaction(activeReactionDetails.messageId, emoji)
@@ -2757,19 +3345,27 @@ export default function Chat() {
         </AnimatePresence>
       </div>
 
-      <Dialog open={isPermissionDialogOpen} onOpenChange={setPermissionDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-card/90 backdrop-blur-lg border-border/50">
+      <Dialog
+        open={isPermissionDialogOpen}
+        onOpenChange={setPermissionDialogOpen}
+      >
+        <DialogContent className="sm:max-w-md bg-card/90 dark:bg-slate-900/80 backdrop-blur-lg border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <VideoIcon className="text-primary" />
               Start a Sync Call
             </DialogTitle>
             <DialogDescription>
-              To start a call, we need access to your camera and microphone. Your browser will ask you for permission.
+              To start a call, we need access to your camera and microphone.
+              Your browser will ask you for permission.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setPermissionDialogOpen(false)}>
+            <Button
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => setPermissionDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -2777,9 +3373,9 @@ export default function Chat() {
                 setPermissionDialogOpen(false);
                 handleStartCall();
               }}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 cursor-pointer"
             >
-              Allow Access
+              Proceed
             </Button>
           </DialogFooter>
         </DialogContent>

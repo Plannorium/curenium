@@ -109,7 +109,9 @@ export const InviteList: React.FC = () => {
               className="bg-primary-600 hover:bg-primary-700 text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer"
             >
               <Plus className="w-4 h-4 mr-2" />
+              <span className="hidden md:block">
               Invite User
+              </span>
             </Button>
           )}
         </div>

@@ -2,21 +2,37 @@ import * as jose from 'jose';
 import mongoose from 'mongoose';
 import { ICallSession, getCallSessionModel } from '../models/CallSession';
 
-
 export interface Env {
     CHAT_ROOM: DurableObjectNamespace;
+    NOTIFICATIONS_ROOM: DurableObjectNamespace;
     MONGODB_URI: string;
     NEXTAUTH_SECRET: string;
     WORKER_INTERNAL_AUTH_KEY: string;
 }
 
+interface UserSession {
+    id?: string;
+    name?: string;
+    image?: string;
+    role?: string;
+    orgId?: string;
+    sub?: string;
+}
+
 export class ChatRoom {
     state: DurableObjectState;
-    sessions: { socket: WebSocket, user: any }[] = [];
+    sessions: { socket: WebSocket, user: UserSession | null }[] = [];
     messages: any[] = [];
     users: Map<string, { id: string; name: string; image?: string }> = new Map();
     env: Env;
     callSessionId?: string;
+
+    private getUserFromSession(session: { socket: WebSocket, user: UserSession | null }): UserSession {
+        if (!session.user) {
+            throw new Error('User not authenticated');
+        }
+        return session.user;
+    }
 
     constructor(state: DurableObjectState, env: Env) {
         this.state = state;
@@ -49,10 +65,45 @@ export class ChatRoom {
         if (url.pathname === '/api/broadcast') {
             if (request.method === 'POST') {
                 const { alert } = await request.json<{ alert: any }>();
-                this.broadcastAlert(alert);
+                await this.broadcastAlert(alert);
                 return new Response('Alert broadcasted in room', { status: 200 });
             }
             return new Response('Method not allowed', { status: 405 });
+        }
+
+        if (url.pathname === '/api/call-end') {
+            if (request.method === 'POST') {
+                const { callId, duration } = await request.json<{ callId: string; duration: string }>();
+                const messageIndex = this.messages.findIndex(msg => msg.id === callId);
+                if (messageIndex > -1) {
+                    this.messages[messageIndex].callEnded = true;
+                    this.messages[messageIndex].duration = duration;
+                    await this.state.storage.put("messages", this.messages);
+                    this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
+                }
+                return new Response('Call ended', { status: 200 });
+            }
+            return new Response('Method not allowed', { status: 405 });
+        }
+
+        // Handle POST requests for call_end messages sent via HTTP
+        if (request.method === 'POST') {
+            try {
+                const data = await request.json() as { type: string; callId: string; duration: string };
+                if (data.type === 'call_end') {
+                    const { callId, duration } = data;
+                    const messageIndex = this.messages.findIndex(msg => msg.id === callId);
+                    if (messageIndex > -1) {
+                        this.messages[messageIndex].callEnded = true;
+                        this.messages[messageIndex].duration = duration;
+                        await this.state.storage.put("messages", this.messages);
+                        this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
+                    }
+                    return new Response('Call ended', { status: 200 });
+                }
+            } catch (error) {
+                // Not JSON or not a call_end message, continue to WebSocket handling
+            }
         }
 
         const isWebSocketUpgrade = request.headers.get("Upgrade") === "websocket";
@@ -85,7 +136,7 @@ export class ChatRoom {
                 try {
                     const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
                     const { payload } = await jose.jwtVerify(data.token, secret);
-                    session.user = payload;
+                    (session as any).user = payload as unknown as UserSession;
                     this.users.set(payload.id as string, { id: payload.id as string, name: payload.name as string, image: payload.image as string });
                     this.broadcastPresence();
                     console.log("Authenticated user:", session.user);
@@ -107,11 +158,11 @@ export class ChatRoom {
                     await this.dbConnect();
                     const CallSession = getCallSessionModel(); // Get the model after connecting to the DB
                     const newCallSession = new CallSession({
-                        participants: [session.user.id],
+                        participants: [(session.user as UserSession).id],
                         startTime: new Date(),
                     });
                     await newCallSession.save();
-                    this.callSessionId = newCallSession._id.toString();
+                    this.callSessionId = newCallSession._id?.toString() || '';
                     await this.state.storage.put("callSessionId", this.callSessionId);
                     this.broadcast(JSON.stringify({ type: 'call-session-started', callSessionId: this.callSessionId }));
                 }
@@ -144,9 +195,9 @@ export class ChatRoom {
                     replyTo: data.replyTo, // This will now include the 'file' property
                     createdAt: new Date().toISOString(),
                     sender: {
-                        _id: session.user.id,
-                        fullName: session.user.name,
-                        image: session.user.image || null,
+                        _id: this.getUserFromSession(session).id,
+                        fullName: this.getUserFromSession(session).name,
+                        image: this.getUserFromSession(session).image || null,
                     },
                     status: 'sent',
                 };
@@ -214,7 +265,7 @@ export class ChatRoom {
                         file: undefined,
                         files: undefined, // Clear files
                         deleted: {
-                            by: session.user?.name || 'A user',
+                            by: (session.user as unknown as UserSession)?.name || 'A user',
                             at: new Date().toISOString(),
                         },
                     };
@@ -223,13 +274,36 @@ export class ChatRoom {
                     // Broadcast the updated message object
                     this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
                 }
+            } else if (data.type === 'call_invitation') {
+                const finalMessage = {
+                    type: 'call_invitation',
+                    id: data.callId,
+                    text: `${data.callerName} started a call.`,
+                    userId: (session.user as unknown as UserSession).id,
+                    fullName: data.callerName,
+                    createdAt: data.timestamp,
+                    callId: data.callId,
+                    sender: {
+                        _id: (session.user as unknown as UserSession).id,
+                        fullName: (session.user as unknown as UserSession).name,
+                        image: (session.user as unknown as UserSession).image || null,
+                    },
+                };
+
+                this.messages.push(finalMessage);
+                if (this.messages.length > 50) {
+                    this.messages.shift();
+                }
+
+                this.broadcast(JSON.stringify(finalMessage));
+                await this.state.storage.put("messages", this.messages);
             }
         });
 
         webSocket.addEventListener("close", async () => {
             console.log("WebSocket session closed");
             const session = this.sessions.find(s => s.socket === webSocket);
-            if (session && session.user) {
+            if (session && session.user && session.user.id) {
                 this.users.delete(session.user.id);
             }
             this.sessions = this.sessions.filter((s) => s.socket !== webSocket);
@@ -270,10 +344,34 @@ export class ChatRoom {
         });
     }
 
-    broadcastAlert(alert: any) {
+    async broadcastAlert(alert: any) {
+        const sender = alert.createdBy || alert.sender;
+        if (!sender || !sender._id) {
+            console.error('Invalid alert: missing sender or sender._id', alert);
+            return;
+        }
+        // Ensure every alert has a unique ID before processing
+        const alertWithId = { ...alert, _id: alert._id || crypto.randomUUID() };
+        const alertMessage = {
+            type: 'alert_notification',
+            id: alertWithId._id,
+            alert: alertWithId,
+            text: alertWithId.message,
+            userId: sender._id,
+            fullName: sender.fullName,
+            createdAt: alert.createdAt || new Date().toISOString(),
+        };
+
+        // Store the alert in messages for persistence
+        this.messages.push(alertMessage);
+        if (this.messages.length > 50) {
+            this.messages.shift();
+        }
+        await this.state.storage.put("messages", this.messages);
+
         const payload = {
             type: 'alert_notification',
-            alert: alert,
+            alert: alertWithId,
         };
         this.broadcast(JSON.stringify(payload));
     }
@@ -283,6 +381,60 @@ const createDirectRoom = (userId1: string, userId2: string) => {
     const sortedIds = [userId1, userId2].sort();
     return sortedIds.join('-');
 };
+
+export class NotificationRoom {
+    state: DurableObjectState;
+    sessions: WebSocket[] = [];
+
+    constructor(state: DurableObjectState, env: Env) {
+        this.state = state;
+    }
+
+    handleSession(socket: WebSocket) {
+        socket.accept();
+        this.sessions.push(socket);
+        socket.send(JSON.stringify({ type: 'connection_established', message: 'WebSocket connection established' }));
+
+        socket.addEventListener("message", async (event) => {
+            try {
+                const data = JSON.parse(event.data as string);
+                console.log("NotificationRoom received message:", data);
+
+                if (data.type === 'auth') {
+                    // Handle authentication if needed
+                    console.log("Notification WebSocket authenticated");
+                    // Could verify token here if needed
+                }
+                // Handle other message types if needed
+            } catch (error) {
+                console.error("Error parsing notification message:", error);
+            }
+        });
+
+        socket.addEventListener("close", () => {
+            this.sessions = this.sessions.filter(s => s !== socket);
+        });
+        socket.addEventListener("error", () => {
+            this.sessions = this.sessions.filter(s => s !== socket);
+        });
+    }
+
+    async fetch(request: Request): Promise<Response> {
+        const url = new URL(request.url);
+        if (url.pathname === '/api/broadcast-notification') {
+            const { type, payload } = await request.json<{ type: string, payload: any }>();
+            this.sessions.forEach(ws => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type, payload }));
+                }
+            });
+            return new Response('Notification broadcasted', { status: 200 });
+        }
+        const pair = new WebSocketPair();
+        this.handleSession(pair[1]);
+        return new Response(null, { status: 101, webSocket: pair[0] });
+    }
+}
 
 export default <ExportedHandler<Env>>{
     async fetch(request: Request, env: Env): Promise<Response> {
@@ -296,38 +448,59 @@ export default <ExportedHandler<Env>>{
 
             // Authenticate the internal request
             const authKey = request.headers.get('X-Internal-Auth-Key');
-            if (authKey !== env.WORKER_INTERNAL_AUTH_KEY) {
+            if (env.WORKER_INTERNAL_AUTH_KEY && authKey !== env.WORKER_INTERNAL_AUTH_KEY) {
                 return new Response('Unauthorized', { status: 401 });
             }
 
             try {
-                const { alert, recipients } = await request.json<{ alert: any; recipients: string[] }>();
-                const roomsToNotify = new Set<string>();
+                const { notification, recipients, originalRecipients } = await request.json<{ notification: any; recipients: string[]; originalRecipients?: string[] }>();
+                const chatRoomsToNotify = new Set<string>();
+                const userNotificationsToNotify = new Set<string>();
 
-                for (const recipient of recipients) {
-                    if (recipient.startsWith('channel:')) {
-                        // It's a channel, add the channel name as a room to notify
-                        roomsToNotify.add(recipient.replace('channel:', ''));
-                    } else {
-                        // It's a user ID. Send the alert to their "self-chat" room.
-                        // This ensures the user gets a notification regardless of their active room.
-                        roomsToNotify.add(createDirectRoom(recipient, recipient));
+                // Handle original recipients for channels
+                if (originalRecipients) {
+                    for (const recipient of originalRecipients) {
+                        if (recipient.startsWith('channel:')) {
+                            // It's a channel, add the channel name as a room to notify
+                            chatRoomsToNotify.add(recipient.replace('channel:', ''));
+                        }
                     }
                 }
 
-                // Dispatch the broadcast to all unique rooms
-                const promises = Array.from(roomsToNotify).map(roomName => {
+                for (const recipient of recipients) {
+                    // It's a user ID.
+                    // Send to their "self-chat" room for an in-app alert message
+                    chatRoomsToNotify.add(createDirectRoom(recipient, recipient));
+                    // Also send to their dedicated notification room for the navbar
+                    userNotificationsToNotify.add(recipient);
+                }
+
+                // Dispatch to ChatRoom Durable Objects
+                const chatPromises = Array.from(chatRoomsToNotify).map(roomName => {
                     const id = env.CHAT_ROOM.idFromName(roomName);
                     const stub = env.CHAT_ROOM.get(id);
-                    // Forward the alert to the specific ChatRoom instance to broadcast internally
                     return stub.fetch(new Request(`${url.origin}/api/broadcast`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ alert }),
+                        body: JSON.stringify({ alert: notification }),
                     }));
                 });
 
-                await Promise.all(promises);
+                // Dispatch to NotificationRoom Durable Objects
+                const notificationPromises = Array.from(userNotificationsToNotify).map(userId => {
+                    const id = env.NOTIFICATIONS_ROOM.idFromName(userId);
+                    const stub = env.NOTIFICATIONS_ROOM.get(id);
+                    // Ensure the notification has an ID before broadcasting.
+                    const notificationWithId = { ...notification, _id: notification._id || crypto.randomUUID() };
+                    // The NotificationRoom expects a 'new_notification' type in its broadcast
+                    return stub.fetch(new Request(`${url.origin}/api/broadcast-notification`, { // This path is internal to the worker
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'new_notification', payload: notificationWithId }),
+                    }));
+                });
+
+                await Promise.all([...chatPromises, ...notificationPromises]);
                 return new Response('Alert broadcast initiated', { status: 202 });
             } catch (error) {
                 console.error('Error in /api/broadcast-alert:', error);
@@ -335,7 +508,7 @@ export default <ExportedHandler<Env>>{
             }
         }
 
-        // Default route for WebSocket connections
+        // Default route for WebSocket connections and HTTP messages
         const room = url.searchParams.get('room');
         if (room) {
             const id = env.CHAT_ROOM.idFromName(room);
@@ -343,6 +516,27 @@ export default <ExportedHandler<Env>>{
             const newRequest = new Request(request.url, request);
             newRequest.headers.set('X-Env', JSON.stringify(env));
             return stub.fetch(newRequest);
+        }
+
+        const notifUserId = url.searchParams.get('user');
+        if (notifUserId) {
+            const id = env.NOTIFICATIONS_ROOM.idFromName(notifUserId);
+            const stub = env.NOTIFICATIONS_ROOM.get(id);
+            const newRequest = new Request(request.url, request);
+            newRequest.headers.set('X-Env', JSON.stringify(env));
+            return stub.fetch(newRequest);
+        }
+
+        if (url.pathname.startsWith("/api/notifications/socket")) {
+            const isWebSocketUpgrade = request.headers.get("Upgrade") === "websocket";
+            if (isWebSocketUpgrade) {
+                const notifUserId = url.searchParams.get('user');
+                const id = env.NOTIFICATIONS_ROOM.idFromName(notifUserId || 'default');
+                const stub = env.NOTIFICATIONS_ROOM.get(id);
+                return stub.fetch(request);
+            } else {
+                return new Response('Method not allowed', { status: 405 });
+            }
         }
 
         return new Response('Not found', { status: 404 });

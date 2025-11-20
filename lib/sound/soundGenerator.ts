@@ -158,6 +158,17 @@ class SoundManager {
         setTimeout(() => synth.dispose(), 1500);
         break;
       }
+      case 'reaction': {
+        // A light, quick "pop" sound for sending a reaction.
+        const synth = new Tone.MembraneSynth({
+          pitchDecay: 0.008,
+          octaves: 4,
+          envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.1 },
+        }).connect(this.masterChannel);
+        synth.triggerAttackRelease('G4', '32n', now);
+        setTimeout(() => synth.dispose(), 300);
+        break;
+      }
       default:
         console.error(`Sound preset "${presetName}" not found.`);
     }

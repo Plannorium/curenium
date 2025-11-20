@@ -4,6 +4,7 @@ import { BellIcon, ArrowRightIcon, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SendAlertModal } from './SendAlertModal';
 import { AlertDetailsModal } from './AlertDetailsModal';
+import { useNotifications } from '@/hooks/use-notifications';
 
 interface Alert {
   _id: string;
@@ -74,11 +75,12 @@ const alertLevelStyles = {
 };
 
 const Alerts = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { notifications } = useNotifications();
   
   const allChannels: Channel[] = [
     { name: 'Emergency Ward', id: 'emergency' },
@@ -89,13 +91,19 @@ const Alerts = () => {
   const fetchAlerts = useCallback(async () => {
     setIsLoading(true);
     const res = await fetch('/api/alerts');
-    const data: AlertsApiResponse = await res.json();
-    setAlerts(data.alerts || []);
+    const data: Alert[] = await res.json();
+    setAlerts(data || []);
     setIsLoading(false);
   }, []);
 
   useEffect(() => { 
     fetchAlerts();
+  }, [fetchAlerts]);
+
+  useEffect(() => {
+    // When a new notification comes in from the WebSocket, re-fetch the alerts list.
+    fetchAlerts();
+  }, [notifications, fetchAlerts]);
     
     const fetchUsers = async () => {
       try {
@@ -107,7 +115,6 @@ const Alerts = () => {
       }
     };
     fetchUsers();
-  }, [fetchAlerts]);
 
   return (
     <>

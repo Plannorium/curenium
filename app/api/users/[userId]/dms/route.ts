@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import Message from '@/models/Message';
 import DMRoom from "@/models/DMRoom";
 import User from "@/models/User";
+import Message from "@/models/Message";
+import "@/models/Message"; 
 import connectToDb from "@/lib/dbConnect";
 
 interface PostRequestBody {
@@ -12,11 +13,11 @@ interface PostRequestBody {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
     await connectToDb();
-    const { userId } = params;
+    const { userId } = await context.params;
     const { receiverId } = (await request.json()) as PostRequestBody;
 
     if (!userId || !receiverId) {
@@ -60,10 +61,10 @@ export async function POST(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  const { userId } = params;
+  const { userId } = await context.params;
 
   if (!session || session.user.id !== userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

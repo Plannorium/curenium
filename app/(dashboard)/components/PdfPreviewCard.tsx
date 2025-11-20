@@ -12,7 +12,7 @@ export default function PdfPreviewCard({ file, onPreview }: Props) {
   // Cloudinary page preview helper (if you want to show a small stacked preview)
   const renderStackPreview = () => {
     const pagesToShow = Math.min(pageCount, 3);
-    const imgs = [];
+    const imgs: React.ReactElement[] = [];
     for (let i = 1; i <= pagesToShow; i++) {
       // If you don't have pre-generated derived images per page, you can generate by
       // replacing pg_1 with pg_{i} in the previewUrl (Cloudinary supports pg_i)

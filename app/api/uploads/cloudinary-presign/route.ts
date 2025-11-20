@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
   // audit the presign request
   await connectDB();
   await writeAudit({
-    orgId: token.orgId,
-    userId: token.sub,
-    userRole: token.role,
+    orgId: token.orgId as string,
+    userId: token.sub || 'unknown',
+    userRole: token.role as string,
     action: "attachment.presign",
     targetType: "Attachment",
     targetId: null,

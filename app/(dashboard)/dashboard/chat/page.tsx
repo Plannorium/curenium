@@ -1,11 +1,11 @@
 "use client";
 
-import Chat from "@/app/(dashboard)/components/Chat";
+import CallWrapper from "@/app/(dashboard)/components/CallWrapper";
 
 const ChatPage = () => {
   return (
     <div className ="flex-1 overflow-hidden"> 
-      <Chat /> 
+      <CallWrapper /> 
     </div>
   );
 };

@@ -29,24 +29,25 @@ export const ThemeProvider: React.FC<{
         const response = await fetch("/api/settings/appearance");
         if (response.ok) {
           const data = (await response.json()) as { theme?: Theme; font?: Font };
-          if (data.theme) setTheme(data.theme);
-          if (data.font) setFont(data.font);
-        } else {
+          // Only update if we don't have localStorage values (first time user)
+          const hasLocalTheme = localStorage.getItem('theme') !== null;
+          const hasLocalFont = localStorage.getItem('font') !== null;
+
+          if (!hasLocalTheme && data.theme) setTheme(data.theme);
+          if (!hasLocalFont && data.font) setFont(data.font);
+        }
+      } catch (_error) {
+        // If API fails and no localStorage, use system preference
+        const hasLocalTheme = localStorage.getItem('theme') !== null;
+        if (!hasLocalTheme) {
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           setTheme(prefersDark ? 'dark' : 'light');
         }
-      } catch (_error) {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setTheme(prefersDark ? 'dark' : 'light');
       }
     };
 
-    const cachedTheme = localStorage.getItem('theme');
-    const cachedFont = localStorage.getItem('font');
-
-    if (!cachedTheme || !cachedFont) {
-      fetchSettings();
-    }
+    // Always try to fetch settings for syncing, but don't override localStorage
+    fetchSettings();
   }, [setTheme, setFont]);
 
   useEffect(() => {
@@ -61,7 +62,21 @@ export const ThemeProvider: React.FC<{
   }, [font]);
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+
+    // Sync with server if user is logged in
+    if (typeof window !== 'undefined') {
+      fetch("/api/settings/appearance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ theme: newTheme, font }),
+      }).catch((error) => {
+        console.error("Failed to sync theme with server:", error);
+      });
+    }
   };
 
   return <ThemeContext.Provider value={{

@@ -1,8 +1,10 @@
-import { Patient } from "@/types/patient" ; 
+"use client";
+
+import { Patient } from "@/types/patient" ;
  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" ; 
  import { Badge } from "@/components/ui/badge" ; 
  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" ; 
- import { Cake, VenetianMask, Mail, Phone, FileText, Pill, Calendar, Activity, ClipboardCheck, ShieldCheck, Home, UserSquare, Share2 } from 'lucide-react'; 
+ import { Cake, VenetianMask, Mail, Phone, FileText, Pill, Calendar, Activity, ClipboardCheck, ShieldCheck, Home, UserSquare, Share2, Stethoscope, Beaker } from 'lucide-react'; 
 import DetailItem from "@/app/(dashboard)/components/patients/DetailItem";
 import EmptyTabContent from "@/app/(dashboard)/components/patients/EmptyTabContent";
 import VitalsDisplay from "./VitalsDisplay";
@@ -10,9 +12,16 @@ import PrescriptionsDisplay from "./PrescriptionsDisplay";
 import AppointmentsDisplay from "./AppointmentsDisplay";
 import InsuranceDisplay from "./InsuranceDisplay";
 import AuditLogDisplay from "./AuditLogDisplay";
+import NursingCarePlan from "./NursingCarePlan";
+import LabResultsDisplay from "./LabResultsDisplay";
+import { SharePatientModal } from "./SharePatientModal";
   import { Button } from "@/components/ui/button";
   import { toast } from "sonner";
- import { motion } from "framer-motion" ; 
+  import { motion } from "framer-motion" ;
+  import { useState } from "react";
+  import { useSession } from "next-auth/react";
+import ClinicalNotesDisplay from "./ClinicalNotesDisplay";
+import LabOrdersDisplay from "./LabOrdersDisplay";
  
  interface PatientDetailProps  { 
    patient: Patient ; 
@@ -27,13 +36,12 @@ import AuditLogDisplay from "./AuditLogDisplay";
    return  age; 
  }; 
  
- export default function PatientDetail({ patient }: PatientDetailProps ) { 
+ export default function PatientDetail({ patient }: PatientDetailProps ) {
+   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+   const { data: session } = useSession();
+
    const handleShare = () => {
-    const url = `${window.location.origin}/dashboard/ehr/patients?patient_id=${patient._id}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link Copied", {
-      description: "Patient profile link has been copied to your clipboard.",
-    });
+    setIsShareModalOpen(true);
   };
 
    return  ( 
@@ -83,7 +91,7 @@ import AuditLogDisplay from "./AuditLogDisplay";
        {/* Tabs */} 
        <div className="p-0">
          <Tabs defaultValue="overview" className="w-full">
-         <TabsList className="grid grid-cols-6 sm:flex sm:flex-nowrap sm:justify-center sm:gap-x-2 w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg">
+         <TabsList className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:flex lg:flex-nowrap lg:justify-center lg:gap-x-2 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
             <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <ClipboardCheck className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Overview</span>
@@ -91,6 +99,10 @@ import AuditLogDisplay from "./AuditLogDisplay";
             <TabsTrigger value="vitals" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Activity className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Vitals</span>
+            </TabsTrigger>
+            <TabsTrigger value="lab-results" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <Beaker className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Lab Results</span>
             </TabsTrigger>
             <TabsTrigger value="prescriptions" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <Pill className="h-4 w-4 shrink-0" />
@@ -100,6 +112,10 @@ import AuditLogDisplay from "./AuditLogDisplay";
               <Calendar className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Appointments</span>
             </TabsTrigger>
+            <TabsTrigger value="nursing-care-plan" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <Stethoscope className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Nursing Care</span>
+            </TabsTrigger>
             <TabsTrigger value="insurance" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <ShieldCheck className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Insurance</span>
@@ -108,40 +124,68 @@ import AuditLogDisplay from "./AuditLogDisplay";
               <FileText className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Audit Log</span>
             </TabsTrigger>
+            <TabsTrigger value="clinical_notes" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Clinical Notes</span>
+            </TabsTrigger>
+            <TabsTrigger value="lab_orders" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+              <Beaker className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Lab Orders</span>
+            </TabsTrigger>
             </TabsList>
 
            {/* Tab Contents */} 
            <TabsContent value="overview" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl" > 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-6 sm:gap-y-8 text-sm" > 
-               <DetailItem icon={Cake} label="Date of Birth" value={`${new Date(patient.dob).toLocaleDateString()} (${calculateAge(patient.dob)} years old )`} /> 
-               <DetailItem icon={VenetianMask} label="Gender" value={patient.gender}  /> 
-               <DetailItem icon={Mail} label="Email" value={patient.contact.email}  /> 
-               <DetailItem icon={Phone} label="Phone" value={patient.contact.phone}  /> 
+               <DetailItem icon={Cake} label="Date of Birth" value={patient.dob ? `${new Date(patient.dob).toLocaleDateString()} (${calculateAge(patient.dob)} years old )` : 'N/A'} />
+               <DetailItem icon={VenetianMask} label="Gender" value={patient.gender || 'N/A'}  />
+               <DetailItem icon={Mail} label="Email" value={patient.contact?.email || 'N/A'}  />
+               <DetailItem icon={Phone} label="Phone" value={patient.contact?.phone || 'N/A'}  />
                 <DetailItem icon={Home} label="Address" value={patient.address ? `${patient.address.street}, ${patient.address.city}, ${patient.address.state} ${patient.address.zip}`: 'N/A'} />
                 <DetailItem icon={UserSquare} label="Emergency Contact" value={patient.emergencyContact ? `${patient.emergencyContact.name} - ${patient.emergencyContact.phone}`: 'N/A'} />
              </div >
            </TabsContent >
 
            <TabsContent value="vitals" >
-             <VitalsDisplay patientId={patient._id} />
+             <VitalsDisplay patientId={patient._id || ''} />
            </TabsContent >
 
+           <TabsContent value="lab-results">
+             <LabResultsDisplay patientId={patient._id || ''} />
+           </TabsContent>
+
            <TabsContent value="prescriptions" >
-             <PrescriptionsDisplay patientId={patient._id} />
+             <PrescriptionsDisplay patientId={patient._id || ''} />
            </TabsContent >
 
            <TabsContent value="appointments" >
-             <AppointmentsDisplay patientId={patient._id} />
+             <AppointmentsDisplay patientId={patient._id || ''} />
            </TabsContent >
 
-           <TabsContent value="insurance" >
-             <InsuranceDisplay patientId={patient._id} />
-           </TabsContent > 
-           <TabsContent value="audit-log">
-             <AuditLogDisplay patientId={patient._id} />
+           <TabsContent value="nursing-care-plan">
+             <NursingCarePlan patientId={patient._id || ''} nurseId={session?.user?.id || ''} />
            </TabsContent>
-         </Tabs > 
-       </div > 
-     </motion.div > 
-   ); 
+
+           <TabsContent value="insurance" >
+             <InsuranceDisplay patientId={patient._id || ''} />
+           </TabsContent >
+           <TabsContent value="audit-log">
+             <AuditLogDisplay patientId={patient._id || ''} />
+           </TabsContent>
+          <TabsContent value="clinical_notes">
+            <ClinicalNotesDisplay patientId={patient._id || ''} />
+          </TabsContent>
+          <TabsContent value="lab_orders">
+            <LabOrdersDisplay patientId={patient._id || ''} />
+          </TabsContent>
+         </Tabs >
+       </div >
+       <SharePatientModal
+         patientId={patient._id || ''}
+         patientName={`${patient.firstName} ${patient.lastName}`}
+         isOpen={isShareModalOpen}
+         onClose={() => setIsShareModalOpen(false)}
+       />
+     </motion.div >
+   );
  }

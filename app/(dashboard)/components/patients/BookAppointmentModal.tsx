@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarPlus, Search } from 'lucide-react';
+import { CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Patient } from '@/types/patient';
@@ -24,8 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+
+
 import {
   Popover,
   PopoverContent,
@@ -129,7 +129,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
         return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       });
 
-    let current = dayStart;
+    const current = dayStart;
     while (current < dayEnd) {
       const timeString = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`;
       if (!bookedTimes.includes(timeString)) {

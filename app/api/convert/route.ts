@@ -41,9 +41,10 @@ async function uploadToCloudinary(pdfUrl: string, originalFilename: string): Pro
       resource_type: 'raw',
       public_id: `curenium/chat/converted/${originalFilename.replace(/\.[^/.]+$/, '')}.pdf`,
       format: 'pdf',
-    }, (error, result: { secure_url: string }) => {
+    }, (error, result) => {
       if (error) reject(error);
-      else resolve(result.secure_url);
+      else if (result && result.secure_url) resolve(result.secure_url);
+      else reject(new Error('Upload failed: no secure_url returned'));
     });
   });
 }

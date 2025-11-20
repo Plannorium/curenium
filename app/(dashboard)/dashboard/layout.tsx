@@ -5,7 +5,7 @@ import React, { useState, useRef, Suspense } from 'react';
 import Chat from '@/app/(dashboard)/components/Chat';
 import Alerts from '@/app/(dashboard)/components/Alerts';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
-import { useOnClickOutside } from '@/lib/hooks/useOnClickOutside';
+import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 
 
 export default function DashboardLayout({ 
@@ -31,7 +31,7 @@ export default function DashboardLayout({
     setCurrentView(view);
   };
 
-  useOnClickOutside(sidebarRef, () => {
+  useOnClickOutside(sidebarRef as React.RefObject<HTMLElement>, () => {
     if (isSidebarOpen) {
       setSidebarOpen(false);
     }

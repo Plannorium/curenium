@@ -18,7 +18,7 @@ export default function PatientsPage() {
 
   useEffect(() => {
     setIsClient(true);
-    const patientId = searchParams.get('patient_id');
+    const patientId = searchParams?.get('patient_id');
     if (patientId) {
       // Fetch patient data based on patientId
       const fetchPatient = async () => {

@@ -5,7 +5,8 @@ import connectDB from "@/lib/dbConnect";
 import Appointment, { IAppointment } from "@/models/Appointment";
 import AuditLog from "@/models/AuditLog";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: any) {
+  const { params } = context;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -21,16 +22,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function POST(
   req: NextRequest,
-  { params: paramsPromise }: { params: Promise<{ id: string }> }
+  context: any
 ) {
+  const { params } = context;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const allowed = ["admin", "receptionist"];
   if (!allowed.includes(session.user.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  const params = await paramsPromise;
   const body: { reason: string, type: string, date: string, personnelId: string } = await req.json();
   await connectDB();
 

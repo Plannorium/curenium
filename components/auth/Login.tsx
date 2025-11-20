@@ -16,10 +16,10 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
 
   useEffect(() => {
-    const urlError = searchParams.get('error');
+    const urlError = searchParams?.get('error');
     if (urlError) {
       switch (urlError) {
         case 'OAuthUserNotFound':

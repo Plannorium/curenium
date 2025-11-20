@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import Notifications from './Notifications';
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -92,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       </div>
 
       <div className="flex items-center space-x-2">
-        {mounted && pathname.startsWith('/dashboard/ehr') && (
+        {mounted && pathname && pathname.startsWith('/dashboard/ehr') && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -123,15 +124,34 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             <MoonIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           )}
         </Button>
-
+{/* 
         <Button
           variant="ghost"
           size="icon"
-          className="relative rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          onClick={async () => {
+            await fetch('/api/notifications/send', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userIds: [session?.user?.id],
+                notification: {
+                  id: crypto.randomUUID(),
+                  title: 'Test Notification',
+                  message: 'This is a test notification.',
+                  read: false,
+                  createdAt: new Date().toISOString(),
+                },
+              }),
+            });
+          }}
+          className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <BellIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full"></span>
-        </Button>
+        </Button> */}
+
+        <Notifications />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

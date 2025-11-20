@@ -96,7 +96,7 @@ const VideoTile = forwardRef<HTMLVideoElement, { stream: MediaStream; isMuted: b
   return (
     <div className={`relative rounded-lg overflow-hidden w-full h-full aspect-video flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'ring-4 ring-green-500 shadow-2xl shadow-green-500/30' : 'ring-1 ring-white/4'} bg-black`}>
       {stream && !isVideoOff ? (
-        <video ref={videoRef} autoPlay playsInline muted={!!isLocal} className={`w-full h-full ${isScreenShare ? 'object-contain' : 'object-cover'} ${isLocal ? 'scale-x-[-1]' : ''}`} />
+        <video ref={videoRef} autoPlay playsInline muted={!!isLocal} className={`w-full h-full ${isScreenShare ? 'object-contain' : 'object-cover'} ${isLocal && !isScreenShare ? 'scale-x-[-1]' : ''}`} />
       ) : (
         <div className="flex flex-col items-center justify-center text-white bg-gray-800 w-full h-full p-4 absolute inset-0">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -220,20 +220,29 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
 
   const isLocalSpeaking = useSpeakingIndicator(localStream);
 
+  const audioInitialized = useRef(false);
+  const playSoundWithInit = useCallback((sound: Parameters<typeof playSound>[0]) => {
+    if (!audioInitialized.current) {
+        initAudio();
+        audioInitialized.current = true;
+    }
+    playSound(sound);
+  }, []);
+
+
   const handleToggleMute = useCallback(() => {
     if (localStream) {
-      const newMuted = !isMuted;
-      localStream.getAudioTracks().forEach(track => track.enabled = !newMuted); onToggleMute();
-      playSound(newMuted ? 'mute' : 'unmute');
+      onToggleMute();
+      playSoundWithInit(!isMuted ? 'mute' : 'unmute');
     }
-  }, [localStream, isMuted, playSound, onToggleMute]);
+  }, [localStream, isMuted, playSoundWithInit, onToggleMute]);
 
   const handleToggleVideo = useCallback(() => {
     if (localStream) {
-      localStream.getVideoTracks().forEach(track => track.enabled = isVideoOff); onToggleVideo();
-      playSound('mute'); // Using 'mute' as a generic 'tick' sound
+      onToggleVideo();
+      playSoundWithInit('mute'); // Using 'mute' as a generic 'tick' sound
     }
-  }, [localStream, isVideoOff, playSound, onToggleVideo]);
+  }, [localStream, playSoundWithInit, onToggleVideo]);
 
   const callStateRef = useRef({ isMuted, isVideoOff });
   useEffect(() => {
@@ -262,12 +271,12 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
           if (currentVideo) handleToggleVideo();
           break;
         case 'end_call':
-          playSound('callEnd');
+          playSoundWithInit('callEnd');
           onEndCall();
           break;
       }
     },
-    [handleToggleMute, handleToggleVideo, playSound, onEndCall]
+    [handleToggleMute, handleToggleVideo, playSoundWithInit, onEndCall]
   );
 
   const gestureOverlay = useGestureControl(
@@ -286,7 +295,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   }, [currentGesture, gestureTimestamp]);
 
   const handleEnableGestureControl = () => {
-    if (localVideoElement?.readyState >= 2) {
+    if (localVideoElement && localVideoElement.readyState >= 2) {
       setIsGestureControlEnabled(true);
       setShowGesturePopup(false);
       toast.success('Gesture control enabled!');
@@ -304,7 +313,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
   const maxChatWidth = 640;
 
   const handleEndCall = () => {
-    playSound('callEnd');
+    playSoundWithInit('callEnd');
     onEndCall();
   };
 
@@ -334,7 +343,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
       const newMessage: CallChatMessage = { id: crypto.randomUUID(), userName, text: chatInput.trim(), timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
       setChatMessages(prev => [...prev, newMessage]);
       setChatInput('');
-      playSound('message');
+      playSoundWithInit('message');
     }
   };
 
@@ -342,7 +351,7 @@ export const CallView: React.FC<CallViewProps> = ({ localStream, remoteStreams, 
     const newReaction = { id: Date.now(), emoji, name: userName };
     setReactions(prev => [...prev, newReaction]);
 setIsReactionPickerOpen(false);
-    playSound('reaction');
+    playSoundWithInit('reaction');
     setTimeout(() => setReactions(prev => prev.filter(r => r.id !== newReaction.id)), 750);
   };
 
@@ -465,12 +474,12 @@ setIsReactionPickerOpen(false);
                     isVideoOff={isVideoOff}
                     isSpeaking={isLocalSpeaking}
                   />
-                  {isGestureControlEnabled && (
+                  {isGestureControlEnabled && localVideoElement && (
                     <GestureOverlay
                       videoRef={{ current: localVideoElement }}
                       handResult={gestureOverlay.handResult}
                       gesture={gestureOverlay.gesture}
-                      confidence={gestureOverlay.confidence}
+                      confidence={gestureOverlay.confidence || 0}
                     />
                   )}
                 </div>

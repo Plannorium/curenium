@@ -1,5 +1,5 @@
-
 import mongoose, { Document, Schema, models, Model } from 'mongoose';
+import Message from './Message';
 
 export interface IDMRoom extends Document {
   room: string;

@@ -55,6 +55,7 @@ export const authOptions: NextAuthOptions = {
           token.name = dbUser.fullName;
           token.role = dbUser.role;
           token.organizationId = dbUser.organizationId?.toString();
+          token.picture = dbUser.image;
         }
       }
 
@@ -79,6 +80,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.organizationId = token.organizationId as string;
         session.user.name = token.name;
+        session.user.image = token.picture;
         session.user.token = token.accessToken as string; // Pass the full encoded JWT to the client
 
         if (!session.user.name && session.user.id) {

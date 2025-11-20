@@ -10,7 +10,7 @@ interface ConfirmResponse {
 
 export default function EmailConfirmation() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState(searchParams.get("email") || "");
+  const [email, setEmail] = useState(searchParams?.get("email") || "");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);

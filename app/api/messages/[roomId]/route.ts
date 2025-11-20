@@ -7,14 +7,14 @@ import User from '@/models/User';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { roomId: string } }
+  context: any
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { roomId } = params;
+  const { roomId } = context.params;
   const userId = session.user.id;
 
   await dbConnect();

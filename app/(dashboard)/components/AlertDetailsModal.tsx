@@ -55,7 +55,7 @@ const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, lab
     <Icon className="h-5 w-5 text-gray-400 dark:text-gray-500 mt-1 flex-shrink-0" />
     <div className="flex-1">
       <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</p>
-      <p className="text-sm text-gray-800 dark:text-gray-100 font-semibold">{value}</p>
+      <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold">{value}</div>
     </div>
   </div>
 );

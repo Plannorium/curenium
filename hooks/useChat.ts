@@ -27,7 +27,7 @@ export interface Message {
   file?: MessageFile;
   content?: any;
   createdAt?: string;
-  type?: "message" | "alert_notification";
+  type?: "message" | "alert_notification" | "call_invitation";
   alert?: any;
   reactions?: { [emoji: string]: { userId: string; fullName: string }[] };
   sender?: {
@@ -42,6 +42,9 @@ export interface Message {
     file?: MessageFile;
   };
   status?: "sent" | "delivered" | "read";
+  callId?: string;
+  callEnded?: boolean;
+  duration?: string;
 }
 
 // Allow messages to carry a single file or multiple files
@@ -57,7 +60,8 @@ interface WebSocketMessage {
     | "reaction"
     | "alert_notification"
     | "vitals_update"
-    | "message_status_update";
+    | "message_status_update"
+    | "call_invitation";
   isTyping?: boolean;
   fullName?: string;
   messages?: Message[];
@@ -87,17 +91,14 @@ export const useChat = (room: string) => {
   const getWs = () => ws.current;
 
   const _sendMessage = useCallback((payload: any) => {
-    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-      console.error("Cannot send message: WebSocket not connected.");
-      return;
-    }
-    try {
+    if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(payload));
-      console.log("Sent message:", payload);
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } else {
+      // This is a common scenario during a connection loop.
+      // It's better to log a warning than an error.
+      console.warn("Cannot send message: WebSocket not open.");
     }
-  }, []);
+  }, []); // Empty dependency array makes this function stable.
 
   const sendPayload = useCallback(
     (payload: any) => {
@@ -108,11 +109,11 @@ export const useChat = (room: string) => {
     [_sendMessage]
   );
 
-  useEffect(() => {
+  const connect = useCallback(() => {
     const maxRetries = 3;
     let currentWs: WebSocket | null = null;
-
-    const connect = () => {
+    
+    const doConnect = () => {
       if (retryCount.current >= maxRetries) {
         console.error("Max retry attempts reached");
         return;
@@ -181,7 +182,7 @@ export const useChat = (room: string) => {
             const message = JSON.parse(event.data);
             console.log("Received message:", message);
 
-            // Handle optimistic message confirmation (for text, files, voice, etc.)
+            // Optimistic message handling can be re-enabled if needed
             // if (message.type === "message" && message.optimisticId) {
             //   setMessages((prevMessages) =>
             //     prevMessages.map((m) =>
@@ -244,7 +245,9 @@ export const useChat = (room: string) => {
                   if (prevMessages.some((m) => m.id === newMessage.id)) {
                     return prevMessages;
                   }
-                  playSound("notification");
+                  if (message.sender._id !== session?.user?.id) {
+                    playSound("notification");
+                  }
                   return [...(prevMessages || []), newMessage];
                 });
 
@@ -270,35 +273,58 @@ export const useChat = (room: string) => {
                 text: message.alert.message,
                 userId: message.alert.createdBy._id, // Not strictly needed but good for consistency
                 fullName: message.alert.createdBy.fullName,
+                createdAt: message.alert.createdAt || new Date().toISOString(),
               };
-              setMessages((prev) => [...(prev || []), alertMessage]);
+              setMessages((prevMessages) => {
+                // Prevent adding an alert that already exists
+                if (prevMessages.some((m) => m.id === alertMessage.id)) {
+                  return prevMessages;
+                }
+                return [...(prevMessages || []), alertMessage];
+              });
             } else if (message.type === "messages") {
               const historicalMessages = (message.messages || [])
                 .filter(Boolean)
-                .map((msg: any) => ({
-                  id: msg._id || msg.id, // Prioritize DB ID
-                  userId: msg.sender?._id,
-                  fullName: msg.sender?.fullName,
-                  threadId: msg.threadId || null, // Map threadId from historical messages
-                  userImage: msg.sender?.image,
-                  text: msg.content || "",
-                  file: msg.files || msg.file,
-                  sender: msg.sender, // Preserve the sender object
-                  createdAt: msg.createdAt || msg.timestamp,
-                  reactions: msg.reactions,
-                  deleted: msg.deleted, // Preserve the deleted property
-                  replyTo: msg.replyTo
-                    ? {
-                        id: msg.replyTo.id,
-                        text: msg.replyTo.text || msg.replyTo.content || "",
-                        fullName:
-                          msg.replyTo.fullName ||
-                          (msg.replyTo as any).userName ||
-                          "Unknown",
-                        file: msg.replyTo.file,
-                      }
-                    : undefined,
-                }));
+                .map((msg: any) => {
+                  if (msg.type === "alert_notification") {
+                    // Handle alert messages differently
+                    return {
+                      id: msg.id,
+                      type: "alert_notification",
+                      alert: msg.alert,
+                      text: msg.text,
+                      userId: msg.userId,
+                      fullName: msg.fullName,
+                      createdAt: msg.createdAt,
+                    };
+                  } else {
+                    // Handle regular messages
+                    return {
+                      id: msg._id || msg.id, // Prioritize DB ID
+                      userId: msg.sender?._id,
+                      fullName: msg.sender?.fullName,
+                      threadId: msg.threadId || null, // Map threadId from historical messages
+                      userImage: msg.sender?.image,
+                      text: msg.content || "",
+                      file: msg.files || msg.file,
+                      sender: msg.sender, // Preserve the sender object
+                      createdAt: msg.createdAt || msg.timestamp,
+                      reactions: msg.reactions,
+                      deleted: msg.deleted, // Preserve the deleted property
+                      replyTo: msg.replyTo
+                        ? {
+                            id: msg.replyTo.id,
+                            text: msg.replyTo.text || msg.replyTo.content || "",
+                            fullName:
+                              msg.replyTo.fullName ||
+                              (msg.replyTo as any).userName ||
+                              "Unknown",
+                            file: msg.replyTo.file,
+                          }
+                        : undefined,
+                    };
+                  }
+                });
               setMessages(historicalMessages);
             } else if (message.type === "reaction") {
               if (message.payload) {
@@ -376,6 +402,25 @@ export const useChat = (room: string) => {
               );
             } else if (message.type === "presence") {
               setOnlineUsers(message.onlineUsers);
+            } else if (message.type === "call_invitation") {
+              const { callId, callerName } = message;
+
+              const callMessage: Message = { // Ensure this is of type Message
+                id: callId, // Use callId as the unique message ID
+                type: 'call_invitation',
+                text: `${callerName} started a call.`,
+                userId: message.sender?._id || 'system',
+                fullName: callerName,
+                createdAt: new Date().toISOString(),
+                callId: callId, // Add callId directly
+              } as any; // Cast as any to add callId if not in Message type
+
+              setMessages((prev) => {
+                // Avoid duplicates
+                if (prev.some((m) => m.id === callMessage.id)) return prev;
+                playSound("notification"); // Use a more subtle notification sound for others
+                return [...prev, callMessage];
+              });
             } else if (message.error) {
               console.error("WebSocket error:", message.error);
             }
@@ -416,7 +461,7 @@ export const useChat = (room: string) => {
               clearTimeout(retryTimeout.current);
             }
 
-            retryTimeout.current = setTimeout(connect, delay);
+            retryTimeout.current = setTimeout(doConnect, delay);
           } else {
             console.error("Max retry attempts reached. Giving up.");
           }
@@ -430,15 +475,13 @@ export const useChat = (room: string) => {
         }
 
         retryTimeout.current = setTimeout(
-          () => {
-            connect();
-          },
+          doConnect,
           Math.min(1000 * Math.pow(2, retryCount.current), 10000)
         );
       }
     };
 
-    connect();
+    doConnect();
 
     return () => {
       if (retryTimeout.current) {
@@ -452,8 +495,11 @@ export const useChat = (room: string) => {
         }
       }
     };
-    ``;
-  }, [session, room, _sendMessage]);
+  }, [session, room, setMessages, playSound]);
+
+  useEffect(() => {
+    connect();
+  }, [connect]);
 
   const sendCombinedMessage = useCallback(
     async (
@@ -591,6 +637,58 @@ export const useChat = (room: string) => {
     [room, _sendMessage]
   );
 
+  const sendCallInvitation = useCallback(
+    (roomId: string, callId: string) => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        const payload = {
+          type: "call_invitation",
+          room: roomId,
+          callId,
+          callerName: session?.user?.fullName || "Someone",
+          timestamp: new Date().toISOString(),
+        };
+        ws.current.send(JSON.stringify(payload));
+      }
+    },
+    [session?.user?.fullName]
+  );
+
+  const sendCallEnd = useCallback(
+    async (callId: string, duration: string, targetRoom?: string) => {
+      const messageRoom = targetRoom || room;
+      if (messageRoom === room) {
+        // Same room, send via WebSocket
+        _sendMessage({
+          type: "call_end",
+          callId,
+          duration,
+        });
+      } else {
+        // Different room, send via HTTP to ensure it goes to the correct Durable Object
+        const workerUrl = process.env.NODE_ENV === "development"
+          ? "http://127.0.0.1:8787"
+          : process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+
+        if (workerUrl) {
+          try {
+            await fetch(`${workerUrl}?room=${messageRoom}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: "call_end",
+                callId,
+                duration,
+              }),
+            });
+          } catch (error) {
+            console.error("Failed to send call_end via HTTP:", error);
+          }
+        }
+      }
+    },
+    [_sendMessage, room]
+  );
+
   const uploadFile = useCallback(
     (
       file: File,
@@ -661,6 +759,17 @@ export const useChat = (room: string) => {
     toast.info(`Replying in thread to ${message.fullName}`);
   }, []);
 
+  const getCallById = useCallback(async (callId: string) => {
+    try {
+      const call = await fetchApi(`/api/calls/${callId}`);
+      return call;
+    } catch (error) {
+      console.error("Failed to fetch call details:", error);
+      toast.error("Failed to fetch call details.");
+      return null;
+    }
+  }, []);
+
   return {
     messages,
     isMuted,
@@ -678,5 +787,9 @@ export const useChat = (room: string) => {
     sendReadReceipt,
     deleteMessage,
     getWs,
+    sendCallInvitation,
+    sendCallEnd,
+    getCallById,
   };
+
 };

@@ -51,7 +51,7 @@ import AuditLog from "@/models/AuditLog" ;
    }); 
  
    // helper to attach audit context from code: 
-   schema.methods._setAuditContext = function(userId: any, userRole: string, before?: any, meta?: any ) { 
+   schema.methods._setAuditContext = function(userId: any, userRole: string | null, before?: any, meta?: any ) { 
      this._auditUser  = userId; 
      this._auditUserRole  = userRole; 
      this._auditBefore = before || null ; 

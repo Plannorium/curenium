@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { BellIcon, Loader2, X, Users, SearchIcon, AlertTriangle, Info } from 'lucide-react';
+import { BellIcon, Loader2, X, SearchIcon, AlertTriangle, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { playSound } from '@/lib/sound/soundGenerator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,6 +26,7 @@ interface SendAlertModalProps {
   allUsers: User[];
   allChannels?: Channel[];
   channelMembers?: User[];
+  currentRoom?: string;
 }
 
 const alertLevelConfig = {
@@ -64,7 +65,7 @@ const alertLevelConfig = {
   },
 };
 
-export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose, onAlertSent, allUsers, allChannels = [], channelMembers }) => {
+export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose, onAlertSent, allUsers, allChannels = [], channelMembers, currentRoom }) => {
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState<'critical' | 'urgent' | 'info'>('critical');
   const [isSendingAlert, setIsSendingAlert] = useState(false);
@@ -89,13 +90,21 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
         return;
       }
       playSound('alert');
+
+      // Include current room as a channel recipient if we're in a channel or general
+      const recipients = [...selectedRecipients];
+      if (currentRoom && !currentRoom.includes('--')) {
+        // Convert room name to channel format (e.g., 'general' -> 'channel:general', 'emergency' -> 'channel:emergency')
+        recipients.push(`channel:${currentRoom}`);
+      }
+
       const response = await fetch('/api/alerts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: alertMessage,
           level: alertType,
-          recipients: selectedRecipients,
+          recipients: recipients,
         }),
       });
       if (response.ok) {
@@ -103,7 +112,7 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
         onAlertSent();
         onClose();
       }
-    } catch (error) { 
+    } catch (error) {
       console.error('Failed to send alert:', error);
     } finally {
       setIsSendingAlert(false);
