@@ -20,6 +20,7 @@ import {
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import Image from "next/image";
 import { useTheme } from "@/components/ThemeProvider";
+import Footer from "@/components/Footer";
 
 function AboutPage() {
   const { theme } = useTheme();
@@ -73,13 +74,6 @@ function AboutPage() {
     }
   ];
 
-  const milestones = [
-    { year: "2020", event: "Plannorium founded in Kano, Nigeria" },
-    { year: "2021", event: "First healthcare SaaS product launched" },
-    { year: "2022", event: "Expanded to Saudi Arabia market" },
-    { year: "2023", event: "Curenium healthcare platform released" },
-    { year: "2024", event: "Reached 500+ healthcare facilities" }
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -185,12 +179,12 @@ function AboutPage() {
               About
             </span>
             <span className="block text-primary font-extrabold mt-2">
-              Plannorium
+              Curenium
             </span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            We're a premium digital solutions company building world-class SaaS platforms and creative experiences
-            for businesses in the GCC region and beyond.
+            Curenium is a revolutionary healthcare communication platform designed to transform how healthcare
+            professionals collaborate, manage patient care, and deliver exceptional outcomes.
           </p>
         </div>
       </section>
@@ -202,27 +196,27 @@ function AboutPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                Premium Digital Solutions
+                Revolutionizing Healthcare Communication
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Founded in 2020, Plannorium has rapidly evolved from a software development agency
-                into a leading SaaS company. We specialize in creating human-centered digital products
-                that combine innovation, functionality, and premium design.
+                Founded in 2025, Curenium emerged from a vision to bridge the communication gaps in healthcare.
+                Born from the combined expertise of Saudi Arabia and Nigeria, Curenium represents the future
+                of healthcare technology - where innovation meets compassionate care.
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Our journey began in Kano, Nigeria, and has expanded to serve clients across the GCC region,
-                with plans for global expansion. We believe in delivering solutions that not only work
-                exceptionally well but also provide an outstanding user experience.
+                Curenium is built for healthcare professionals who demand excellence. Our platform combines
+                real-time collaboration, intelligent patient management, and seamless communication tools
+                to empower medical teams and improve patient outcomes.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
                 <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
-                  <span className="text-primary font-semibold">10+ Years Combined Experience</span>
+                  <span className="text-primary font-semibold">Real-time Collaboration</span>
                 </div>
                 <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
-                  <span className="text-primary font-semibold">500+ Happy Clients</span>
+                  <span className="text-primary font-semibold">Patient-Centric Design</span>
                 </div>
                 <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
-                  <span className="text-primary font-semibold">GCC Region Focus</span>
+                  <span className="text-primary font-semibold">Enterprise Security</span>
                 </div>
               </div>
             </div>
@@ -232,33 +226,33 @@ function AboutPage() {
               <div className="relative backdrop-blur-xl bg-card/80 border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
                 <div className="relative p-8">
-                  <h3 className="text-xl font-bold text-foreground mb-6">Our Services</h3>
+                  <h3 className="text-xl font-bold text-foreground mb-6">Curenium Features</h3>
                   <div className="space-y-4">
                     <div className="flex items-start">
                       <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 p-2 rounded-lg mr-4">
-                        <Code className="text-primary h-5 w-5" />
+                        <Users className="text-primary h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-foreground">Software Development</h4>
-                        <p className="text-sm text-muted-foreground">Web, mobile, and SaaS applications</p>
+                        <h4 className="font-semibold text-foreground">Real-time Collaboration</h4>
+                        <p className="text-sm text-muted-foreground">Instant messaging and team coordination</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 p-2 rounded-lg mr-4">
-                        <Palette className="text-primary h-5 w-5" />
+                        <Target className="text-primary h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-foreground">Creative Design</h4>
-                        <p className="text-sm text-muted-foreground">Branding, UI/UX, and visual identity</p>
+                        <h4 className="font-semibold text-foreground">Patient Management</h4>
+                        <p className="text-sm text-muted-foreground">Comprehensive EHR and patient tracking</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 p-2 rounded-lg mr-4">
-                        <Rocket className="text-primary h-5 w-5" />
+                        <Award className="text-primary h-5 w-5" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-foreground">Product Development</h4>
-                        <p className="text-sm text-muted-foreground">End-to-end SaaS platform creation</p>
+                        <h4 className="font-semibold text-foreground">Smart Alerts</h4>
+                        <p className="text-sm text-muted-foreground">Intelligent notifications and workflow automation</p>
                       </div>
                     </div>
                   </div>
@@ -280,8 +274,8 @@ function AboutPage() {
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-4">Our Mission</h3>
               <p className="text-muted-foreground leading-relaxed text-lg">
-                To build premium, scalable, human-centered digital products—delivered with the same detail,
-                polish, and quality associated with world-class brands.
+                To revolutionize healthcare communication by providing healthcare professionals with
+                intelligent, secure, and intuitive tools that enhance patient care and team collaboration.
               </p>
             </div>
           </div>
@@ -294,8 +288,8 @@ function AboutPage() {
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-4">Our Vision</h3>
               <p className="text-muted-foreground leading-relaxed text-lg">
-                To become a leading technology and design powerhouse across the GCC, trusted for innovation,
-                creative excellence, and reliable digital execution.
+                To become the global standard for healthcare communication platforms, empowering medical
+                professionals worldwide with tools that save lives and improve healthcare outcomes.
               </p>
             </div>
           </div>
@@ -332,38 +326,6 @@ function AboutPage() {
         </div>
       </section>
 
-      {/* Timeline */}
-      <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Our Journey
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            From humble beginnings to becoming a trusted name in digital solutions.
-          </p>
-        </div>
-
-        <div className="relative">
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-0.5 h-full bg-gradient-to-b from-primary to-primary/50"></div>
-
-          <div className="space-y-12">
-            {milestones.map((milestone, index) => (
-              <div key={index} className={`flex items-center ${index % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8 text-right' : 'pl-8'}`}>
-                  <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
-                    <div className="relative">
-                      <div className="text-2xl font-bold text-primary mb-2">{milestone.year}</div>
-                      <p className="text-muted-foreground">{milestone.event}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
@@ -374,11 +336,11 @@ function AboutPage() {
 
           <div className="relative max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-              Join Us on Our Journey
+              Transform Healthcare Communication
             </h2>
             <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl mx-auto">
-              Whether you're a healthcare provider looking for innovative solutions or a business seeking
-              premium digital services, we'd love to work with you.
+              Join the healthcare professionals already using Curenium to improve patient outcomes,
+              streamline workflows, and enhance team collaboration.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Link href="/contact" prefetch={false}>
@@ -405,159 +367,7 @@ function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative backdrop-blur-sm bg-muted/50 border-t border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
-        <div className="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="col-span-2 md:col-span-1">
-              {isHydrated ? (
-                <Image
-                  src={
-                    theme === "dark"
-                      ? "/curenium-logo-d.png"
-                      : "/curenium-logo.png"
-                  }
-                  alt="Curenium Logo"
-                  width={128}
-                  height={32}
-                  className="h-8 w-auto"
-                />
-              ) : (
-                <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
-              )}
-              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                Premium Digital Solutions • SaaS • Design • Development
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4">
-                Product
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    href="/features"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/pricing"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/security"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Security
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4">
-                Company
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    href="/about"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/careers"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Careers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4">
-                Legal
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Terms
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/compliance"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Compliance
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-border/30 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-muted-foreground md:order-1">
-              &copy; {new Date().getFullYear()} Plannorium. All rights reserved.
-            </p>
-            <div className="flex space-x-4 md:order-2">
-              <Link
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
-              >
-                <span className="sr-only">Twitter</span>
-                <Twitter className="h-5 w-5" />
-              </Link>
-              <Link
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
-              >
-                <span className="sr-only">LinkedIn</span>
-                <Linkedin className="h-5 w-5" />
-              </Link>
-              <Link
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
-              >
-                <span className="sr-only">Facebook</span>
-                <Facebook className="h-5 w-5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

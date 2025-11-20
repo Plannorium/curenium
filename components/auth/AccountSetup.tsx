@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
 import Image from 'next/image';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface AdminRegisterResponse {
   message?: string;
@@ -15,6 +16,7 @@ interface AdminRegisterResponse {
 }
 
 export const AccountSetup: React.FC = () => {
+  const { theme } = useTheme();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,14 +56,29 @@ export const AccountSetup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-white/[0.05] [mask-image:linear-gradient(to_bottom,white_10%,transparent_90%)]"></div>
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full filter blur-3xl animate-blob"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-500/10 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-black/[0.02] [mask-image:linear-gradient(to_bottom,black_10%,transparent_90%)]"></div>
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl animate-blob"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
       
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-4">
-          <Image src="/curenium-logo-bg-none.png" alt="Curenium Logo" width={80} height={80} className="mx-auto mb-0" />
+        <div className="text-center mb-4 flex justify-center items-center flex-col">
+          <div className="mx-auto mb-0">
+            <Image
+              src="/curenium-logo.png"
+              alt="Curenium Logo"
+              width={80}
+              height={80}
+              className="block dark:hidden"
+            />
+            <Image
+              src="/curenium-no-bg.png"
+              alt="Curenium Logo"
+              width={80}
+              height={80}
+              className="hidden dark:block"
+            />
+          </div>
           <h2 className="text-2xl font-bold">Create Your Admin Account</h2>
           <p className="text-dark-400 mt-1">Join Curenium and streamline your team&apos;s communication.</p>
         </div>

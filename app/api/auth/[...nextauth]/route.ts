@@ -21,27 +21,57 @@ export const authOptions: NextAuthOptions = {
     ...credentialsAuthOptions.providers,
   ],
   session: { strategy: "jwt" },
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
-    async signIn({ user, account }) {
-      await dbConnect();
-      const existingUser = await User.findOne({ email: user.email });
+    async redirect({ url, baseUrl }) {
+      // Handle callbackUrl parameter from query string
+      const urlObj = new URL(url, baseUrl);
+      const callbackUrl = urlObj.searchParams.get('callbackUrl');
 
-      if (existingUser) {
-        if (account && !existingUser.provider) {
-          existingUser.provider = account.provider;
-          existingUser.providerAccountId = account.providerAccountId;
-          await existingUser.save();
+      // If there's a callbackUrl parameter, validate and use it
+      if (callbackUrl) {
+        try {
+          const callbackUrlObj = new URL(callbackUrl, baseUrl);
+          // Only allow same-origin callbacks
+          if (callbackUrlObj.origin === baseUrl) {
+            return callbackUrl;
+          }
+        } catch {
+          // Invalid callback URL, fall back to base URL
         }
+      }
+
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
+    },
+    async signIn({ user, account, profile, email, credentials }) {
+      try {
+        await dbConnect();
+        const existingUser = await User.findOne({ email: user.email });
+
+        if (existingUser) {
+          if (account && !existingUser.provider) {
+            existingUser.provider = account.provider;
+            existingUser.providerAccountId = account.providerAccountId;
+            await existingUser.save();
+          }
+          return true;
+        }
+
+        if (account?.provider !== 'credentials') {
+          // For OAuth sign-ins, we don't create a new user here.
+          // The user must be invited first.
+          return '/login?error=OAuthUserNotFound';
+        }
+
         return true;
+      } catch (error) {
+        console.error('SignIn callback error:', error);
+        return '/login?error=SignInError';
       }
-
-      if (account?.provider !== 'credentials') {
-        // For OAuth sign-ins, we don't create a new user here.
-        // The user must be invited first.
-        return '/login?error=OAuthUserNotFound';
-      }
-
-      return true;
     },
     async jwt({ token, user }) {
       if (user) {
@@ -103,6 +133,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     error: '/login',
   },
+  useSecureCookies: process.env.NODE_ENV === 'production',
 };
 
 const handler = NextAuth(authOptions);
