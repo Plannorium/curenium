@@ -67,35 +67,6 @@ export const authOptions: NextAuthOptions = {
               }
         })
     ],
-    callbacks: {
-        async jwt({ token, user }) {
-            if (user) {
-                await dbConnect();
-                const dbUser = await User.findById(user.id);
-                if (dbUser) {
-                    token.id = dbUser._id.toString();
-                    token._id = dbUser._id.toString();
-                    token.role = dbUser.role;
-                    token.organizationId = dbUser.organizationId.toString();
-                    token.image = dbUser.image;
-                }
-            }
-            return token;
-        },
-        async session({ session, token }) {
-            if (session.user) {
-                session.user.id = token.id as string;
-                session.user._id = token._id as string;
-                session.user.role = token.role as string;
-                session.user.organizationId = token.organizationId as string;
-                session.user.image = token.image as string;
-            }
-            return session;
-        }
-    },
-    session: {
-        strategy: "jwt",
-    },
     pages: {
         signIn: '/login',
     },

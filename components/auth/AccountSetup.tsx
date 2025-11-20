@@ -56,10 +56,10 @@ export const AccountSetup: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-grid-black/[0.02] [mask-image:linear-gradient(to_bottom,black_10%,transparent_90%)]"></div>
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl animate-blob"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
+    <div className="min-h-screen bg-background dark:bg-dark-950 text-foreground dark:text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.05] [mask-image:linear-gradient(to_bottom,black_10%,transparent_90%)] dark:[mask-image:linear-gradient(to_bottom,white_10%,transparent_90%)]"></div>
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 dark:bg-primary-500/10 rounded-full filter blur-3xl animate-blob"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 dark:bg-accent-500/10 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
       
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-4 flex justify-center items-center flex-col">
@@ -83,7 +83,7 @@ export const AccountSetup: React.FC = () => {
           <p className="text-dark-400 mt-1">Join Curenium and streamline your team&apos;s communication.</p>
         </div>
 
-        <div className="bg-dark-800/50 backdrop-blur-lg border border-dark-700 rounded-2xl shadow-2xl shadow-black/20 p-8">
+        <div className="bg-card/80 dark:bg-dark-800/50 backdrop-blur-lg border border-border dark:border-dark-700 rounded-2xl shadow-2xl p-8">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
               <label htmlFor="fullName" className="text-sm font-medium text-dark-300">Full Name</label>
@@ -128,9 +128,9 @@ export const AccountSetup: React.FC = () => {
             </div>
           </form>
         </div>
-        <p className="text-center text-sm text-dark-400 mt-8">
+        <p className="text-center text-sm text-muted-foreground dark:text-dark-400 mt-8">
           Already have an account?{' '}
-          <a href="/login" className="font-medium text-primary-400 hover:text-primary-300 transition-colors">
+          <a href="/login" className="font-medium text-primary hover:text-primary/80 transition-colors">
             Sign In
           </a>
         </p>

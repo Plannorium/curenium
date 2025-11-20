@@ -22,25 +22,38 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   debug: process.env.NODE_ENV === 'development',
+  // Ensure base URL is set correctly for production
+  ...(process.env.NEXTAUTH_URL && { baseUrl: process.env.NEXTAUTH_URL }),
   callbacks: {
     async redirect({ url, baseUrl }) {
       // Handle callbackUrl parameter from query string
-      const urlObj = new URL(url, baseUrl);
-      const callbackUrl = urlObj.searchParams.get('callbackUrl');
+      try {
+        const urlObj = new URL(url, baseUrl);
+        const callbackUrl = urlObj.searchParams.get('callbackUrl');
 
-      // If there's a callbackUrl parameter, validate and use it
-      if (callbackUrl) {
-        try {
-          const callbackUrlObj = new URL(callbackUrl, baseUrl);
-          // Only allow same-origin callbacks
-          if (callbackUrlObj.origin === baseUrl) {
-            return callbackUrl;
+        // If there's a callbackUrl parameter, validate and use it
+        if (callbackUrl) {
+          // Handle both relative and absolute URLs
+          if (callbackUrl.startsWith('/')) {
+            // Relative URL - ensure it's safe
+            return `${baseUrl}${callbackUrl}`;
+          } else {
+            // Absolute URL - check if it's same origin
+            try {
+              const callbackUrlObj = new URL(callbackUrl);
+              if (callbackUrlObj.origin === baseUrl) {
+                return callbackUrl;
+              }
+            } catch {
+              // Invalid URL, fall back to base URL
+            }
           }
-        } catch {
-          // Invalid callback URL, fall back to base URL
         }
+      } catch {
+        // If URL parsing fails, continue with default logic
       }
 
+      // Default NextAuth redirect logic
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`
       // Allows callback URLs on the same origin
