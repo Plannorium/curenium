@@ -42,8 +42,8 @@ export const AccountSetup: React.FC = () => {
     if (res.ok && data.user) {
       const signInResponse = await signIn('credentials', {
         redirect: false,
-        email: data.user.email,
-        password: password, // Use the password from the form
+        email: email,
+        password: password,
       });
 
       if (signInResponse?.ok) {

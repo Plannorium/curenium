@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,11 @@ import { useTheme } from '@/components/ThemeProvider';
 
 export const Login: React.FC = () => {
   const { theme } = useTheme();
-  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
@@ -26,6 +24,9 @@ export const Login: React.FC = () => {
     const urlError = searchParams?.get('error');
     if (urlError) {
       switch (urlError) {
+        case 'CredentialsSignin':
+          setError('Invalid email or password. Please try again.');
+          break;
         case 'OAuthUserNotFound':
           setError('You need to be invited to use this application. Please contact your administrator.');
           break;
@@ -36,41 +37,20 @@ export const Login: React.FC = () => {
     }
   }, [searchParams]);
 
-  // Handle redirect after successful login
-  useEffect(() => {
-    if (shouldRedirect && session?.user && status === 'authenticated') {
-      setIsLoading(false);
-      router.push(callbackUrl);
-    }
-  }, [shouldRedirect, session, status, router, callbackUrl]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-      });
+    const result = await signIn('credentials', {
+      email,
+      password,
+      callbackUrl,
+      redirect: true,
+    });
 
-      if (result?.error) {
-        setError(result.error);
-        setIsLoading(false);
-        return;
-      }
-
-      if (result?.ok) {
-        // Set flag to redirect when session becomes available
-        setShouldRedirect(true);
-      } else {
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('An unexpected error occurred. Please try again.');
+    if (result?.error) {
+      // This part may not be reached if redirect is true, but it's good for safety.
       setIsLoading(false);
     }
   };
