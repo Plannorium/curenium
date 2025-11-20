@@ -136,7 +136,9 @@ export const useChat = (room: string) => {
 
       let wsUrl;
       try {
-        const url = new URL(workerUrl);
+        // Normalize workerUrl: allow hostnames without protocol and default to https
+        const normalized = /^https?:\/\//i.test(workerUrl) ? workerUrl : `https://${workerUrl}`;
+        const url = new URL(normalized);
         const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
         wsUrl = `${wsProtocol}://${url.host}/api/chat/socket?room=${room}`;
       } catch (error) {
