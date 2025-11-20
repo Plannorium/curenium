@@ -5,16 +5,17 @@ import Prescription from "@/models/Prescription";
 import { Prescription as PrescriptionType } from "@/types/prescription";
 import AuditLog from "@/models/AuditLog";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const resolvedParams = await params;
   const { searchParams } = new URL(req.url);
   const limit = searchParams.get("limit");
 
   try {
     await connectDB();
-    let query = Prescription.find({ patientId: params.id, orgId: token.orgId }).sort({ datePrescribed: -1 });
+    let query = Prescription.find({ patientId: resolvedParams.id, orgId: token.orgId }).sort({ datePrescribed: -1 });
 
     if (limit) {
       query = query.limit(parseInt(limit));
@@ -30,11 +31,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const resolvedParams = await params;
   const allowed = ["doctor"];
   if (!token.role || !allowed.includes(token.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -42,7 +44,7 @@ export async function POST(
   await connectDB();
   const p = await Prescription.create({
     ...body,
-    patientId: params.id,
+    patientId: resolvedParams.id,
     orgId: token.orgId, // Assuming orgId is in the token
     prescribedBy: token.sub || token.id,
   });
@@ -51,7 +53,7 @@ export async function POST(
     orgId: token.orgId,
     userId: token.sub || token.id,
     action: "prescription.create",
-    details: `Prescription ${p._id} created for patient ${params.id}`,
+    details: `Prescription ${p._id} created for patient ${resolvedParams.id}`,
   });
 
   return NextResponse.json({ ok: true, prescription: p }, { status: 201 });

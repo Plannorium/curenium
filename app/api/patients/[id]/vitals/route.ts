@@ -9,13 +9,14 @@ import Patient from "@/models/Patient";
 import { sendWebSocketMessage } from "@/lib/websockets";
 import { Vital as VitalType } from "@/types/vital";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const resolvedParams = await params;
   try {
     await connectDB();
-    const vitals = await Vital.find({ patientId: params.id, orgId: token.orgId }).sort({ createdAt: -1 });
+    const vitals = await Vital.find({ patientId: resolvedParams.id, orgId: token.orgId }).sort({ createdAt: -1 });
     return NextResponse.json(vitals);
   } catch (error) {
     console.error("Failed to fetch vitals:", error);
@@ -23,53 +24,54 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) { 
-   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET  }); 
-   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401  }); 
- 
-   // allow nurses, receptionists, doctors 
-   const allowed = ["nurse", "receptionist", "doctor", "admin"]; 
-   if (!token.role || !allowed.includes(token.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403  }); 
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET  });
+   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401  });
 
-   const body: Omit<VitalType, '_id' | 'createdAt' | 'updatedAt'> = await req.json(); 
-   await connectDB(); 
-   const v = new Vital({ 
-     ...body, 
-     patientId: params.id, 
-     recordedBy: token.sub, 
-     orgId: token.orgId, 
-   }); 
+   const resolvedParams = await params;
+   // allow nurses, receptionists, doctors
+   const allowed = ["nurse", "receptionist", "doctor", "admin"];
+   if (!token.role || !allowed.includes(token.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403  });
+
+   const body: Omit<VitalType, '_id' | 'createdAt' | 'updatedAt'> = await req.json();
+   await connectDB();
+   const v = new Vital({
+     ...body,
+     patientId: resolvedParams.id,
+     recordedBy: token.sub,
+     orgId: token.orgId,
+   });
    v._setAuditContext(token.sub || 'unknown', token.role, req.headers.get("x-forwarded-for") || "unknown");
-   await v.save(); 
+   await v.save();
 
    // WebSocket notification
    sendWebSocketMessage({
      type: "vitals_update",
      payload: {
-       patientId: params.id,
+       patientId: resolvedParams.id,
        vital: v,
      },
    }, 'default', await getToken({ req, raw: true }));
- 
+
    if (body.isUrgent) {
      const onCallDoctor = await User.findOne({ orgId: token.orgId, role: 'doctor', onCall: true });
-     const patient = await Patient.findById(params.id);
-   
+     const patient = await Patient.findById(resolvedParams.id);
+
      if (onCallDoctor && patient) {
        const alert = await Alert.create({
          orgId: token.orgId,
-         patientId: params.id,
+         patientId: resolvedParams.id,
          message: `Urgent vitals recorded for ${(patient as any).fullName}.`,
          level: 'urgent',
          createdBy: token.sub,
          recipients: [onCallDoctor._id],
        });
-   
+
        sendWebSocketMessage({
          type: "alert_notification",
          payload: alert,
        }, 'default', await getToken({ req, raw: true }));
      }
    }
-   return NextResponse.json({ ok: true, vital: v }, { status: 201  }); 
+   return NextResponse.json({ ok: true, vital: v }, { status: 201  });
  }
