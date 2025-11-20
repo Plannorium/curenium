@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -11,11 +11,13 @@ import { useTheme } from '@/components/ThemeProvider';
 
 export const Login: React.FC = () => {
   const { theme } = useTheme();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
@@ -34,26 +36,43 @@ export const Login: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Handle redirect after successful login
+  useEffect(() => {
+    if (shouldRedirect && session?.user && status === 'authenticated') {
+      setIsLoading(false);
+      router.push(callbackUrl);
+    }
+  }, [shouldRedirect, session, status, router, callbackUrl]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    const result = await signIn('credentials', {
-      redirect: true,
-      email,
-      password,
-      callbackUrl,
-    });
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
 
-    // If signIn returns (which means redirect failed), handle error
-    if (result?.error) {
-      setError(result.error);
+      if (result?.error) {
+        setError(result.error);
+        setIsLoading(false);
+        return;
+      }
+
+      if (result?.ok) {
+        // Set flag to redirect when session becomes available
+        setShouldRedirect(true);
+      } else {
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
-    // If signIn succeeds with redirect: true, it will redirect automatically
-    // If it doesn't redirect, there might be an issue
-    setIsLoading(false);
   };
 
   return (

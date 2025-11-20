@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { User, Mail, Lock, Building } from 'lucide-react';
 
 import Image from 'next/image';
 import { useTheme } from '@/components/ThemeProvider';
@@ -86,40 +87,52 @@ export const AccountSetup: React.FC = () => {
         <div className="bg-card/80 dark:bg-dark-800/50 backdrop-blur-lg border border-border dark:border-dark-700 rounded-2xl shadow-2xl p-8">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
-              <label htmlFor="fullName" className="text-sm font-medium text-dark-300">Full Name</label>
-              <input id="fullName" name="fullName" type="text" required 
-                className="w-full px-4 py-2 bg-dark-700/50 border border-dark-600 rounded-lg placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
+              <label htmlFor="fullName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
+                <input id="fullName" name="fullName" type="text" required
+                  className="w-full pl-10 pr-4 py-2 bg-background dark:bg-dark-700/50 border border-input dark:border-dark-600 rounded-lg placeholder-muted-foreground dark:placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="email" className="text-sm font-medium text-dark-300">Email Address</label>
-              <input id="email" name="email" type="email" autoComplete="email" required 
-                className="w-full px-4 py-2 bg-dark-700/50 border border-dark-600 rounded-lg placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <label htmlFor="email" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
+                <input id="email" name="email" type="email" autoComplete="email" required
+                  className="w-full pl-10 pr-4 py-2 bg-background dark:bg-dark-700/50 border border-input dark:border-dark-600 rounded-lg placeholder-muted-foreground dark:placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="password" className="text-sm font-medium text-dark-300">Password</label>
-              <input id="password" name="password" type="password" autoComplete="new-password" required 
-                className="w-full px-4 py-2 bg-dark-700/50 border border-dark-600 rounded-lg placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <label htmlFor="password" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
+                <input id="password" name="password" type="password" autoComplete="new-password" required
+                  className="w-full pl-10 pr-4 py-2 bg-background dark:bg-dark-700/50 border border-input dark:border-dark-600 rounded-lg placeholder-muted-foreground dark:placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="organizationName" className="text-sm font-medium text-dark-300">Organization Name</label>
-              <input id="organizationName" name="organizationName" type="text" required 
-                className="w-full px-4 py-2 bg-dark-700/50 border border-dark-600 rounded-lg placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-              />
+              <label htmlFor="organizationName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Organization Name</label>
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
+                <input id="organizationName" name="organizationName" type="text" required
+                  className="w-full pl-10 pr-4 py-2 bg-background dark:bg-dark-700/50 border border-input dark:border-dark-600 rounded-lg placeholder-muted-foreground dark:placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+                  value={organizationName}
+                  onChange={(e) => setOrganizationName(e.target.value)}
+                />
+              </div>
             </div>
             
-            {error && <p className="text-sm text-red-400 text-center pt-2">{error}</p>}
-            {success && <p className="text-sm text-green-400 text-center pt-2">{success}</p>}
+            {error && <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error}</p>}
+            {success && <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg py-2 px-4">{success}</p>}
 
             <div className="pt-4">
               <Button type="submit" className="w-full text-base font-semibold" size="lg">
