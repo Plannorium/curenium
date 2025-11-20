@@ -35,6 +35,7 @@ import {
   PaperclipIcon,
   PauseIcon,
   Phone,
+  PlayIcon,
   Plus,
   ReplyIcon,
   Search,
@@ -84,6 +85,7 @@ interface User {
   role?: string;
   email?: string;
   isOnline?: boolean;
+  online?: boolean;
 }
 
 interface AlertMessage {
@@ -118,9 +120,11 @@ interface DMRoom {
 
 const AudioPlayer = ({ src }: { src: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -134,7 +138,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
   };
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !isDragging) {
       setCurrentTime(audioRef.current.currentTime);
     }
   };
@@ -146,15 +150,70 @@ const AudioPlayer = ({ src }: { src: string }) => {
   };
 
   const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60)
-      .toString()
-      .padStart(2, "0");
-    return `${minutes}:${seconds}`;
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = Math.floor(time % 60);
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const handleSeek = (event: React.MouseEvent) => {
+    if (progressRef.current && audioRef.current) {
+      const rect = progressRef.current.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+      const newTime = percentage * duration;
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const handleMouseDown = (event: React.MouseEvent) => {
+    setIsDragging(true);
+    handleSeek(event);
+  };
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (isDragging) {
+      handleSeek(event);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleGlobalMouseMove = (event: MouseEvent) => {
+      if (isDragging && progressRef.current && audioRef.current) {
+        const rect = progressRef.current.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+        const newTime = percentage * duration;
+        audioRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      }
+    };
+
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('mousemove', handleGlobalMouseMove as EventListener);
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mousemove', handleGlobalMouseMove as EventListener);
+    };
+  }, [isDragging, duration]);
+
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-background/70 dark:bg-gray-800/50 w-full lg:-64">
+    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-gradient-to-r from-background/80 to-background/60 dark:from-gray-800/80 dark:to-gray-800/60 backdrop-blur-sm border border-border/50 dark:border-gray-700/50 shadow-lg w-[16.5rem] lg:w-[18.5rem]">
       <audio
         ref={audioRef}
         src={src}
@@ -169,15 +228,40 @@ const AudioPlayer = ({ src }: { src: string }) => {
         onClick={togglePlay}
         size="sm"
         variant="ghost"
-        className="rounded-full h-8 w-8 p-0 shrink-0"
+        className="rounded-full h-10 w-10 p-0 shrink-0 hover:bg-primary/10 transition-all duration-200"
       >
-        {isPlaying ? "❚❚" : "►"}
+        {isPlaying ? (
+          <PauseIcon className="h-5 w-5 text-primary" />
+        ) : (
+          <PlayIcon className="h-5 w-5 text-primary ml-0.5" />
+        )}
       </Button>
-      <div className="max-w-[88%] lg:max-w-full grow flex items-center h-8">
-        <AudioVisualizer audioRef={audioRef} isPlaying={isPlaying} />
-      </div>
-      <div className="text-xs text-muted-foreground flex justify-start items-center gap-x-1.5">
-        {formatTime(currentTime)} / {formatTime(duration)}
+      <div className="flex-1 flex flex-col gap-1">
+        <div
+          ref={progressRef}
+          className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden select-none"
+          onClick={handleSeek}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-100"
+            style={{ width: `${progressPercentage}%` }}
+          />
+          <div
+            className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white dark:bg-gray-200 border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing"
+            style={{ left: `calc(${progressPercentage}% - 8px)` }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setIsDragging(true);
+            }}
+          />
+        </div>
+        <div className="flex justify-between items-center text-xs text-muted-foreground font-mono">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
       </div>
     </div>
   );
@@ -268,8 +352,10 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   const { data: session } = useSession();
   const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const [isActionsVisible, setIsActionsVisible] = useState(false);
   const reactionPickerRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messageText = msg.text || msg.content;
   const isEmoji = isSingleEmoji(messageText);
 
@@ -375,6 +461,31 @@ const MessageBubble = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleTouchStart = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      setIsActionsVisible(true);
+    }, 500); // 500ms long press
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleClickOutsideActions = () => {
+    setIsActionsVisible(false);
+  };
+
+  useEffect(() => {
+    if (isActionsVisible) {
+      const handleClick = () => setIsActionsVisible(false);
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [isActionsVisible]);
 
   const timeString = msg.createdAt
     ? new Date(msg.createdAt).toLocaleTimeString([], {
@@ -595,6 +706,8 @@ const MessageBubble = ({
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
       className={`group relative flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300`}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <Avatar className="h-8 w-8 shrink-0 ring-2 ring-background/50 shadow-sm">
         <AvatarImage src={user?.image || undefined} />
@@ -620,16 +733,16 @@ const MessageBubble = ({
         <div className={cn("flex flex-col relative items-start group")}>
           <div
             className={cn(
-              "relative group rounded-xl bg-linear-to-br p-3 lg:p-4 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
+              "relative group rounded-xl bg-linear-to-br p-3 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
               !isEmoji &&
                 `px-2.5 py-1.5 ${
                   isSender
-                    ? "from-primary/0 to-primary/10 border-primary/90 bg-card dark:bg-gray-900/80 border-r dark:border-gray-700/50"
+                    ? "from-primary/0 to-primary/10 bg-card dark:bg-gray-900/80 border border-accent-50 dark:border-gray-900/70"
                     : "bg-card border-border/40 dark:bg-gray-800/50 dark:border-gray-700/50"
                 }`
             )}
           >
-            <div className="absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700">
+            <div className={`absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 ${isActionsVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700`}>
               <div className="relative" ref={reactionPickerRef}>
                 <button
                   onClick={() => setReactionPickerOpen((p) => !p)}
@@ -816,6 +929,42 @@ export default function Chat() {
     if (!session?.user?._id || !users.length) return null;
     return users.find((u) => u._id === session?.user?._id);
   }, [session?.user?._id, users]);
+
+  // Refresh users online status periodically
+  useEffect(() => {
+    const refreshUsersOnlineStatus = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+          const data: User[] = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Failed to refresh users online status:', error);
+      }
+    };
+
+    // Cleanup stale online statuses (run every 5 minutes)
+    const cleanupOnlineStatus = async () => {
+      try {
+        await fetch('/api/users/cleanup', { method: 'POST' });
+      } catch (error) {
+        console.error('Failed to cleanup online status:', error);
+      }
+    };
+
+    // Refresh immediately and then every 60 seconds
+    refreshUsersOnlineStatus();
+    const refreshInterval = setInterval(refreshUsersOnlineStatus, 60000);
+
+    // Cleanup every 5 minutes
+    const cleanupInterval = setInterval(cleanupOnlineStatus, 300000);
+
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(cleanupInterval);
+    };
+  }, []);
   const [lightbox, setLightbox] = useState<{
     images: Array<{ url: string; name: string }>;
     initialIndex: number;
@@ -993,6 +1142,42 @@ export default function Chat() {
     }
     prevMessagesLengthRef.current = messages.length;
   }, [messages, session?.user?._id]);
+
+  // Heartbeat to update online status
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const updateOnlineStatus = async () => {
+      try {
+        await fetch('/api/users/online', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Failed to update online status:', error);
+      }
+    };
+
+    // Update online status immediately
+    updateOnlineStatus();
+
+    // Set up heartbeat interval (every 30 seconds)
+    const heartbeatInterval = setInterval(updateOnlineStatus, 30000);
+
+    // Set offline when component unmounts or user leaves
+    const handleBeforeUnload = () => {
+      navigator.sendBeacon('/api/users/online', JSON.stringify({ method: 'DELETE' }));
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Set offline when component unmounts
+      fetch('/api/users/online', { method: 'DELETE' }).catch(console.error);
+    };
+  }, [session?.user?.id]);
 
 
   const handleStartChat = (roomId: string) => {
@@ -2263,7 +2448,7 @@ export default function Chat() {
 
               <button
                 onClick={() => setIsChannelsOpen(!isChannelsOpen)}
-                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground tracking-wider"
               >
                 <h3 className="flex items-center">
                   <Users className="h-3 w-3 mr-2" />
@@ -2380,7 +2565,7 @@ export default function Chat() {
               <button
                 onClick={() => setIsDmsOpen(!isDmsOpen)}
 
-                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground tracking-wider"
               >
                 <h3 className="flex items-center">
                   <MessageCircle className="h-3 w-3 mr-2" />
@@ -2413,16 +2598,16 @@ export default function Chat() {
                     >
                       <div className="relative mr-3">
                         <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
-                          <AvatarImage src={currentUser.image || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                            {currentUser.fullName
-                              ?.split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {onlineUsers.includes(currentUser._id) && (
+                        <AvatarImage src={currentUser.image || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                          {currentUser.fullName
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {currentUser.online && (
 
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
                         )}
@@ -2490,7 +2675,7 @@ export default function Chat() {
                                   .slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
-                            {onlineUsers.includes(user._id.toString()) && (
+                            {user.online && (
                               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
                             )}
                           </div>
@@ -2558,23 +2743,23 @@ export default function Chat() {
                     className={cn(
                       "w-2.5 h-2.5 rounded-full mr-2",
                       isDmRoom
-                        ? otherUser && onlineUsers.includes(otherUser._id)
+                        ? otherUser && otherUser.online
                           ? "bg-green-500"
                           : "bg-gray-400"
-                        : onlineUsers.length > 0
-                          ? "bg-green-500"
-                          : "bg-gray-400"
+                        : users.filter(u => u.online).length > 0
+                        ? "bg-green-500"
+                        : "bg-gray-400"
                     )}
                   />
                   <span className="text-xs text-muted-foreground">
                     {isDmRoom ? (
                       <span className="hidden md:inline">
-                        {otherUser && onlineUsers.includes(otherUser._id)
+                        {otherUser && otherUser.online
                           ? "Online"
                           : "Offline"}
                       </span>
                     ) : (
-                      `${onlineUsers.length} Online`
+                      `${users.filter(u => u.online).length} Online`
                     )}
                   </span>
                 </div>
@@ -3053,7 +3238,7 @@ export default function Chat() {
                             <p className="font-semibold text-sm text-foreground truncate">{user.fullName}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                           </div>
-                          {onlineUsers.includes(user._id) && (
+                          {user.online && (
                             <div className="w-2 h-2 bg-green-500 rounded-full shrink-0"></div>
                           )}
                         </button>
@@ -3067,7 +3252,7 @@ export default function Chat() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="p-2 rounded-xl hover:bg-accent/50 transition-all duration-200"
+                            className="p-2 hidden md:block rounded-xl hover:bg-accent/50 transition-all duration-200"
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                           >
                             <SmileIcon

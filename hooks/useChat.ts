@@ -78,6 +78,9 @@ interface WebSocketMessage {
 
 export const useChat = (room: string) => {
   const { data: session } = useSession();
+  // Pusher fallback refs
+  const pusherRef = useRef<any | null>(null);
+  const pusherChannelRef = useRef<any | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -87,6 +90,55 @@ export const useChat = (room: string) => {
   const retryCount = useRef(0);
   const retryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingMessageRef = useRef<Message | null>(null);
+
+  // Initialize Pusher fallback (receive-only). We keep this minimal: subscribe to a private room channel
+  // and append incoming messages to the UI. Sending is unchanged and will continue to use the WS when available.
+  const initPusherFallback = useCallback(() => {
+    // Lazy-load Pusher to avoid bundling it unless fallback is used
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Pusher = require('pusher-js');
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) {
+      console.warn('NEXT_PUBLIC_PUSHER_KEY not configured; cannot start Pusher fallback');
+      return;
+    }
+
+    if (pusherRef.current) return; // already initialized
+
+    const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
+    const opts: any = {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1',
+      authEndpoint: '/api/pusher/auth',
+      auth: {
+        headers: {
+          Authorization: `Bearer ${session?.user?.token}`,
+        },
+      },
+    };
+
+    try {
+      // @ts-ignore
+      const pusher = new Pusher(key, opts);
+      pusherRef.current = pusher;
+      const channelName = `private-room-${room}`;
+      const channel = pusher.subscribe(channelName);
+      pusherChannelRef.current = channel;
+      channel.bind('message', (data: any) => {
+        try {
+          // Basic validation
+          if (!data || !data.id) return;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === data.id)) return prev;
+            return [...prev, data];
+          });
+        } catch (err) {
+          console.error('Error handling pusher message:', err);
+        }
+      });
+      console.log('Pusher fallback initialized for room', room);
+    } catch (err) {
+      console.error('Failed to init pusher fallback', err);
+    }
+  }, [room, session?.user?.token]);
 
   const getWs = () => ws.current;
 
@@ -116,6 +168,12 @@ export const useChat = (room: string) => {
     const doConnect = () => {
       if (retryCount.current >= maxRetries) {
         console.error("Max retry attempts reached");
+        // Initialize Pusher fallback for read-only realtime when WS is unavailable
+        try {
+          initPusherFallback();
+        } catch (err) {
+          console.error('Failed to initialize Pusher fallback:', err);
+        }
         return;
       }
 
@@ -246,9 +304,6 @@ export const useChat = (room: string) => {
                   // Prevent adding a message that already exists
                   if (prevMessages.some((m) => m.id === newMessage.id)) {
                     return prevMessages;
-                  }
-                  if (message.sender._id !== session?.user?.id) {
-                    playSound("notification");
                   }
                   return [...(prevMessages || []), newMessage];
                 });
@@ -420,7 +475,6 @@ export const useChat = (room: string) => {
               setMessages((prev) => {
                 // Avoid duplicates
                 if (prev.some((m) => m.id === callMessage.id)) return prev;
-                playSound("notification"); // Use a more subtle notification sound for others
                 return [...prev, callMessage];
               });
             } else if (message.error) {
@@ -502,6 +556,31 @@ export const useChat = (room: string) => {
   useEffect(() => {
     connect();
   }, [connect]);
+
+  // Cleanup Pusher fallback on unmount or room change
+  useEffect(() => {
+    return () => {
+      try {
+        if (pusherChannelRef.current) {
+          // unbind all events
+          if (typeof pusherChannelRef.current.unbind_all === 'function') {
+            pusherChannelRef.current.unbind_all();
+          }
+        }
+        if (pusherRef.current) {
+          try {
+            pusherRef.current.disconnect();
+          } catch (e) {
+            console.warn('Error disconnecting pusher fallback', e);
+          }
+          pusherRef.current = null;
+          pusherChannelRef.current = null;
+        }
+      } catch (err) {
+        console.error('Error during pusher cleanup', err);
+      }
+    };
+  }, [room]);
 
   const sendCombinedMessage = useCallback(
     async (

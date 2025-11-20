@@ -384,16 +384,26 @@ const createDirectRoom = (userId1: string, userId2: string) => {
 
 export class NotificationRoom {
     state: DurableObjectState;
-    sessions: WebSocket[] = [];
+    sessions: { socket: WebSocket, userId: string | null }[] = [];
+    env: Env;
 
     constructor(state: DurableObjectState, env: Env) {
         this.state = state;
+        this.env = env;
     }
 
-    handleSession(socket: WebSocket) {
+    async handleSession(socket: WebSocket, userId: string) {
         socket.accept();
-        this.sessions.push(socket);
-        socket.send(JSON.stringify({ type: 'connection_established', message: 'WebSocket connection established' }));
+        const session = { socket, userId: null as string | null };
+        this.sessions.push(session);
+
+        // Set a timeout for authentication - close connection if not authenticated within 10 seconds
+        const authTimeout = setTimeout(() => {
+            if (!session.userId) {
+                console.log("Authentication timeout for notification WebSocket");
+                socket.close(1008, "Authentication timeout");
+            }
+        }, 10000);
 
         socket.addEventListener("message", async (event) => {
             try {
@@ -401,38 +411,81 @@ export class NotificationRoom {
                 console.log("NotificationRoom received message:", data);
 
                 if (data.type === 'auth') {
-                    // Handle authentication if needed
-                    console.log("Notification WebSocket authenticated");
-                    // Could verify token here if needed
+                    try {
+                        const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
+                        const { payload } = await jose.jwtVerify(data.token, secret);
+
+                        if (payload.id === userId) {
+                            session.userId = userId;
+                            clearTimeout(authTimeout);
+                            console.log("Notification WebSocket authenticated for user:", userId);
+                            socket.send(JSON.stringify({ type: 'authenticated', message: 'WebSocket authenticated successfully' }));
+                        } else {
+                            console.error("Authentication failed: user ID mismatch");
+                            clearTimeout(authTimeout);
+                            socket.send(JSON.stringify({ error: 'Authentication failed' }));
+                            socket.close(1008, "Authentication failed");
+                        }
+                    } catch (error) {
+                        console.error("Authentication failed:", error);
+                        clearTimeout(authTimeout);
+                        socket.send(JSON.stringify({ error: 'Authentication failed' }));
+                        socket.close(1008, "Authentication failed");
+                    }
+                } else if (!session.userId) {
+                    // Reject any messages before authentication
+                    socket.send(JSON.stringify({ error: 'Not authenticated' }));
+                    socket.close(1008, "Not authenticated");
                 }
-                // Handle other message types if needed
             } catch (error) {
                 console.error("Error parsing notification message:", error);
             }
         });
 
         socket.addEventListener("close", () => {
-            this.sessions = this.sessions.filter(s => s !== socket);
+            clearTimeout(authTimeout);
+            this.sessions = this.sessions.filter(s => s.socket !== socket);
         });
+
         socket.addEventListener("error", () => {
-            this.sessions = this.sessions.filter(s => s !== socket);
+            clearTimeout(authTimeout);
+            this.sessions = this.sessions.filter(s => s.socket !== socket);
         });
     }
 
     async fetch(request: Request): Promise<Response> {
         const url = new URL(request.url);
+        const envHeader = request.headers.get('X-Env');
+        if (envHeader) {
+            this.env = JSON.parse(envHeader);
+        }
+
         if (url.pathname === '/api/broadcast-notification') {
             const { type, payload } = await request.json<{ type: string, payload: any }>();
-            this.sessions.forEach(ws => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type, payload }));
+            // Send to all authenticated sessions for this user
+            this.sessions.forEach(session => {
+                if (session.userId && session.socket.readyState === WebSocket.OPEN) {
+                    try {
+                        session.socket.send(JSON.stringify({ type, payload }));
+                    } catch (error) {
+                        console.error("Failed to send notification to session:", error);
+                        this.sessions = this.sessions.filter(s => s.socket !== session.socket);
+                    }
                 }
             });
             return new Response('Notification broadcasted', { status: 200 });
         }
-        const pair = new WebSocketPair();
-        this.handleSession(pair[1]);
-        return new Response(null, { status: 101, webSocket: pair[0] });
+
+        const isWebSocketUpgrade = request.headers.get("Upgrade") === "websocket";
+        if (isWebSocketUpgrade) {
+            const pair = new WebSocketPair();
+            const [client, server] = Object.values(pair);
+            const userId = url.searchParams.get('user') || '';
+            await this.handleSession(server, userId);
+            return new Response(null, { status: 101, webSocket: client });
+        } else {
+            return new Response("Expected websocket", { status: 400 });
+        }
     }
 }
 

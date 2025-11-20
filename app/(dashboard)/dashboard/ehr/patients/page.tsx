@@ -64,7 +64,7 @@ export default function PatientsPage() {
         <h1 className="text-lg sm:text-2xl font-bold">Patient Management</h1>
           <AddPatientModal onPatientAdded={handlePatientAdded}>
             <Button className='cursor-pointer text-sm md:text-base'>
-              <UserPlus className="mr-2 h-4 w-4" />
+              <UserPlus className="lg:mr-2 h-4 w-4" />
             <span className='hidden md:block'>
               Add Patient
               </span>

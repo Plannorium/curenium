@@ -7,6 +7,7 @@ import { Card } from '@/components/Card';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { Loader } from '@/components/ui/Loader';
 
 interface InviteDetailsResponse {
   error?: string;
@@ -96,7 +97,7 @@ export default function AcceptInvite() {
           </h3>
           {token ? (
             <div>
-              {isNewUser === null && <p>Loading...</p>}
+             {isNewUser === null && <Loader variant="minimal" />}
               {isNewUser === true && (
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div>

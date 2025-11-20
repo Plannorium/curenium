@@ -15,11 +15,13 @@ import {
   Smile,
   StopCircle,
   Hand,
-  PhoneOff
+  PhoneOff,
+  MoreVertical
 } from "lucide-react";
 import React, { useState, useEffect, useRef, forwardRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ResizableBox } from "react-resizable";
 import "react-resizable/css/styles.css";
 import { initAudio, playSound } from "@/lib/sound/soundGenerator";
@@ -176,7 +178,7 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
     setIsPopupOpen(false);
   };
 
-  const buttonSize = variant === 'minimized' ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-14 h-14 sm:w-16 sm:h-16';
+  const buttonSize = variant === 'minimized' ? 'w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14' : 'w-14 h-14 sm:w-16 sm:h-16';
   const iconSize = variant === 'minimized' ? 20 : 24;
 
   return (
@@ -187,7 +189,7 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
           size={variant === 'minimized' ? 'icon' : 'lg'}
           className={`${buttonSize} rounded-full transition-colors cursor-pointer ${
             isScreenSharing
-              ? 'bg-blue-500/90 text-white hover:bg-blue-600/90 border-transparent'
+              ? 'bg-blue-500/90 text-white hover:bg-blue-600/90'
               : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'
           }`}
         >
@@ -224,6 +226,7 @@ const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStream
   const [chatMessages, setChatMessages] = useState<CallChatMessage[]>([]);
   const [reactions, setReactions] = useState<{ id: number; emoji: string; name: string }[]>([]);
   const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
+  const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
   const [showGesturePopup, setShowGesturePopup] = useLocalStorage('showGesturePopup', true);
   const [isGestureControlEnabled, setIsGestureControlEnabled] = useState(false);
   const [showGestureWalkthrough, setShowGestureWalkthrough] = useState(false);
@@ -338,6 +341,12 @@ const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStream
 
   const handleEndCall = () => {
     playSoundWithInit('callEnd');
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    if (localVideoElement) {
+      localVideoElement.srcObject = null;
+    }
     onEndCall();
   };
 
@@ -534,7 +543,7 @@ setIsReactionPickerOpen(false);
         </div>
 
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/70 backdrop-blur-md p-2 rounded-full border border-white/10 shadow-2xl w-auto">
-          <TooltipButton tooltip={isGestureControlEnabled ? 'Disable Gesture Control' : 'Enable Gesture Control'}>
+          {/* <TooltipButton tooltip={isGestureControlEnabled ? 'Disable Gesture Control' : 'Enable Gesture Control'}>
             <Button
               onClick={() => {
                 if (isGestureControlEnabled) {
@@ -545,42 +554,28 @@ setIsReactionPickerOpen(false);
                 }
               }}
               size="icon"
-              className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${
+              className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${
                 isGestureControlEnabled
                 ? 'bg-green-500/90 text-white hover:bg-green-600/90'
                 : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'
               }`}
             >
-              <Hand size={20} />
+              <Hand size={19} />
             </Button>
-          </TooltipButton>
+          </TooltipButton> */}
 
           <TooltipButton tooltip={isMuted ? 'Unmute' : 'Mute'}>
-            <Button onClick={handleToggleMute} size="icon" className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${isMuted ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isMuted ? <MicOff size={20} /> : <Mic size={20} />}</Button>
+            <Button onClick={handleToggleMute} size="icon" className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${isMuted ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isMuted ? <MicOff size={19} /> : <Mic size={19} />}</Button>
           </TooltipButton>
 
           <TooltipButton tooltip={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}>
-            <Button onClick={handleToggleVideo} size="icon" className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${isVideoOff ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}</Button>
+            <Button onClick={handleToggleVideo} size="icon" className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${isVideoOff ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isVideoOff ? <VideoOff size={19} /> : <Video size={19} />}</Button>
           </TooltipButton>
 
           <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" />
 
-          <TooltipButton tooltip="Invite Members">
-            <Button onClick={onInvite} size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14">
-              <UserPlus size={20} />
-            </Button>
-          </TooltipButton>
-
-          <TooltipButton tooltip="Copy Link">
-            <Button onClick={handleCopyLink} size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14">
-              <Link size={20} />
-            </Button>
-          </TooltipButton>
-
           <div className="relative" ref={reactionPickerRef}>
-            <TooltipButton tooltip="Send Reaction">
-              <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-12 h-12 sm:w-14 sm:h-14"><Smile size={20} /></Button>
-            </TooltipButton>
+            <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14"><Smile size={19} /></Button>
 
             <AnimatePresence>
               {isReactionPickerOpen && (
@@ -593,18 +588,64 @@ setIsReactionPickerOpen(false);
             </AnimatePresence>
           </div>
 
+          <Popover open={isMoreOptionsOpen} onOpenChange={setIsMoreOptionsOpen}>
+            <PopoverTrigger asChild>
+              <Button size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14">
+                <MoreVertical size={19} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" side="top" align="center">
+              <div className="grid gap-1">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    if (isGestureControlEnabled) {
+                      setIsGestureControlEnabled(false);
+                      toast.info('Gesture control disabled.');
+                    } else {
+                      setShowGestureWalkthrough(true);
+                    }
+                    setIsMoreOptionsOpen(false);
+                  }}
+                >
+                  <Hand className="mr-2 h-4 w-4" />
+                  {isGestureControlEnabled ? 'Disable Gestures' : 'Enable Gestures'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => { onInvite(); setIsMoreOptionsOpen(false); }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Invite Members
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => { handleCopyLink(); setIsMoreOptionsOpen(false); }}
+                >
+                  <Link className="mr-2 h-4 w-4" />
+                  Copy Invite Link
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <TooltipButton tooltip="End Call">
-            <Button onClick={handleEndCall} variant="destructive" size="icon" className="rounded-full w-16 h-12 sm:w-20 sm:h-14"><PhoneOff size={20} /></Button>
+            <Button onClick={handleEndCall} variant="destructive" size="icon" className="rounded-full w-12 h-10 lg:w-16 lg:h-12 sm:w-20 sm:h-14"><PhoneOff size={19} /></Button>
           </TooltipButton>
 
           <TooltipButton tooltip={isChatOpen ? 'Close Chat' : 'Open Chat'}>
-            <Button onClick={() => setIsChatOpen(!isChatOpen)} size="icon" className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 transition-colors ${isChatOpen ? 'bg-blue-500/90 text-white hover:bg-blue-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}><MessageSquare size={20} /></Button>
+            <Button onClick={() => setIsChatOpen(!isChatOpen)} size="icon" className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${isChatOpen ? 'bg-blue-500/90 text-white hover:bg-blue-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}><MessageSquare size={19} /></Button>
           </TooltipButton>
         </div>
 
+
+
         <div className="absolute top-4 right-4" style={{ right: isChatOpen ? `${chatWidth + 24}px` : '1rem', transition: 'right 0.25s ease' }}>
           <TooltipButton tooltip="Minimize">
-            <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white"><Minimize2 size={20} /></Button>
+            <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white"><Minimize2 size={19} /></Button>
           </TooltipButton>
         </div>
       </div>

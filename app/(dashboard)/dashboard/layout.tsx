@@ -6,6 +6,7 @@ import Chat from '@/app/(dashboard)/components/Chat';
 import Alerts from '@/app/(dashboard)/components/Alerts';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import { Loader } from '@/components/ui/Loader';
 
 
 export default function DashboardLayout({ 
@@ -47,8 +48,8 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen bg-dark-100 dark:bg-dark-900">
       <div ref={sidebarRef}>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Sidebar 
+       <Suspense fallback={<Loader variant="minimal" />}>
+          <Sidebar
             isOpen={isSidebarOpen} 
             isCollapsed={isCollapsed} 
             toggleCollapse={toggleCollapse} 
@@ -59,10 +60,10 @@ export default function DashboardLayout({
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 px-2 py-1 md:px-4 md:pl-7 md:py-3">
-          <Suspense fallback={<div>Loading...</div>}>
-            {views[currentView] || children}
-          </Suspense>
-        </main>
+           <Suspense fallback={<Loader variant="fullscreen" text="Loading Curenium..." />}>
+             {views[currentView] || children}
+           </Suspense>
+         </main>
       </div>
     </div>
   );

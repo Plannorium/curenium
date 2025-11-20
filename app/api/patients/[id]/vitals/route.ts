@@ -14,9 +14,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const resolvedParams = await params;
+  const orgId = token.organizationId as string;
+  if (!orgId) return NextResponse.json({ error: "Organization ID is required" }, { status: 400 });
   try {
     await connectDB();
-    const vitals = await Vital.find({ patientId: resolvedParams.id, orgId: token.orgId }).sort({ createdAt: -1 });
+    const vitals = await Vital.find({ patientId: resolvedParams.id, orgId }).sort({ createdAt: -1 });
     return NextResponse.json(vitals);
   } catch (error) {
     console.error("Failed to fetch vitals:", error);
@@ -35,11 +37,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
    const body: Omit<VitalType, '_id' | 'createdAt' | 'updatedAt'> = await req.json();
    await connectDB();
+   const orgId = (token.organizationId as string) || body.orgId;
+   if (!orgId) return NextResponse.json({ error: "Organization ID is required" }, { status: 400 });
    const v = new Vital({
      ...body,
      patientId: resolvedParams.id,
      recordedBy: token.sub,
-     orgId: token.orgId,
+     orgId,
    });
    v._setAuditContext(token.sub || 'unknown', token.role, req.headers.get("x-forwarded-for") || "unknown");
    await v.save();
@@ -54,12 +58,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
    }, 'default', await getToken({ req, raw: true }));
 
    if (body.isUrgent) {
-     const onCallDoctor = await User.findOne({ orgId: token.orgId, role: 'doctor', onCall: true });
+     const onCallDoctor = await User.findOne({ organizationId: orgId, role: 'doctor', onCall: true });
      const patient = await Patient.findById(resolvedParams.id);
 
      if (onCallDoctor && patient) {
        const alert = await Alert.create({
-         orgId: token.orgId,
+         orgId,
          patientId: resolvedParams.id,
          message: `Urgent vitals recorded for ${(patient as any).fullName}.`,
          level: 'urgent',

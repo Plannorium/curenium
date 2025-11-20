@@ -34,7 +34,7 @@ export async function GET(
     );
   }
 
-  const labResults = await LabResult.find({ patientId }).sort({ createdAt: -1 });
+  const labResults = await LabResult.find({ patientId, orgId: session.user.organizationId }).sort({ createdAt: -1 });
 
   return NextResponse.json(labResults, { status: 200 });
 }

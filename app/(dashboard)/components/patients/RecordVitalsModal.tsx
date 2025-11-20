@@ -156,7 +156,7 @@ export const RecordVitalsModal: React.FC<RecordVitalsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="dark:bg-slate-900/80 lg:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Record Vitals for {patientName}</DialogTitle>
           <DialogDescription>
@@ -338,7 +338,7 @@ export const RecordVitalsModal: React.FC<RecordVitalsModalProps> = ({
             </label>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-4">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

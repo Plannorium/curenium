@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       query.role = role;
     }
 
-    const users = await User.find(query).select('fullName image id _id role');
+    const users = await User.find(query).select('fullName image id _id role online');
 
     return NextResponse.json(users, { status: 200 });
   } catch (error) {

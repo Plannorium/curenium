@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     const invite = await Invite.create({
       email,
       role,
-      organization: organization._id,
+      organizationId: organization._id,
       invitedBy: session.user.id,
       token: inviteToken,
     });

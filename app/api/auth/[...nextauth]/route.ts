@@ -50,7 +50,7 @@ export const authOptions: NextAuthOptions = {
           }
         }
       } catch {
-        // If URL parsing fails, continue with default logic
+        // If URL parsing fails, continue with default logice
       }
 
       // Default NextAuth redirect logic

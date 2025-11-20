@@ -176,14 +176,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   } else if (pathname && pathname.startsWith('/dashboard/chat')) {
     teamsContent = (
       <>
-        <h3 className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? 'lg:text-center' : ''}`}>
+        <h3 className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? 'lg:text-center' : ''}`}>
           Channels
         </h3>
         <div className="mt-1 space-y-1 px-2">
           <Link
             key="general"
             href={`/dashboard/chat?room=general`}
-            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
               activeRoom === 'general' || !activeRoom
                 ? 'bg-primary/10 text-primary'
                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -196,18 +196,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Link
               key={channel._id}
               href={`/dashboard/chat?room=${channel.name.toLowerCase().replace(/\s/g, '')}`}
-              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              className={`group flex items-center w-full px-3 py-2.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
                 activeRoom === `${channel.name.toLowerCase().replace(/\s/g, '')}`
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-primary/10 text-primary border-primary/30 shadow-md shadow-primary/10'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:text-gray-900 dark:hover:text-white'
               } ${isCollapsed ? 'lg:justify-center' : ''}`}
             >
-              <span className={`font-bold ${isCollapsed ? 'lg:hidden' : ''}`}>#</span>
+              <span className={`font-bold text-primary ${isCollapsed ? 'lg:hidden' : ''}`}>#</span>
               <span className={`ml-2 truncate whitespace-nowrap ${isCollapsed ? 'lg:hidden' : ''}`}>{channel.name}</span>
             </Link>
           ))}
         </div>
-        <h3 className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? 'lg:text-center' : ''}`}>
+        <h3 className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? 'lg:text-center' : ''}`}>
           Direct Messages
         </h3>
         <div className="mt-1 space-y-1 px-2">
@@ -279,32 +279,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </>
     );
-  } else {
-    const teams = [
-      { name: 'Clinical Team', color: 'bg-blue-500' },
-      { name: 'Cardiology', color: 'bg-red-500' },
-      { name: 'Pediatrics', color: 'bg-purple-500' },
-    ];
-    teamsContent = (
-      <>
-        <h3 className={`px-3 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? 'lg:hidden' : ''}`}>
-          Teams
-        </h3>
-        <div className="mt-3 space-y-1">
-          {teams.map(team => (
-            <button
-              key={team.name}
-              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${isCollapsed ? 'lg:justify-center' : ''}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${team.color} ${isCollapsed ? '' : 'mr-3'}`}></span>
-              <span className={`text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white truncate whitespace-nowrap transition-colors duration-200 ${isCollapsed ? 'lg:hidden' : ''}`}>
-                {team.name}
-              </span>
-            </button>
-          ))}
-        </div>
-      </>
-    );
   }
 
   return (
@@ -324,22 +298,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`transition-all duration-300 h-8 ${isCollapsed ? 'w-8' : 'w-auto'}`}
             />
           </Link>
-          <button 
-            onClick={toggleCollapse} 
+          <button
+            onClick={toggleCollapse}
             className={`hidden lg:flex items-center justify-center p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${isCollapsed ? 'relative left-[12]' : ''}`}
           >
-            <ChevronLeftIcon 
-              size={18} 
-              className={`text-gray-500 dark:text-gray-400 transition-all duration-300 ${isCollapsed ? 'rotate-180' : ''}`} 
+            <ChevronLeftIcon
+              size={18}
+              className={`text-gray-500 dark:text-gray-400 transition-all duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
             />
           </button>
-          <button 
-            onClick={toggleSidebar} 
-            className="lg:hidden items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          <button
+            onClick={toggleSidebar}
+            className="lg:hidden ml-auto flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
           >
-            <XIcon 
-              size={18} 
-              className={`text-gray-500 dark:text-gray-400 transition-all duration-300`} 
+            <XIcon
+              size={20}
+              className={`text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-200`}
             />
           </button>
         </div>

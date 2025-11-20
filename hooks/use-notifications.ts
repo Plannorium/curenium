@@ -103,7 +103,9 @@ export const useNotifications = () => {
 
       let wsUrl;
       try {
-        const url = new URL(workerUrl);
+        // Normalize workerUrl: allow hostnames without protocol and default to https
+        const normalized = /^https?:\/\//i.test(workerUrl) ? workerUrl : `https://${workerUrl}`;
+        const url = new URL(normalized);
         const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
         wsUrl = `${wsProtocol}://${url.host}/api/notifications/socket?user=${session.user.id}`;
       } catch (error) {
@@ -111,15 +113,35 @@ export const useNotifications = () => {
         return;
       }
 
-      ws = new WebSocket(wsUrl);
+      // Quick HTTP probe to surface connectivity issues (will return 400 on non-upgrade)
+      try {
+        // Non-blocking HTTP probe so we don't make the connect function async.
+        fetch(wsUrl.replace(/^wss?:/, 'https:'), { method: 'GET' })
+          .then((probeRes) => console.log(`Worker probe status: ${probeRes.status} ${probeRes.statusText}`))
+          .catch((probeError) => console.warn('Worker HTTP probe failed:', probeError));
+      } catch (probeError) {
+        // Defensive - fetch shouldn't throw synchronously, but log if it does.
+        console.warn('Worker HTTP probe threw sync error:', probeError);
+      }
+
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error('Failed to create Notification WebSocket:', err);
+        return;
+      }
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log("Notification WebSocket connected successfully");
+        console.log("Notification WebSocket connected successfully", { userId: session.user.id });
         localRetryCount = 0;
         setIsConnected(true);
         // Authenticate the connection
-        ws?.send(JSON.stringify({ type: "auth", token: session.user.token }));
+        try {
+          ws?.send(JSON.stringify({ type: "auth", token: session.user.token }));
+        } catch (sendErr) {
+          console.error('Failed to send auth message on open:', sendErr);
+        }
       };
 
       ws.onmessage = (event) => {
@@ -137,7 +159,11 @@ export const useNotifications = () => {
       };
 
       ws.onclose = (event) => {
-        console.log(`Notification WebSocket disconnected: code=${event.code}`);
+        console.log("Notification WebSocket closed", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
         setIsConnected(false);
         // Reconnect logic
         if (event.code !== 1000) { // 1000 is normal closure
@@ -149,7 +175,8 @@ export const useNotifications = () => {
       };
 
       ws.onerror = (error) => {
-        console.error("Notification WebSocket error:", error);
+        // The browser provides limited info on error events; log the whole event for inspection.
+        console.error("Notification WebSocket error event:", error);
         setIsConnected(false);
       };
     };

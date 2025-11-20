@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Users, Plus, Mail, Shield, Clock } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRole } from '@/components/auth/RoleProvider';
+import { Loader } from '@/components/ui/Loader';
 
 interface Invite {
   _id: string;
@@ -108,7 +109,7 @@ export const InviteList: React.FC = () => {
               onClick={() => setIsModalOpen(true)}
               className="bg-primary-600 hover:bg-primary-700 text-primary-foreground shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 lg:mr-2" />
               <span className="hidden md:block">
               Invite User
               </span>
@@ -124,7 +125,7 @@ export const InviteList: React.FC = () => {
       {/* Invites List */}
       <div className="p-6 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 ">
         {loading ? (
-          <div className="text-center py-12">Loading...</div>
+         <div className="text-center py-12"><Loader variant="minimal" /></div>
         ) : validInvites.length === 0 ? (
           <div className="text-center py-12">
             <div className="p-4 bg-muted/50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -183,7 +184,7 @@ export const InviteList: React.FC = () => {
                       </div>
                     </div>
                     {userRole === 'admin' && (
-                      <div className="flex-shrink-0 ml-4">
+                      <div className="flex-shrink-0 ml-1.5 lg:ml-4">
                         <InviteActions invite={{ _id: invite._id, status: status, email: invite?.email ?? '' }} />
                       </div>
                     )}

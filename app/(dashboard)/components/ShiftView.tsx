@@ -169,8 +169,10 @@ const ShiftView = () => {
               size="sm"
               className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm cursor-pointer"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 lg:mr-2" />
+             <span className='hidden md:block'>
               Add Shift
+              </span> 
             </Button>
           </AddShiftModal>
         </div>
