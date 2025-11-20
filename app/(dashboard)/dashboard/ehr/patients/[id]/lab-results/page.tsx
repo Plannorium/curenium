@@ -73,7 +73,7 @@ const HistoricalLabResultsPage = () => {
   };
 
   const filteredAndSortedResults = useMemo(() => {
-    let filtered = labResults.filter((result) => {
+    const filtered = labResults.filter((result) => {
       const matchesSearch = result.testName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            result.value.toLowerCase().includes(searchTerm.toLowerCase());
       const status = isValueNormal(result.value, result.referenceRange || "");
@@ -81,7 +81,7 @@ const HistoricalLabResultsPage = () => {
       return matchesSearch && matchesStatus;
     });
 
-    filtered.sort((a, b) => {
+    return filtered.sort((a, b) => {
       let aVal: any = a[sortField];
       let bVal: any = b[sortField];
 
@@ -97,8 +97,6 @@ const HistoricalLabResultsPage = () => {
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-
-    return filtered;
   }, [labResults, searchTerm, sortField, sortDirection, statusFilter]);
 
   const paginatedResults = useMemo(() => {
