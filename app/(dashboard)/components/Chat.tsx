@@ -2098,6 +2098,10 @@ export default function Chat() {
         return;
       }
 
+      // Generate callId and send invitation first
+      const callId = `call-${activeRoom}-${Date.now()}`;
+      sendCallInvitation(activeRoom, callId);
+
       // Request a stream with the devices that are available.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: hasVideo,
@@ -2114,6 +2118,7 @@ export default function Chat() {
 
       if (session?.user?.token) {
         const call = await startMeshCall({
+          callId,
           roomId: activeRoom,
           localStream: stream,
           token: session.user.token,
@@ -2132,8 +2137,6 @@ export default function Chat() {
             });
           },
           onCallStarted: (callId) => {
-            // Send call invitation to the chat room via WebSocket
-            sendCallInvitation(activeRoom, callId);
             if (typeof window !== "undefined") {
               window.history.replaceState(null, "", `/call/${callId}`);
             }
@@ -2879,7 +2882,7 @@ export default function Chat() {
             {/* Chat Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(100vh-250px)] md:max-h-none"
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(91vh-250px)] md:max-h-none"
             >
               {messages
                 .filter((msg) => !msg.threadId)

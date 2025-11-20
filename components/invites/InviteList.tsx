@@ -166,7 +166,9 @@ export const InviteList: React.FC = () => {
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}
                           >
                             {status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                            <span className='hidden md:block'>
                             {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </span>
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">

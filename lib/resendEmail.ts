@@ -86,18 +86,73 @@ export const sendWelcomeEmail = async (email: string, fullName: string, organiza
     console.warn("RESEND_API_KEY is not set or is a placeholder. Skipping welcome email.");
     return { ok: false, message: "email_skipped" };
   }
+
+  const dashboardLink = `${process.env.NEXTAUTH_URL}/dashboard`;
+
   try {
     await resend.emails.send({
       from: "Plannorium <noreply@plannorium.com>",
       to: email,
-      subject: "Welcome to Curenium",
-      html: `
-      <div style="font-family: Arial, sans-serif; color: #333;">
-        <h2>Welcome, ${fullName}!</h2>
-        <p>Your organization <b>${organization.toUpperCase()}</b> has been successfully created.</p>
-        <p>Start managing your team and workflows inside <b>Curenium</b>.</p>
-        </div>
-      `,
+      subject: `Welcome to Curenium - ${organization.toUpperCase()} Admin`,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Welcome to Curenium</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+        @media screen {
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 400;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 600;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 700;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGfvAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+        }
+        body, table, td, a { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+        table, td { mso-table-rspace: 0pt; mso-table-lspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; }
+        a[x-apple-data-detectors] { font-family: inherit !important; font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; color: inherit !important; text-decoration: none !important; }
+        div[style*="margin: 16px 0;"] { margin: 0 !important; }
+        body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; }
+        table { border-collapse: collapse !important; }
+        a { color: #22c55e; }
+        img { height: auto; line-height: 100%; text-decoration: none; border: 0; outline: none; }
+        .gradient-bg { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+        .btn-primary { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff !important; padding: 16px 32px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 700; font-size: 16px; text-align: center; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4); }
+    </style>
+</head>
+<body style="background-color: #f8fafc;">
+    <div style="display: none; font-size: 1px; color: #fefefe; line-height: 1px; font-family: 'Inter', Helvetica, Arial, sans-serif; max-height: 0; max-width: 0; opacity: 0; overflow: hidden;">
+        Welcome to Curenium - Your organization ${organization.toUpperCase()} is ready.
+    </div>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr><td align="center" bgcolor="#f8fafc" style="padding: 40px 24px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+            <tr><td align="center" class="gradient-bg" style="padding: 48px 24px 0; font-family: 'Inter', Helvetica, Arial, sans-serif; border-radius: 16px 16px 0 0;"><h1 style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -1px; line-height: 48px; color: #ffffff;">Welcome to Curenium</h1></td></tr>
+            <tr><td align="center" bgcolor="#ffffff" style="padding: 48px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 18px; line-height: 28px; color: #374151;"><p style="margin: 0 0 24px 0;">Hi ${fullName},</p><p style="margin: 0 0 32px 0;">Congratulations! Your organization <strong>${organization.toUpperCase()}</strong> has been successfully created on Curenium.</p><p style="margin: 0 0 16px 0;">As the admin, you now have full control to invite team members, manage workflows, and streamline your healthcare operations.</p><p style="margin: 0 0 40px 0; font-size: 16px; color: #6b7280;">Get started by accessing your dashboard and exploring the features.</p></td></tr>
+            <tr><td align="center" bgcolor="#ffffff" style="padding: 0 24px 48px;"><a href="${dashboardLink}" class="btn-primary">Access Your Dashboard</a></td></tr>
+            <tr><td align="center" bgcolor="#f8fafc" style="padding: 32px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px; color: #6b7280; border-radius: 0 0 16px 16px;"><p style="margin: 0;">Need help getting started? Check out our documentation or contact support.</p></td></tr>
+        </table></td></tr>
+        <tr><td align="center" bgcolor="#f8fafc" style="padding: 24px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+            <tr><td align="center" bgcolor="#f8fafc" style="padding: 12px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 20px; color: #9ca3af;"><p style="margin: 0;">This email was sent to you because you created an organization on Curenium. If you didn't create this account, please ignore this email.</p></td></tr>
+        </table></td></tr>
+    </table>
+</body>
+</html>`,
     });
     return { ok: true };
   } catch (error) {
@@ -111,18 +166,73 @@ export const sendAddedToOrgEmail = async (email: string, fullName: string, organ
     console.warn("RESEND_API_KEY is not set or is a placeholder. Skipping added to org email.");
     return { ok: false, message: "email_skipped" };
   }
+
+  const dashboardLink = `${process.env.NEXTAUTH_URL}/dashboard`;
+
   try {
     await resend.emails.send({
       from: "Plannorium <noreply@plannorium.com>",
       to: email,
-      subject: `You've been added to a new organization on Curenium`,
-      html: `
-      <div style="font-family: Arial, sans-serif; color: #333;">
-        <h2>Hi ${fullName},</h2>
-        <p>You have been added to the organization <b>${organization.toUpperCase()}</b> on Curenium.</p>
-        <p>You can now access the new organization's dashboard.</p>
-        </div>
-      `,
+      subject: `Welcome to ${organization.toUpperCase()} on Curenium`,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Welcome to Curenium</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+        @media screen {
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 400;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 600;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 700;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGfvAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+        }
+        body, table, td, a { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+        table, td { mso-table-rspace: 0pt; mso-table-lspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; }
+        a[x-apple-data-detectors] { font-family: inherit !important; font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; color: inherit !important; text-decoration: none !important; }
+        div[style*="margin: 16px 0;"] { margin: 0 !important; }
+        body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; }
+        table { border-collapse: collapse !important; }
+        a { color: #22c55e; }
+        img { height: auto; line-height: 100%; text-decoration: none; border: 0; outline: none; }
+        .gradient-bg { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+        .btn-primary { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff !important; padding: 16px 32px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 700; font-size: 16px; text-align: center; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4); }
+    </style>
+</head>
+<body style="background-color: #f8fafc;">
+    <div style="display: none; font-size: 1px; color: #fefefe; line-height: 1px; font-family: 'Inter', Helvetica, Arial, sans-serif; max-height: 0; max-width: 0; opacity: 0; overflow: hidden;">
+        Welcome to ${organization.toUpperCase()} on Curenium.
+    </div>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr><td align="center" bgcolor="#f8fafc" style="padding: 40px 24px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+            <tr><td align="center" class="gradient-bg" style="padding: 48px 24px 0; font-family: 'Inter', Helvetica, Arial, sans-serif; border-radius: 16px 16px 0 0;"><h1 style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -1px; line-height: 48px; color: #ffffff;">Welcome to Curenium</h1></td></tr>
+            <tr><td align="center" bgcolor="#ffffff" style="padding: 48px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 18px; line-height: 28px; color: #374151;"><p style="margin: 0 0 24px 0;">Hi ${fullName},</p><p style="margin: 0 0 32px 0;">Welcome to <strong>${organization.toUpperCase()}</strong>! You've been successfully added to the team on Curenium.</p><p style="margin: 0 0 16px 0;">You can now collaborate with your colleagues, access shared resources, and contribute to your team's healthcare workflows.</p><p style="margin: 0 0 40px 0; font-size: 16px; color: #6b7280;">Log in to your dashboard to get started.</p></td></tr>
+            <tr><td align="center" bgcolor="#ffffff" style="padding: 0 24px 48px;"><a href="${dashboardLink}" class="btn-primary">Access Your Dashboard</a></td></tr>
+            <tr><td align="center" bgcolor="#f8fafc" style="padding: 32px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px; color: #6b7280; border-radius: 0 0 16px 16px;"><p style="margin: 0;">If you have any questions about getting started, reach out to your team admin or check our help resources.</p></td></tr>
+        </table></td></tr>
+        <tr><td align="center" bgcolor="#f8fafc" style="padding: 24px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+            <tr><td align="center" bgcolor="#f8fafc" style="padding: 12px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 20px; color: #9ca3af;"><p style="margin: 0;">This email was sent to you because you were added to ${organization.toUpperCase()} on Curenium. If you weren't expecting this, please contact your administrator.</p></td></tr>
+        </table></td></tr>
+    </table>
+</body>
+</html>`,
     });
     return { ok: true };
   } catch (error) {

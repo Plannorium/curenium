@@ -13,6 +13,7 @@ type WSMessage = {
 };
 
 type StartMeshCallParams = {
+  callId: string;
   roomId: string;
   localStream: MediaStream;
   token: string;
@@ -32,6 +33,7 @@ type JoinMeshCallParams = {
 };
 
 export async function startMeshCall({
+  callId,
   roomId,
   localStream,
   token,
@@ -46,7 +48,6 @@ export async function startMeshCall({
     )}`
   );
   const pcMap: Record<string, RTCPeerConnection> = {};
-  const callId = `call-${roomId}-${Date.now()}`;
 
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "auth", token, user: { name: userName } }));

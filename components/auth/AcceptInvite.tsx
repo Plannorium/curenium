@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Check, User, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Loader } from '@/components/ui/Loader';
+import Image from 'next/image';
 
 interface InviteDetailsResponse {
   error?: string;
@@ -97,67 +97,90 @@ export default function AcceptInvite() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-6">
-      <Card className="sm:mx-auto sm:w-full sm:max-w-md">
-        <CardHeader>
-          <CardTitle>Accept Invitation</CardTitle>
-        </CardHeader>
-        <CardContent className="py-8 px-6">
+    <div className="min-h-screen bg-background dark:bg-dark-950 text-foreground dark:text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.05] [mask-image:linear-gradient(to_bottom,black_10%,transparent_90%)] dark:[mask-image:linear-gradient(to_bottom,white_10%,transparent_90%)]"></div>
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 dark:bg-primary-500/10 rounded-full filter blur-3xl animate-blob"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 dark:bg-accent-500/10 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="text-center mb-8 flex justify-center items-center flex-col">
+          <div className="mx-auto mb-4">
+            <Image
+              src="/curenium-logo.png"
+              alt="Curenium Logo"
+              width={48}
+              height={48}
+              className="block dark:hidden"
+            />
+            <Image
+              src="/curenium-no-bg.png"
+              alt="Curenium Logo"
+              width={48}
+              height={48}
+              className="hidden dark:block"
+            />
+          </div>
+          <h2 className="text-2xl font-bold">Accept Invitation</h2>
+          <p className="text-muted-foreground dark:text-dark-400 mt-1">Join your team on Curenium.</p>
+        </div>
+
+        <div className="bg-card/80 dark:bg-dark-800/50 backdrop-blur-lg border border-border dark:border-dark-700 rounded-2xl shadow-2xl p-8">
           {token ? (
             <div>
-              {error ? (
-                <p className="text-sm text-red-500">{error}</p>
-              ) : isNewUser === null ? (
+              {error && <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error}</p>}
+              {isNewUser === null ? (
                 <Loader variant="minimal" />
               ) : isNewUser === true ? (
-                <form className="space-y-6" onSubmit={handleSubmit}>
-                  <div>
-                    <label htmlFor="fullName" className="block text-sm font-medium text-muted-foreground">Full Name</label>
-                    <div className="mt-1">
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  <div className="space-y-1">
+                    <label htmlFor="fullName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                       <input
                         id="fullName"
                         name="fullName"
                         type="text"
                         required
-                        className="appearance-none block w-full px-3 py-2 border border-input rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary sm:text-sm bg-background"
+                        className="w-full pl-10 pr-4 py-2 bg-background dark:bg-dark-700/50 border border-input dark:border-dark-600 rounded-lg placeholder-muted-foreground dark:placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                       />
                     </div>
                   </div>
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">Create a Password</label>
-                    <div className="mt-1">
+                  <div className="space-y-1">
+                    <label htmlFor="password" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Create a Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                       <input
                         id="password"
                         name="password"
                         type="password"
                         required
-                        className="appearance-none block w-full px-3 py-2 border border-input rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary sm:text-sm bg-background"
+                        className="w-full pl-10 pr-4 py-2 bg-background dark:bg-dark-700/50 border border-input dark:border-dark-600 rounded-lg placeholder-muted-foreground dark:placeholder-dark-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </div>
                   </div>
-                  {success && <p className="text-sm text-green-600">{success}</p>}
-                  <div>
-                    <Button type="submit" className="w-full">
+                  {success && <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg py-2 px-4">{success}</p>}
+                  <div className="pt-2">
+                    <Button type="submit" className="w-full text-base font-semibold" size="lg">
                       Complete Registration <Check size={16} className="ml-2" />
                     </Button>
                   </div>
                 </form>
               ) : (
                 <div>
-                  <p>{success || `You have been added to a new organization. Please log in to access it.`}</p>
-                  <Button onClick={() => router.push('/login')} className="w-full mt-4">Go to Login</Button>
+                  <p className="text-center">{success || `You have been added to a new organization. Please log in to access it.`}</p>
+                  <Button onClick={() => router.push('/login')} className="w-full mt-4 text-base font-semibold" size="lg">Go to Login</Button>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-sm text-destructive">{error || 'Invalid invite link.'}</p>
+            <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error || 'Invalid invite link.'}</p>
           )}
-       </CardContent>
-     </Card>
-   </div>
+        </div>
+      </div>
+    </div>
   );
 }
