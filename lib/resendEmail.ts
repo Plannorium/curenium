@@ -137,7 +137,7 @@ export const sendTeamInvitationEmail = async (email: string, inviter: string, or
     return { ok: false, message: "email_skipped" };
   }
 
-  const invitationLink = `${process.env.NEXTAUTH_URL}/signup?inviteCode=${invitationCode}`;
+  const invitationLink = `${process.env.NEXTAUTH_URL}/accept-invite?token=${invitationCode}`;
 
   try {
     await resend.emails.send({

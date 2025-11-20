@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -35,6 +35,14 @@ export default function AcceptInvite() {
       if (token) {
         try {
           const res = await fetch(`/api/invite/details?token=${token}`);
+          if (!res.ok) {
+            if (res.status === 404) {
+              setError('Invalid invite link.');
+            } else {
+              setError('Failed to fetch invite details.');
+            }
+            return;
+          }
           const data: InviteDetailsResponse = await res.json();
           if (data.error) {
             setError(data.error);
@@ -89,55 +97,56 @@ export default function AcceptInvite() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900 flex flex-col justify-center py-12 px-6">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="py-8 px-6">
-          <h3 className="text-xl font-bold text-dark-900 dark:text-white mb-6">
-            Accept Invitation
-          </h3>
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-6">
+      <Card className="sm:mx-auto sm:w-full sm:max-w-md">
+        <CardHeader>
+          <CardTitle>Accept Invitation</CardTitle>
+        </CardHeader>
+        <CardContent className="py-8 px-6">
           {token ? (
             <div>
-             {isNewUser === null && <Loader variant="minimal" />}
-              {isNewUser === true && (
+              {error ? (
+                <p className="text-sm text-red-500">{error}</p>
+              ) : isNewUser === null ? (
+                <Loader variant="minimal" />
+              ) : isNewUser === true ? (
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div>
-                    <label htmlFor="fullName" className="block text-sm font-medium text-dark-700 dark:text-dark-200">Full Name</label>
+                    <label htmlFor="fullName" className="block text-sm font-medium text-muted-foreground">Full Name</label>
                     <div className="mt-1">
                       <input
                         id="fullName"
                         name="fullName"
                         type="text"
                         required
-                        className="appearance-none block w-full px-3 py-2 border border-dark-300 dark:border-dark-600 rounded-md shadow-sm placeholder-dark-400 dark:placeholder-dark-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-transparent"
+                        className="appearance-none block w-full px-3 py-2 border border-input rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary sm:text-sm bg-background"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                       />
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-dark-700 dark:text-dark-200">Create a Password</label>
+                    <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">Create a Password</label>
                     <div className="mt-1">
                       <input
                         id="password"
                         name="password"
                         type="password"
                         required
-                        className="appearance-none block w-full px-3 py-2 border border-dark-300 dark:border-dark-600 rounded-md shadow-sm placeholder-dark-400 dark:placeholder-dark-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-transparent"
+                        className="appearance-none block w-full px-3 py-2 border border-input rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary sm:text-sm bg-background"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </div>
                   </div>
-                  {error && <p className="text-sm text-red-500">{error}</p>}
-                  {success && <p className="text-sm text-green-500">{success}</p>}
+                  {success && <p className="text-sm text-green-600">{success}</p>}
                   <div>
                     <Button type="submit" className="w-full">
                       Complete Registration <Check size={16} className="ml-2" />
                     </Button>
                   </div>
                 </form>
-              )}
-              {isNewUser === false && (
+              ) : (
                 <div>
                   <p>{success || `You have been added to a new organization. Please log in to access it.`}</p>
                   <Button onClick={() => router.push('/login')} className="w-full mt-4">Go to Login</Button>
@@ -145,10 +154,10 @@ export default function AcceptInvite() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-red-500">{error || 'Invalid invite link.'}</p>
+            <p className="text-sm text-destructive">{error || 'Invalid invite link.'}</p>
           )}
-        </Card>
-      </div>
-    </div>
+       </CardContent>
+     </Card>
+   </div>
   );
 }

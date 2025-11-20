@@ -202,11 +202,17 @@ const AudioPlayer = ({ src }: { src: string }) => {
       }
     };
 
-    document.addEventListener('mouseup', handleGlobalMouseUp);
-    document.addEventListener('mousemove', handleGlobalMouseMove as EventListener);
+    document.addEventListener("mouseup", handleGlobalMouseUp);
+    document.addEventListener(
+      "mousemove",
+      handleGlobalMouseMove as EventListener
+    );
     return () => {
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-      document.removeEventListener('mousemove', handleGlobalMouseMove as EventListener);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
+      document.removeEventListener(
+        "mousemove",
+        handleGlobalMouseMove as EventListener
+      );
     };
   }, [isDragging, duration]);
 
@@ -327,7 +333,6 @@ interface MessageBubbleProps {
   onMentionClick: (user: User) => void;
 }
 
-
 const MessageBubble = ({
   msg,
   isSender,
@@ -344,8 +349,8 @@ const MessageBubble = ({
   onScrollToMessage,
   sendReadReceipt,
   voiceUploadProgress,
-    onJoinCall,
-    isCallActive,
+  onJoinCall,
+  isCallActive,
   id,
   users,
   onMentionClick,
@@ -367,12 +372,13 @@ const MessageBubble = ({
     const parts = text.split(/(@\w+)/g);
 
     return parts.map((part, index) => {
-      if (part.startsWith('@')) {
+      if (part.startsWith("@")) {
         // This is a mention
         const mentionText = part.slice(1); // Remove the @ symbol
-        const mentionedUser = users.find(u =>
-          u.fullName.toLowerCase().startsWith(mentionText.toLowerCase()) ||
-          u.fullName.split(' ')[0].toLowerCase() === mentionText.toLowerCase()
+        const mentionedUser = users.find(
+          (u) =>
+            u.fullName.toLowerCase().startsWith(mentionText.toLowerCase()) ||
+            u.fullName.split(" ")[0].toLowerCase() === mentionText.toLowerCase()
         );
 
         if (mentionedUser) {
@@ -414,16 +420,18 @@ const MessageBubble = ({
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    if (msg.type === 'call_invitation' && msg.createdAt && !msg.callEnded) {
+    if (msg.type === "call_invitation" && msg.createdAt && !msg.callEnded) {
       const startTime = new Date(msg.createdAt).getTime();
       interval = setInterval(() => {
         const diff = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = String(Math.floor(diff / 60)).padStart(2, '0');
-        const seconds = String(diff % 60).padStart(2, '0');
+        const minutes = String(Math.floor(diff / 60)).padStart(2, "0");
+        const seconds = String(diff % 60).padStart(2, "0");
         setDuration(`${minutes}:${seconds}`);
       }, 1000);
     }
-    return () => { if (interval) clearInterval(interval); };
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [msg.type, msg.createdAt, msg.callEnded]);
 
   useEffect(() => {
@@ -482,8 +490,8 @@ const MessageBubble = ({
   useEffect(() => {
     if (isActionsVisible) {
       const handleClick = () => setIsActionsVisible(false);
-      document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
+      document.addEventListener("click", handleClick);
+      return () => document.removeEventListener("click", handleClick);
     }
   }, [isActionsVisible]);
 
@@ -620,10 +628,14 @@ const MessageBubble = ({
               <>
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-foreground">
-                    {isSender ? "You started a call." : `${user?.fullName} started a call.`}
+                    {isSender
+                      ? "You started a call."
+                      : `${user?.fullName} started a call.`}
                   </p>
                   {duration && (
-                    <span className="text-sm font-mono text-green-400 animate-pulse">{duration}</span>
+                    <span className="text-sm font-mono text-green-400 animate-pulse">
+                      {duration}
+                    </span>
                   )}
                 </div>
                 <Button
@@ -687,7 +699,9 @@ const MessageBubble = ({
             <BellIcon size={22} className={`text-${color}-500 animate-pulse`} />
           </div>
           <div className="text-left">
-            <p className={`font-bold text-xs lg:text-sm text-${color}-500 uppercase`}>
+            <p
+              className={`font-bold text-xs lg:text-sm text-${color}-500 uppercase`}
+            >
               {alert.level} Alert
             </p>
             {/* <p className="font-medium text-foreground">{alert.message}</p> */}
@@ -742,7 +756,9 @@ const MessageBubble = ({
                 }`
             )}
           >
-            <div className={`absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 ${isActionsVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700`}>
+            <div
+              className={`absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 ${isActionsVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700`}
+            >
               <div className="relative" ref={reactionPickerRef}>
                 <button
                   onClick={() => setReactionPickerOpen((p) => !p)}
@@ -934,22 +950,22 @@ export default function Chat() {
   useEffect(() => {
     const refreshUsersOnlineStatus = async () => {
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch("/api/users");
         if (response.ok) {
           const data: User[] = await response.json();
           setUsers(data);
         }
       } catch (error) {
-        console.error('Failed to refresh users online status:', error);
+        console.error("Failed to refresh users online status:", error);
       }
     };
 
     // Cleanup stale online statuses (run every 5 minutes)
     const cleanupOnlineStatus = async () => {
       try {
-        await fetch('/api/users/cleanup', { method: 'POST' });
+        await fetch("/api/users/cleanup", { method: "POST" });
       } catch (error) {
-        console.error('Failed to cleanup online status:', error);
+        console.error("Failed to cleanup online status:", error);
       }
     };
 
@@ -1065,7 +1081,6 @@ export default function Chat() {
     getWs,
   } = useChat(activeRoom);
 
-
   const handleToggleMute = () => {
     setIsMuted((prev) => {
       const newMuted = !prev;
@@ -1077,9 +1092,8 @@ export default function Chat() {
       }
       return newMuted;
     });
-    playSound(!isMuted ? 'mute' : 'unmute');
+    playSound(!isMuted ? "mute" : "unmute");
   };
-
 
   const handleToggleVideo = () => {
     setIsVideoOff((prev) => {
@@ -1092,9 +1106,8 @@ export default function Chat() {
       }
       return newVideoOff;
     });
-    playSound('mute'); // Using 'mute' as a generic 'tick' sound
+    playSound("mute"); // Using 'mute' as a generic 'tick' sound
   };
-
 
   const prevMessagesLengthRef = useRef(messages.length);
 
@@ -1149,12 +1162,12 @@ export default function Chat() {
 
     const updateOnlineStatus = async () => {
       try {
-        await fetch('/api/users/online', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/users/online", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
         });
       } catch (error) {
-        console.error('Failed to update online status:', error);
+        console.error("Failed to update online status:", error);
       }
     };
 
@@ -1166,19 +1179,21 @@ export default function Chat() {
 
     // Set offline when component unmounts or user leaves
     const handleBeforeUnload = () => {
-      navigator.sendBeacon('/api/users/online', JSON.stringify({ method: 'DELETE' }));
+      navigator.sendBeacon(
+        "/api/users/online",
+        JSON.stringify({ method: "DELETE" })
+      );
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
       clearInterval(heartbeatInterval);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       // Set offline when component unmounts
-      fetch('/api/users/online', { method: 'DELETE' }).catch(console.error);
+      fetch("/api/users/online", { method: "DELETE" }).catch(console.error);
     };
   }, [session?.user?.id]);
-
 
   const handleStartChat = (roomId: string) => {
     if (!roomId) return;
@@ -1187,13 +1202,11 @@ export default function Chat() {
     setSelectedUser(null);
   };
 
-
   const handleAlertClick = (alert: AlertMessage) => {
     setSelectedAlert(alert);
   };
 
   const handleThreadReply = (threadId: string, content: string) => {
-
     if (session?.user) {
       sendCombinedMessage(
         content,
@@ -1205,7 +1218,6 @@ export default function Chat() {
       );
     }
   };
-
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -1224,13 +1236,14 @@ export default function Chat() {
   } | null>(null);
 
   // Scroll position caching per room
-  const [scrollPositions, setScrollPositions] = useState<Record<string, number>>({});
+  const [scrollPositions, setScrollPositions] = useState<
+    Record<string, number>
+  >({});
   const [hasUserScrolledUp, setHasUserScrolledUp] = useState(false);
 
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionIndex, setMentionIndex] = useState(-1);
-
 
   const handleReaction = (messageId: string, emoji: string) => {
     if (!session?.user) return;
@@ -1245,7 +1258,6 @@ export default function Chat() {
     });
   };
 
-
   const handleReactionClick = (
     messageId: string,
     emoji: string,
@@ -1253,7 +1265,6 @@ export default function Chat() {
   ) => {
     setActiveReactionDetails({ messageId, emoji, users });
   };
-
 
   const handleScrollToMessage = (messageId: string) => {
     const messageIndex = messages.findIndex((m) => m.id === messageId);
@@ -1265,7 +1276,6 @@ export default function Chat() {
     }
   };
 
-
   const handleDeleteMessage = async (messageId: string) => {
     const messageToDelete = messages.find((m) => m.id === messageId);
     if (messageToDelete) {
@@ -1273,7 +1283,6 @@ export default function Chat() {
       setShowDeleteConfirm(true);
     }
   };
-
 
   const handleToggleRecording = async () => {
     if (recordingState === "idle") {
@@ -1333,7 +1342,6 @@ export default function Chat() {
     }
   };
 
-
   const handleSendVoiceMessage = async () => {
     if (
       mediaRecorderRef.current &&
@@ -1344,7 +1352,6 @@ export default function Chat() {
     }
   };
 
-
   const handlePauseRecording = () => {
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.pause();
@@ -1354,7 +1361,6 @@ export default function Chat() {
       setRecordingState("recording");
     }
   };
-
 
   const handleCancelRecording = () => {
     if (mediaRecorderRef.current) {
@@ -1371,7 +1377,6 @@ export default function Chat() {
     audioChunksRef.current = [];
   };
 
-
   const confirmDeleteMessage = async () => {
     if (deletingMessage) {
       await deleteMessage(deletingMessage.id);
@@ -1380,9 +1385,8 @@ export default function Chat() {
     }
   };
 
-
   const handleEndCall = () => {
-    playSound('callEnd');
+    playSound("callEnd");
     if (callRef.current) {
       callRef.current.endCall();
       callRef.current = null;
@@ -1402,14 +1406,20 @@ export default function Chat() {
 
       // Send call_end message to update the message in the database
       if (callRef.current && (callRef.current as any).id) {
-        sendCallEnd((callRef.current as any).id, durationString, callRoom || undefined);
+        sendCallEnd(
+          (callRef.current as any).id,
+          durationString,
+          callRoom || undefined
+        );
       }
 
-      setMessages(prev => prev.map(m =>
-        m.id === callRef.current?.id
-          ? { ...m, callEnded: true, duration: durationString }
-          : m
-      ));
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === callRef.current?.id
+            ? { ...m, callEnded: true, duration: durationString }
+            : m
+        )
+      );
     }
 
     setLocalStream(null);
@@ -1419,7 +1429,6 @@ export default function Chat() {
     setScreenStream(null);
     setCallRoom(null); // Reset call room
   };
-
 
   const handleToggleScreenShare = async () => {
     if (isScreenSharing) {
@@ -1467,7 +1476,6 @@ export default function Chat() {
     }
   };
 
-
   // Save scroll position when changing rooms
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -1478,9 +1486,9 @@ export default function Chat() {
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
       // Save scroll position for current room
-      setScrollPositions(prev => ({
+      setScrollPositions((prev) => ({
         ...prev,
-        [activeRoom]: scrollTop
+        [activeRoom]: scrollTop,
       }));
 
       // Track if user has scrolled up
@@ -1543,7 +1551,6 @@ export default function Chat() {
     };
   }, [messages, isDocModalOpen, lightbox, hasUserScrolledUp]);
 
-
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   useEffect(() => {
@@ -1557,7 +1564,8 @@ export default function Chat() {
       setShowScrollToBottom(!isNearBottom && messages.length > 5);
 
       // Update scroll up state
-      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
       setHasUserScrolledUp(distanceFromBottom > 150);
     };
 
@@ -1566,7 +1574,6 @@ export default function Chat() {
 
     return () => container.removeEventListener("scroll", handleScroll);
   }, [messages]);
-
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1583,7 +1590,6 @@ export default function Chat() {
     };
   }, [emojiPickerRef]);
 
-
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -1599,7 +1605,6 @@ export default function Chat() {
 
     fetchUsers();
   }, []);
-
 
   const fetchChannels = async () => {
     try {
@@ -1620,7 +1625,6 @@ export default function Chat() {
     fetchChannels();
   }, []);
 
-
   useEffect(() => {
     const fetchRecentDms = async () => {
       if (session?.user?.id) {
@@ -1639,12 +1643,10 @@ export default function Chat() {
     fetchRecentDms();
   }, [session, setRecentDms]);
 
-
   const openDocPreview = (file: any) => {
     setSelectedDoc(file);
     setIsDocModalOpen(true);
   };
-
 
   const closeDocPreview = () => {
     setIsDocModalOpen(false);
@@ -1708,7 +1710,7 @@ export default function Chat() {
 
     if (mentionMatch) {
       const beforeMention = textBeforeCursor.substring(0, mentionMatch.index);
-      const firstName = user.fullName.split(' ')[0];
+      const firstName = user.fullName.split(" ")[0];
       const newText = beforeMention + `@${firstName} ` + textAfterCursor;
       setText(newText);
       setShowMentions(false);
@@ -1721,7 +1723,6 @@ export default function Chat() {
       }, 0);
     }
   };
-
 
   useEffect(() => {
     if (
@@ -1739,7 +1740,6 @@ export default function Chat() {
     }
   }, [currentResultIndex, searchResults]);
 
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -1771,7 +1771,6 @@ export default function Chat() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
 
   interface ConversionProgress {
     status: "queued" | "converting" | "uploading" | "completed" | "failed";
@@ -1785,7 +1784,6 @@ export default function Chat() {
     status: string;
     pdfUrl?: string;
   }
-
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1957,7 +1955,8 @@ export default function Chat() {
         // Always scroll to bottom when sending a message
         setTimeout(() => {
           if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            messagesContainerRef.current.scrollTop =
+              messagesContainerRef.current.scrollHeight;
           }
         }, 100);
       } catch (error) {
@@ -1974,12 +1973,10 @@ export default function Chat() {
     }
   };
 
-
   const handleReply = (message: any) => {
     setReplyingTo(message);
     textareaRef.current?.focus();
   };
-
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1987,7 +1984,6 @@ export default function Chat() {
       handleSendMessage();
     }
   };
-
 
   const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -2018,7 +2014,6 @@ export default function Chat() {
       typingTimeoutRef.current = null;
     }, 3000);
   };
-
 
   const handleJoinCall = async (callId: string) => {
     try {
@@ -2088,7 +2083,6 @@ export default function Chat() {
       toast.error("Failed to join call.");
     }
   };
-
 
   const handleStartCall = async () => {
     initAudio(); // Ensure audio is ready
@@ -2175,7 +2169,7 @@ export default function Chat() {
   };
 
   const handleSendCallInvitations = async () => {
-    if (session?.user && usersToInvite.length > 0 && callRef.current ) {
+    if (session?.user && usersToInvite.length > 0 && callRef.current) {
       const callId = (callRef.current as any).id as string;
       if (callId) {
         if (isDmRoom) {
@@ -2192,7 +2186,12 @@ export default function Chat() {
             if (!dmExists) {
               // This assumes you have a way to create/add a DM room.
               // We can use the logic from handleRoomChange.
-              addRecentDm({ participants: [session.user as any, user], room: dmRoomId, messages: [], _id: dmRoomId });
+              addRecentDm({
+                participants: [session.user as any, user],
+                room: dmRoomId,
+                messages: [],
+                _id: dmRoomId,
+              });
             }
           }
         } else {
@@ -2222,7 +2221,6 @@ export default function Chat() {
     [channels, activeRoom]
   );
 
-
   const channelUsers = useMemo(() => {
     if (activeRoom === "general") {
       return users;
@@ -2239,11 +2237,12 @@ export default function Chat() {
 
   const filteredMentionUsers = useMemo(() => {
     if (!mentionQuery) return channelUsers.slice(0, 5);
-    return channelUsers.filter(user =>
-      user.fullName.toLowerCase().includes(mentionQuery.toLowerCase())
-    ).slice(0, 5);
+    return channelUsers
+      .filter((user) =>
+        user.fullName.toLowerCase().includes(mentionQuery.toLowerCase())
+      )
+      .slice(0, 5);
   }, [mentionQuery, channelUsers]);
-
 
   const otherUser = useMemo(() => {
     if (!isDmRoom) return null;
@@ -2259,7 +2258,6 @@ export default function Chat() {
     );
   }, [users, searchQuery, session?.user?._id]);
 
-
   if (!session)
     return (
       <div className="flex items-center justify-center h-full backdrop-blur-sm bg-card/50 rounded-2xl border border-border/50">
@@ -2271,7 +2269,6 @@ export default function Chat() {
         </div>
       </div>
     );
-
 
   const handleRoomChange = async (room: string) => {
     router.push(`${pathname}?room=${room}`);
@@ -2304,7 +2301,6 @@ export default function Chat() {
       }
     }
   };
-
 
   return (
     <>
@@ -2343,8 +2339,8 @@ export default function Chat() {
                     key={user._id}
                     onClick={() => {
                       const room = [session?.user?._id, user._id]
-                      .sort()
-                      .join("--");
+                        .sort()
+                        .join("--");
                       //handleRoomChange(room);
                       //setIsNewChatDialogOpen(false);
                       setUsersToInvite((prev) => [...prev, user]);
@@ -2398,17 +2394,18 @@ export default function Chat() {
               )}
             </div>
           </div>
-            <DialogFooter>
-            <Button type="submit" onClick={handleSendCallInvitations}
+          <DialogFooter>
+            <Button
+              type="submit"
+              onClick={handleSendCallInvitations}
               disabled={usersToInvite.length === 0}
             >
               Invite
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog >
+      </Dialog>
       <div className="h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
-
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
 
@@ -2424,14 +2421,12 @@ export default function Chat() {
           allUsers={users}
         />
 
-
         <div className="relative flex-1 flex min-h-0">
           {/* Channel List Sidebar */}
           <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 shrink-0">
             <div className="p-4">
               <div className="relative" ref={emojiPickerRef}>
                 <input
-
                   type="text"
                   placeholder="Search conversations"
                   className="backdrop-blur-sm bg-background/50 dark:bg-gray-800/50 border border-border/60 dark:border-gray-700/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
@@ -2445,7 +2440,6 @@ export default function Chat() {
             </div>
 
             <div className="px-3 pb-2">
-
               <button
                 onClick={() => setIsChannelsOpen(!isChannelsOpen)}
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground tracking-wider"
@@ -2462,7 +2456,6 @@ export default function Chat() {
                 />
               </button>
               {isChannelsOpen && (
-
                 <div className="mt-2 space-y-1">
                   <div
                     className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
@@ -2472,7 +2465,6 @@ export default function Chat() {
                     }`}
                   >
                     <button
-
                       className="flex cursor-pointer items-center flex-1 text-left"
                       onClick={() => handleRoomChange("general")}
                     >
@@ -2486,7 +2478,6 @@ export default function Chat() {
                       General
                     </button>
                     {/* No manage button for the general channel */}
-
                   </div>
                   {channels
                     .filter((channel) =>
@@ -2506,7 +2497,6 @@ export default function Chat() {
                         }`}
                       >
                         <button
-
                           className="flex cursor-pointer items-center flex-1 text-left"
                           onClick={() =>
                             handleRoomChange(
@@ -2531,7 +2521,6 @@ export default function Chat() {
                           {channel.name}
                         </button>
                         <button
-
                           onClick={(e) => {
                             e.stopPropagation();
                             setManagingChannel(channel);
@@ -2556,7 +2545,6 @@ export default function Chat() {
                     </button>
                   </div>
                 </div>
-
               )}
             </div>
 
@@ -2564,7 +2552,6 @@ export default function Chat() {
             <div className="px-3 pb-2 mt-6">
               <button
                 onClick={() => setIsDmsOpen(!isDmsOpen)}
-
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground tracking-wider"
               >
                 <h3 className="flex items-center">
@@ -2586,7 +2573,6 @@ export default function Chat() {
                     <button
                       onClick={() =>
                         handleRoomChange(
-
                           `${currentUser._id}-${currentUser._id}`
                         )
                       }
@@ -2598,17 +2584,16 @@ export default function Chat() {
                     >
                       <div className="relative mr-3">
                         <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
-                        <AvatarImage src={currentUser.image || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-                          {currentUser.fullName
-                            ?.split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {currentUser.online && (
-
+                          <AvatarImage src={currentUser.image || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                            {currentUser.fullName
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {currentUser.online && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
                         )}
                       </div>
@@ -2658,7 +2643,6 @@ export default function Chat() {
                           key={(dm as any)._id}
                           onClick={() => handleRoomChange(room)}
                           className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-
                             activeRoom === room
                               ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
                               : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
@@ -2682,7 +2666,6 @@ export default function Chat() {
                           {user.fullName}
                         </button>
                       );
-
                     })}
                   <button
                     onClick={() => setIsNewChatDialogOpen(true)}
@@ -2696,18 +2679,17 @@ export default function Chat() {
                     Start a new chat
                   </button>
                 </div>
-
               )}
             </div>
           </div>
 
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden bg-background dark:bg-gray-900/80 border-l border-r border-border/50 dark:border-gray-700/50">
-      {isCallActive && callRef.current && (
-        <Call
-          callId={callRef.current.id}
-          localStream={localStream}
-          remoteStreams={remoteStreams}
+            {isCallActive && callRef.current && (
+              <Call
+                callId={callRef.current.id}
+                localStream={localStream}
+                remoteStreams={remoteStreams}
                 onEndCall={handleEndCall}
                 userName={session?.user?.name || ""}
                 onToggleScreenShare={handleToggleScreenShare}
@@ -2719,7 +2701,6 @@ export default function Chat() {
                 onToggleVideo={handleToggleVideo}
                 onInvite={handleInviteToCall}
               />
-
             )}
 
             {/* Chat Header */}
@@ -2746,20 +2727,18 @@ export default function Chat() {
                         ? otherUser && otherUser.online
                           ? "bg-green-500"
                           : "bg-gray-400"
-                        : users.filter(u => u.online).length > 0
-                        ? "bg-green-500"
-                        : "bg-gray-400"
+                        : users.filter((u) => u.online).length > 0
+                          ? "bg-green-500"
+                          : "bg-gray-400"
                     )}
                   />
                   <span className="text-xs text-muted-foreground">
                     {isDmRoom ? (
                       <span className="hidden md:inline">
-                        {otherUser && otherUser.online
-                          ? "Online"
-                          : "Offline"}
+                        {otherUser && otherUser.online ? "Online" : "Offline"}
                       </span>
                     ) : (
-                      `${users.filter(u => u.online).length} Online`
+                      `${users.filter((u) => u.online).length} Online`
                     )}
                   </span>
                 </div>
@@ -2798,7 +2777,6 @@ export default function Chat() {
                     }
                   }}
                   className="flex items-center group cursor-pointer"
-
                 >
                   <div className="flex items-center -space-x-2 pr-2 transition-all duration-300 group-hover:-space-x-1">
                     {isDmRoom ? (
@@ -2826,7 +2804,6 @@ export default function Chat() {
                       <>
                         {channelUsers.slice(0, 4).map((user) => (
                           <Avatar
-
                             key={user.id || user._id}
                             className="h-7 w-7 lg:h-8 lg:w-8 border-2 border-background group-hover:z-10 transition-all duration-200"
                           >
@@ -2842,7 +2819,6 @@ export default function Chat() {
                         ))}
                         {channelUsers.length > 4 && (
                           <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
-
                             <AvatarFallback className="text-xs font-semibold bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-colors">
                               +{channelUsers.length - 4}
                             </AvatarFallback>
@@ -2854,7 +2830,6 @@ export default function Chat() {
                 </button>
               </div>
             </header>
-
 
             {/* Search Bar */}
             {showSearch && (
@@ -2901,11 +2876,10 @@ export default function Chat() {
               </div>
             )}
 
-
             {/* Chat Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-6 custom-scrollbar"
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(100vh-250px)] md:max-h-none"
             >
               {messages
                 .filter((msg) => !msg.threadId)
@@ -2918,8 +2892,9 @@ export default function Chat() {
                     index === 0 ||
                     (prevMsg &&
                       new Date(msg.createdAt || Date.now()).toDateString() !==
-                        new Date(prevMsg.createdAt || Date.now()).toDateString());
-
+                        new Date(
+                          prevMsg.createdAt || Date.now()
+                        ).toDateString());
 
                   return (
                     <div
@@ -2927,7 +2902,6 @@ export default function Chat() {
                       ref={(el) => {
                         messageRefs.current[index] = el;
                       }}
-
                       className={`${searchResults.includes(index) ? (index === searchResults[currentResultIndex] ? "bg-primary/10 rounded-lg" : "") : ""}`}
                     >
                       {showTimeSeparator && (
@@ -2935,7 +2909,9 @@ export default function Chat() {
                           <div className="bg-card/80 border border-border/40 rounded-full px-4 py-1 text-xs text-muted-foreground font-medium">
                             {(() => {
                               try {
-                                const msgDate = new Date(msg.createdAt || Date.now());
+                                const msgDate = new Date(
+                                  msg.createdAt || Date.now()
+                                );
                                 if (isNaN(msgDate.getTime())) {
                                   return "Today";
                                 }
@@ -2976,7 +2952,6 @@ export default function Chat() {
                       />
                     </div>
                   );
-
                 })}
               <div ref={bottomRef} />
             </div>
@@ -2994,7 +2969,6 @@ export default function Chat() {
                 }}
                 className="fixed bottom-24 right-8 bg-primary text-white rounded-full p-3 shadow-lg z-50 animate-bounce"
               >
-
                 <ChevronDownIcon size={20} />
               </button>
             )}
@@ -3002,7 +2976,6 @@ export default function Chat() {
             {/* Delete Confirmation Modal */}
             <Dialog
               open={showDeleteConfirm}
-
               onOpenChange={setShowDeleteConfirm}
             >
               <DialogContent>
@@ -3027,7 +3000,6 @@ export default function Chat() {
               </DialogContent>
             </Dialog>
 
-
             {/* Typing Indicator */}
             <div className="h-6 px-4 pb-2 flex items-center">
               {typingUsers.length > 0 && (
@@ -3038,7 +3010,6 @@ export default function Chat() {
               )}
             </div>
 
-
             {/* Message Input */}
             <div className="backdrop-blur-sm bg-card/50 border-t border-border/50 p-4 dark:border-gray-700/50 dark:bg-transparent">
               {replyingTo && (
@@ -3046,7 +3017,6 @@ export default function Chat() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2 overflow-hidden">
                       {replyingTo.file && !Array.isArray(replyingTo.file) && (
-
                         <>
                           {replyingTo.file.type?.startsWith("image") ||
                           replyingTo.file.thumbnailUrl ? (
@@ -3084,7 +3054,6 @@ export default function Chat() {
                       </div>
                     </div>
                     <Button
-
                       variant="ghost"
                       size="sm"
                       className="p-1 h-6 w-6"
@@ -3104,7 +3073,6 @@ export default function Chat() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {stagedFiles.map((file, index) => (
                       <div key={index} className="flex flex-col gap-2">
-
                         <div className="relative group bg-background/70 p-2 rounded-lg flex flex-col items-start gap-2 h-24 justify-between">
                           {stagedFilePreviews[index] ? (
                             <img
@@ -3127,7 +3095,6 @@ export default function Chat() {
                           )}
                           {!isUploading && (
                             <Button
-
                               variant="ghost"
                               size="sm"
                               className="absolute top-1 right-1 h-6 w-6 p-1 opacity-50 group-hover:opacity-100 transition-opacity"
@@ -3138,7 +3105,6 @@ export default function Chat() {
                           )}
                           {isUploading &&
                             uploadProgress[file.name] !== undefined && (
-
                               <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden relative mt-auto">
                                 <Progress
                                   value={
@@ -3156,7 +3122,6 @@ export default function Chat() {
                               </div>
                             )}
                         </div>
-
                       </div>
                     ))}
                   </div>
@@ -3165,7 +3130,6 @@ export default function Chat() {
 
               <div className="relative">
                 <div className="flex items-end backdrop-blur-sm bg-background/50 border border-border/50 dark:border-gray-700/50 rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
-
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -3174,7 +3138,6 @@ export default function Chat() {
                     multiple
                   />
                   {recordingState === "idle" ? (
-
                     <textarea
                       ref={textareaRef}
                       value={text}
@@ -3185,7 +3148,6 @@ export default function Chat() {
                       rows={1}
                     />
                   ) : (
-
                     <div className="w-full h-8.5 flex items-center gap-4">
                       {recordingState !== "sending" && (
                         <Button
@@ -3203,7 +3165,6 @@ export default function Chat() {
                         isSending={recordingState === "sending"}
                       />
                       {recordingState === "sending" && (
-
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Sending…
@@ -3211,7 +3172,6 @@ export default function Chat() {
                       )}
                       {recordingState === "paused" && (
                         <div className="text-sm text-muted-foreground animate-pulse">
-
                           Paused
                         </div>
                       )}
@@ -3220,7 +3180,9 @@ export default function Chat() {
                   {showMentions && filteredMentionUsers.length > 0 && (
                     <div className="absolute bottom-full left-0 mb-2 bg-card/95 backdrop-blur-lg border border-border/50 rounded-xl shadow-xl max-h-64 overflow-y-auto z-50 min-w-72 max-w-80">
                       <div className="p-2 border-b border-border/30">
-                        <p className="text-xs font-medium text-muted-foreground px-2">Mention users</p>
+                        <p className="text-xs font-medium text-muted-foreground px-2">
+                          Mention users
+                        </p>
                       </div>
                       {filteredMentionUsers.map((user, index) => (
                         <button
@@ -3231,12 +3193,20 @@ export default function Chat() {
                           <Avatar className="h-8 w-8 ring-2 ring-background/50">
                             <AvatarImage src={user.image || undefined} />
                             <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                              {user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                              {user.fullName
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-foreground truncate">{user.fullName}</p>
-                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                            <p className="font-semibold text-sm text-foreground truncate">
+                              {user.fullName}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {user.email}
+                            </p>
                           </div>
                           {user.online && (
                             <div className="w-2 h-2 bg-green-500 rounded-full shrink-0"></div>
@@ -3433,8 +3403,8 @@ export default function Chat() {
               : // This is a placeholder. In a real app, you'd get actual channel members.
                 // For now, sending to a "channel" from chat sends to all users.
                 activeRoom !== "general"
-              ? users
-              : undefined
+                ? users
+                : undefined
           }
           currentRoom={activeRoom}
         />
@@ -3459,9 +3429,12 @@ export default function Chat() {
           onClose={() => setCreateChannelModalOpen(false)}
           onChannelCreated={fetchChannels}
         />
-            <Dialog open={isPermissionDialogOpen} onOpenChange={setPermissionDialogOpen}>
-              {/* Dialog content here */}
-            </Dialog>
+        <Dialog
+          open={isPermissionDialogOpen}
+          onOpenChange={setPermissionDialogOpen}
+        >
+          {/* Dialog content here */}
+        </Dialog>
 
         <ChannelMembersModal
           isOpen={isMembersModalOpen}
