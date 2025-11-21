@@ -35,7 +35,7 @@ interface SettingsLayoutProps {
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
     return (
-        <div className="space-y-6 p-3 pl-5 pb-7 lg:pl-10 lg:p-10 lg:pb-16 md:block">
+        <div className="space-y-6 p-3 pl-5 pb-9 lg:pl-10 lg:p-10 lg:pb-16 md:block">
             <div className="space-y-0.5">
                 <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
                 <p className="text-muted-foreground">

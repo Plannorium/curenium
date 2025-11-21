@@ -161,7 +161,7 @@ export const InviteList: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
-                          <p className="font-medium text-foreground truncate">{invite?.email ?? '—'}</p>
+                          <p className="font-medium text-foreground md:line-clamp-2 truncate md:whitespace-normal">{invite?.email ? (invite.email.length > 15 ? `${invite.email.substring(0, 15)}...` : invite.email) : '—'}</p>
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}
                           >

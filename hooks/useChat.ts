@@ -475,6 +475,7 @@ export const useChat = (room: string) => {
               setMessages((prev) => {
                 // Avoid duplicates
                 if (prev.some((m) => m.id === callMessage.id)) return prev;
+                playSound("callRinging");
                 return [...prev, callMessage];
               });
             } else if (message.error) {

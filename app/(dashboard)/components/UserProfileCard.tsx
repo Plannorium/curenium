@@ -68,7 +68,7 @@
              <XIcon size ={18} /> 
            </Button> 
          </div> 
-         <div className ="p-8 bg-background/85 dark:bg-slate-900/80 rounded-xl shadow-2xl border-border/30 "> 
+         <div className ="p-8 bg-background/85 dark:bg-slate-900/95 rounded-xl shadow-2xl border-border/30 "> 
            <div className ="flex flex-col items-center text-center"> 
              <Avatar className ="h-24 w-24 border-4 border-background shadow-lg"> 
                <AvatarImage src ={ user .image || undefined} /> 

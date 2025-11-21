@@ -628,9 +628,7 @@ const MessageBubble = ({
               <>
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-foreground">
-                    {isSender
-                      ? "You started a call."
-                      : `${user?.fullName} started a call.`}
+                    {msg.text || `${msg.fullName} started a call.`}
                   </p>
                   {duration && (
                     <span className="text-sm font-mono text-green-400 animate-pulse">
@@ -654,26 +652,7 @@ const MessageBubble = ({
   }
 
   if (msg.type === "alert_notification" && msg.alert) {
-    if (msg.alert?.type === "call_started" && !isCallActive) {
-      return (
-        <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-          <div className="text-left">
-            <p className="font-medium text-green-400">
-              {msg.alert.callerName} started a call
-            </p>
-            <p className="text-sm text-gray-400">Click to join</p>
-          </div>
-          <Button
-            onClick={() => onJoinCall(msg.alert.callId)}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Phone className="w-4 h-4 mr-2" />
-            Join Call
-          </Button>
-        </div>
-      );
-    }
+    // Handle other alert types here if needed
     const alert: AlertMessage = msg.alert;
     const alertColors = {
       critical: "red",
@@ -2098,10 +2077,6 @@ export default function Chat() {
         return;
       }
 
-      // Generate callId and send invitation first
-      const callId = `call-${activeRoom}-${Date.now()}`;
-      sendCallInvitation(activeRoom, callId);
-
       // Request a stream with the devices that are available.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: hasVideo,
@@ -2118,7 +2093,7 @@ export default function Chat() {
 
       if (session?.user?.token) {
         const call = await startMeshCall({
-          callId,
+          callId: `call-${activeRoom}-${crypto.randomUUID().slice(0, 8)}`,
           roomId: activeRoom,
           localStream: stream,
           token: session.user.token,
@@ -2137,6 +2112,8 @@ export default function Chat() {
             });
           },
           onCallStarted: (callId) => {
+            // This runs when WS connects
+            sendCallInvitation(activeRoom, callId); // ← THIS IS KEY
             if (typeof window !== "undefined") {
               window.history.replaceState(null, "", `/call/${callId}`);
             }
@@ -2316,7 +2293,7 @@ export default function Chat() {
           }
         }}
       >
-        <DialogContent className="max-w-md g-background/80 dark:bg-slate-900/80 border-border/30 shadow-2xl rounded-2xl">
+        <DialogContent className="max-w-md g-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl rounded-2xl">
           <DialogHeader className="text-left">
             <DialogTitle className="text-xl font-bold">New Message</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -2408,7 +2385,7 @@ export default function Chat() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="h-[calc(100vh-7.5rem)] lg:h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
+      <div className="h-[calc(100vh-11rem)] lg:h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
 
@@ -2882,7 +2859,7 @@ export default function Chat() {
             {/* Chat Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(98vh-250px)] md:max-h-none"
+              className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 md:space-y-6 custom-scrollbar max-h-[calc(93vh-250px)] md:max-h-none"
             >
               {messages
                 .filter((msg) => !msg.threadId)
@@ -3007,7 +2984,7 @@ export default function Chat() {
             <div className="h-6 px-4 pb-2 flex items-center">
               {typingUsers.length > 0 && (
                 <div className="text-xs text-muted-foreground italic animate-pulse">
-                  {typingUsers.map((user) => user).join(", ")}
+                  {typingUsers.join(", ")}
                   {typingUsers.length === 1 ? " is" : " are"} typing...
                 </div>
               )}
@@ -3510,7 +3487,7 @@ export default function Chat() {
         open={isPermissionDialogOpen}
         onOpenChange={setPermissionDialogOpen}
       >
-        <DialogContent className="sm:max-w-md bg-card/90 dark:bg-slate-900/80 backdrop-blur-lg border-border/50">
+        <DialogContent className="sm:max-w-md bg-card/90 dark:bg-slate-900/95 backdrop-blur-lg border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <VideoIcon className="text-primary" />

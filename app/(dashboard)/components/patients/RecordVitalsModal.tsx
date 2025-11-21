@@ -156,7 +156,7 @@ export const RecordVitalsModal: React.FC<RecordVitalsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="dark:bg-slate-900/80 lg:max-w-2xl">
+      <DialogContent className="dark:bg-slate-900/95 lg:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Record Vitals for {patientName}</DialogTitle>
           <DialogDescription>

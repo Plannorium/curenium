@@ -87,7 +87,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
         <Button
           onClick={() => setIsModalOpen(true)}
           size="sm"
-          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
         >
           <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
           <span className="text-sm sm:text-base">Request Lab Order</span>

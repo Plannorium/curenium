@@ -61,8 +61,17 @@ const DashboardContent: React.FC = () => {
 
   const welcomeMessage = organization?.language ? translations[organization.language as keyof typeof translations]?.welcome || translations.en.welcome : translations.en.welcome;
 
-  const currentShift = shifts?.find(shift => new Date(shift.startTime) <= new Date() && new Date(shift.endTime) >= new Date());
-  const upcomingShift = shifts?.find(shift => new Date(shift.startTime) > new Date());
+  const isAdmin = session?.user?.role === 'admin';
+
+  // Filter shifts based on user role
+  const userShifts = isAdmin ? shifts : shifts?.filter(shift => shift.user?.fullName === session?.user?.name);
+
+  const currentShift = userShifts?.find(shift => new Date(shift.startTime) <= new Date() && new Date(shift.endTime) >= new Date());
+  const upcomingShift = userShifts?.find(shift => new Date(shift.startTime) > new Date());
+
+  // Get all current shifts for display (for admin)
+  const allCurrentShifts = shifts?.filter(shift => new Date(shift.startTime) <= new Date() && new Date(shift.endTime) >= new Date()) || [];
+  const allUpcomingShifts = shifts?.filter(shift => new Date(shift.startTime) > new Date()) || [];
 
   const criticalAlerts = alerts?.filter(alert => alert.level === 'critical').length || 0;
   const urgentAlerts = alerts?.filter(alert => alert.level === 'urgent').length || 0;
@@ -124,6 +133,11 @@ const DashboardContent: React.FC = () => {
                     <p className="text-sm text-gray-300 dark:text-primary-foreground/80 font-medium">
                       {formatDistanceToNow(new Date(currentShift.endTime))} remaining
                     </p>
+                    {isAdmin && allCurrentShifts.length > 1 && (
+                      <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
+                        {allCurrentShifts.map(s => s.user.fullName).join(', ')}
+                      </p>
+                    )}
                   </>
                 ) : upcomingShift ? (
                   <>
@@ -133,9 +147,25 @@ const DashboardContent: React.FC = () => {
                     <p className="text-sm text-gray-300 dark:text-primary-foreground/80 font-medium">
                       Starts in {formatDistanceToNow(new Date(upcomingShift.startTime))}
                     </p>
+                    {isAdmin && allUpcomingShifts.length > 1 && (
+                      <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
+                        {allUpcomingShifts.map(s => s.user.fullName).join(', ')}
+                      </p>
+                    )}
                   </>
                 ) : (
-                  <div className="text-lg font-semibold text-white dark:text-primary-foreground">No upcoming shifts</div>
+                  <div className="text-lg font-semibold text-white dark:text-primary-foreground">
+                    {isAdmin && allCurrentShifts.length > 0 ? (
+                      <>
+                        No personal shifts
+                        <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
+                          {allCurrentShifts.length} active: {allCurrentShifts.map(s => s.user.fullName).join(', ')}
+                        </p>
+                      </>
+                    ) : (
+                      'No upcoming shifts'
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -191,7 +221,7 @@ const DashboardContent: React.FC = () => {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <ShiftView />
+              <ShiftView limit={5} />
             </div>
             <div className="space-y-6">
               {/* <Card className="backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">

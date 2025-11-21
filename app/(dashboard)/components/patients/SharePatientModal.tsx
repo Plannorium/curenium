@@ -157,10 +157,10 @@ export const SharePatientModal: React.FC<SharePatientModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-card text-card-foreground p-0">
+      <DialogContent className="max-w-2xl bg-card dark:bg-slate-900/95 text-card-foreground p-0">
         <DialogHeader className="p-6 pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center text-2xl font-bold">
+          <div className="flex items-center justify-between mt-5">
+            <DialogTitle className="flex items-center text-lg lg:text-2xl font-bold">
               <Users className="mr-3 h-6 w-6 text-primary" />
               Share: <span className="font-normal ml-2">{patientName}</span>
             </DialogTitle>
@@ -291,7 +291,7 @@ export const SharePatientModal: React.FC<SharePatientModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-4 bg-muted/50 border-t">
+        <DialogFooter className="p-6 pt-4 bg-muted/50 dark:bg-slate-900/95 border-t">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

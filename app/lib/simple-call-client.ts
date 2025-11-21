@@ -42,6 +42,9 @@ export async function startMeshCall({
   onParticipantLeft,
   onCallStarted,
 }: StartMeshCallParams) {
+  // Generate callId properly: call-{roomId}-{randomId}
+  const properCallId = `call-${roomId}-${crypto.randomUUID().slice(0, 8)}`;
+
   const ws = new WebSocket(
     `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(
       roomId
@@ -52,7 +55,7 @@ export async function startMeshCall({
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: "auth", token, user: { name: userName } }));
     ws.send(JSON.stringify({ type: "join", room: roomId }));
-    onCallStarted(callId);
+    onCallStarted(properCallId);
   };
 
   ws.onmessage = async (evt) => {
@@ -152,7 +155,7 @@ export async function startMeshCall({
   }
 
   return {
-    id: callId,
+    id: properCallId,
     endCall: () => {
       if (ws.readyState === WebSocket.OPEN) {
         Object.values(pcMap).forEach((pc) => pc.close());
@@ -173,7 +176,14 @@ export async function joinMeshCall({
   onRemoteStream,
   onParticipantLeft,
 }: JoinMeshCallParams) {
-  const roomId = callId.startsWith("call-") ? callId.substring(5, callId.lastIndexOf('-')) : callId;
+  // Extract the actual channel/room name from callId
+  // Format: call-{channelName}-{randomId}
+  const match = callId.match(/^call-([^-]+)-/);
+  if (!match) {
+    throw new Error("Invalid callId format");
+  }
+  const roomId = match[1]; // e.g. "general"
+
   const ws = new WebSocket(
     `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`
   );

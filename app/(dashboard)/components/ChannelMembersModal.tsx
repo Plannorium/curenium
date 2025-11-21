@@ -39,7 +39,7 @@ export const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="backdrop-blur-xl bg-background/80 dark:bg-slate-900/80 border-border/30 shadow-2xl max-w-md p-0">
+      <DialogContent className="backdrop-blur-xl bg-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl max-w-md p-0">
         <DialogHeader className="p-6 pb-4 border-b border-border/30">
           <DialogTitle className="text-lg font-semibold">Channel Members ({users.length})</DialogTitle>
           <div className="relative pt-2">

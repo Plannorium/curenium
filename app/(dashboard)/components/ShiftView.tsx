@@ -31,7 +31,11 @@ interface Shift {
   _malformed?: boolean;
 }
 
-const ShiftView = () => {
+interface ShiftViewProps {
+  limit?: number;
+}
+
+const ShiftView = ({ limit }: ShiftViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [displayMonth, setDisplayMonth] = useState<Date>(selectedDate || new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -271,13 +275,13 @@ const ShiftView = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">Today&apos;s Shifts</h2>
               <Badge variant="outline" className="text-xs">
-                {filteredShifts.length} {filteredShifts.length === 1 ? 'shift' : 'shifts'}
+                {limit ? Math.min(filteredShifts.length, limit) : filteredShifts.length} {((limit ? Math.min(filteredShifts.length, limit) : filteredShifts.length) === 1) ? 'shift' : 'shifts'}
               </Badge>
             </div>
             
-            {filteredShifts.length > 0 ? (
+            {(limit ? filteredShifts.slice(0, limit) : filteredShifts).length > 0 ? (
               <div className="space-y-3">
-                {filteredShifts.map((shift: Shift) => (
+                {(limit ? filteredShifts.slice(0, limit) : filteredShifts).map((shift: Shift) => (
                   <div
                     key={shift._id}
                     className="group bg-card border border-border rounded-lg p-4 transition-all duration-200 hover:bg-muted/50 hover:border-primary/20"

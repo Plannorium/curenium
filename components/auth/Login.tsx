@@ -24,13 +24,11 @@ export const Login: React.FC = () => {
     const urlError = searchParams?.get('error');
     if (urlError) {
       switch (urlError) {
-        case 'CredentialsSignin':
-          setError('Invalid email or password. Please try again.');
-          break;
         case 'OAuthUserNotFound':
           setError('You need to be invited to use this application. Please contact your administrator.');
           break;
         default:
+          // For other errors that might come from redirects, show generic message
           setError('An unexpected error occurred. Please try again.');
           break;
       }
@@ -46,12 +44,33 @@ export const Login: React.FC = () => {
       email,
       password,
       callbackUrl,
-      redirect: true,
+      redirect: false,
     });
 
+    setIsLoading(false);
+
     if (result?.error) {
-      // This part may not be reached if redirect is true, but it's good for safety.
-      setIsLoading(false);
+      // Map specific error messages
+      switch (result.error) {
+        case 'No user found with this email':
+          setError('No account found with this email address.');
+          break;
+        case 'Incorrect password':
+          setError('Incorrect password. Please try again.');
+          break;
+        case 'Your account is pending verification by an administrator.':
+          setError('Your account is pending verification by an administrator.');
+          break;
+        case 'Please sign in using your social account or contact support.':
+          setError('Please sign in using your social account or contact support.');
+          break;
+        default:
+          setError('Invalid email or password. Please try again.');
+          break;
+      }
+    } else if (result?.ok) {
+      // Successful login, redirect manually
+      router.push(callbackUrl);
     }
   };
 
