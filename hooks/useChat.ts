@@ -242,24 +242,25 @@ export const useChat = (room: string) => {
             const message = JSON.parse(event.data);
             console.log("Received message:", message);
 
-            // Optimistic message handling can be re-enabled if needed
-            // if (message.type === "message" && message.optimisticId) {
-            //   setMessages((prevMessages) =>
-            //     prevMessages.map((m) =>
-            //       m.id === message.optimisticId
-            //         ? {
-            //             ...m,
-            //             ...message, // Replace with the full message from the server
-            //             id: message.id || message._id, // Use real DB ID
-            //             file: message.files || message.file, // Use real file object
-            //             status: "sent",
-            //           }
-            //         : m
-            //     )
-            //   );
-            //   pendingMessageRef.current = null; // Clear ref used for text messages
-            //   return; // IMPORTANT: Stop further processing to prevent duplicates
-            // }
+            // Handle optimistic message replacement
+            if (message.type === "message" && message.optimisticId) {
+              setMessages((prevMessages) =>
+                prevMessages.map((m) =>
+                  m.id === message.optimisticId
+                    ? {
+                        ...message, // Start with server message
+                        threadId: m.threadId || message.threadId, // Preserve threadId from optimistic message
+                        replyTo: m.replyTo || message.replyTo, // Preserve replyTo from optimistic message
+                        id: message.id || message._id, // Use real DB ID
+                        file: message.files || message.file, // Use real file object
+                        status: "sent",
+                      }
+                    : m
+                )
+              );
+              pendingMessageRef.current = null; // Clear ref used for text messages
+              return; // IMPORTANT: Stop further processing to prevent duplicates
+            }
 
             // Handle other incoming websocket events
             if (message.type === "typing") {

@@ -19417,12 +19417,12 @@ var require_browser_umd = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-LfyFbj/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-F7l9Pg/middleware-loader.entry.ts
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-LfyFbj/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-F7l9Pg/middleware-insertion-facade.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
@@ -20769,6 +20769,14 @@ var worker_default = {
         return new Response("Internal Server Error", { status: 500 });
       }
     }
+    if (url.pathname.startsWith("/ws/call-")) {
+      const room2 = url.pathname.replace("/ws/", "");
+      const id = env2.CHAT_ROOM.idFromName(room2);
+      const stub = env2.CHAT_ROOM.get(id);
+      const newRequest = new Request(request.url, request);
+      newRequest.headers.set("X-Env", JSON.stringify(env2));
+      return stub.fetch(newRequest);
+    }
     const room = url.searchParams.get("room");
     if (room) {
       const id = env2.CHAT_ROOM.idFromName(room);
@@ -20847,7 +20855,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-LfyFbj/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-F7l9Pg/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -20882,7 +20890,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-LfyFbj/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-F7l9Pg/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

@@ -50,17 +50,26 @@ export default function CallPage() {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         setLocalStream(stream);
 
-        // Extract roomId from callId: call-general-abc123 → "general"
-        const roomMatch = callId.match(/^call-([^-]+)-/);
-        if (!roomMatch) throw new Error("Invalid call ID format");
-        const roomId = roomMatch[1];
+        // Extract roomId from callId.
+        // Support canonical: call-{room}-{suffix} and legacy: call-{room}
+        let roomId: string | null = null;
+        const strictMatch = callId.match(/^call-(.+)-[^-]+$/);
+        if (strictMatch) {
+          roomId = strictMatch[1];
+        } else if (callId.startsWith('call-')) {
+          const parts = callId.split('-');
+          // call-room or call-room-with-hyphens
+          roomId = parts.slice(1).join('-');
+        }
+
+        if (!roomId) throw new Error('Invalid call ID format');
 
         let call;
 
-        // IF this is the original creator (URL has no random suffix OR we're testing)
-        // → Use startMeshCall to generate proper callId and update URL
-        if (!callId.includes('-', 5)) {
-          // Old format: call-general → treat as creator
+        // If the callId is the shorter/legacy form (no suffix), treat this client as the creator
+        const hasSuffix = /^call-.+-[^-]+$/.test(callId);
+        if (!hasSuffix) {
+          // Creator: start the call and let startMeshCall provide the canonical ID
           call = await startMeshCall({
             callId,
             roomId,

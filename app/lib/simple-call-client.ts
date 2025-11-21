@@ -177,12 +177,29 @@ export async function joinMeshCall({
   onParticipantLeft,
 }: JoinMeshCallParams) {
   // Extract the actual channel/room name from callId
-  // Format: call-{channelName}-{randomId}
-  const match = callId.match(/^call-([^-]+)-/);
-  if (!match) {
+  // Expected canonical format: call-{channelName}-{randomSuffix}
+  // But allow legacy or simplified formats such as "call-general".
+  let roomId: string | null = null;
+
+  // Prefer a strict match that allows hyphens in the channel name
+  const strictMatch = callId.match(/^call-(.+)-[^-]+$/);
+  if (strictMatch) {
+    roomId = strictMatch[1];
+  } else if (callId.startsWith("call-")) {
+    // Fallback: split and take everything after the first segment
+    const parts = callId.split("-");
+    if (parts.length >= 3) {
+      // e.g. call-my-channel-abc123 -> join parts [1..-2]
+      roomId = parts.slice(1, -1).join("-");
+    } else {
+      // e.g. call-general -> room is everything after 'call-'
+      roomId = parts.slice(1).join("-");
+    }
+  }
+
+  if (!roomId) {
     throw new Error("Invalid callId format");
   }
-  const roomId = match[1]; // e.g. "general"
 
   const ws = new WebSocket(
     `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`

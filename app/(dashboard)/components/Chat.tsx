@@ -996,14 +996,30 @@ export default function Chat() {
   };
 
   const handleReplyInThread = (threadId: string, content: string) => {
-    sendCombinedMessage(
-      content,
-      undefined,
-      false,
-      undefined,
-      undefined,
-      threadId
-    );
+    if (session?.user) {
+      // Add optimistic message for immediate UI feedback
+      const tempId = `temp-thread-${Date.now()}`;
+      const optimisticMessage: Message = {
+        id: tempId,
+        text: content,
+        userId: session.user._id || '',
+        fullName: session.user.name || 'You',
+        userImage: session.user.image,
+        threadId: threadId,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, optimisticMessage]);
+
+      sendCombinedMessage(
+        content,
+        undefined,
+        false,
+        undefined,
+        tempId, // optimisticId
+        threadId
+      );
+    }
   };
 
   const [stagedFilePreviews, setStagedFilePreviews] = useState<string[]>([]);
