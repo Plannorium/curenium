@@ -41,7 +41,7 @@ export default function CallPage() {
 
     let stream: MediaStream | null = null;
 
-    const join = async () => {
+    const initCall = async () => {
       setIsConnecting(true);
       setError(null);
       playSoundWithInit("callStart");
@@ -50,34 +50,70 @@ export default function CallPage() {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         setLocalStream(stream);
 
-        const call = await joinMeshCall({
-          callId,
-          localStream: stream,
-          token: session.user.token,
-          userName: session.user.name || "Anonymous",
-          onRemoteStream: (remoteStream, peerId, peerName) => {
-            setRemoteStreams(prev => ({ ...prev, [peerId]: { stream: remoteStream, name: peerName } }));
-            playSoundWithInit('userJoined');
-          },
-          onParticipantLeft: (peerId) => {
-            setRemoteStreams(prev => {
-              const { [peerId]: _, ...rest } = prev;
-              return rest;
-            });
-            playSoundWithInit('userLeft');
-          },
-        });
+        // Extract roomId from callId: call-general-abc123 → "general"
+        const roomMatch = callId.match(/^call-([^-]+)-/);
+        if (!roomMatch) throw new Error("Invalid call ID format");
+        const roomId = roomMatch[1];
+
+        let call;
+
+        // IF this is the original creator (URL has no random suffix OR we're testing)
+        // → Use startMeshCall to generate proper callId and update URL
+        if (!callId.includes('-', 5)) {
+          // Old format: call-general → treat as creator
+          call = await startMeshCall({
+            callId,
+            roomId,
+            localStream: stream,
+            token: session.user.token!,
+            userName: session.user.name || "Anonymous",
+            onRemoteStream: (remoteStream, peerId, peerName) => {
+              setRemoteStreams(prev => ({ ...prev, [peerId]: { stream: remoteStream, name: peerName } }));
+              playSoundWithInit('userJoined');
+            },
+            onParticipantLeft: (peerId) => {
+              setRemoteStreams(prev => {
+                const { [peerId]: _, ...rest } = prev;
+                return rest;
+              });
+              playSoundWithInit('userLeft');
+            },
+            onCallStarted: (newCallId: string) => {
+              // This updates the URL to the proper format
+              window.history.replaceState(null, "", `/call/${newCallId}`);
+            },
+          });
+        } else {
+          // Normal joiner → use joinMeshCall
+          call = await joinMeshCall({
+            callId,
+            localStream: stream,
+            token: session.user.token!,
+            userName: session.user.name || "Anonymous",
+            onRemoteStream: (remoteStream, peerId, peerName) => {
+              setRemoteStreams(prev => ({ ...prev, [peerId]: { stream: remoteStream, name: peerName } }));
+              playSoundWithInit('userJoined');
+            },
+            onParticipantLeft: (peerId) => {
+              setRemoteStreams(prev => {
+                const { [peerId]: _, ...rest } = prev;
+                return rest;
+              });
+              playSoundWithInit('userLeft');
+            },
+          });
+        }
+
         callRef.current = call;
         setIsConnecting(false);
-      } catch (err) {
-        console.error("Error joining call:", err);
-        setError("Failed to join the call. Please check your camera and microphone permissions.");
+      } catch (err: any) {
+        console.error("Call init failed:", err);
+        setError(err.message || "Failed to join call. Check permissions and try again.");
         setIsConnecting(false);
-        playSoundWithInit('error');
       }
     };
 
-    join();
+    initCall();
 
     return () => {
       callRef.current?.endCall();

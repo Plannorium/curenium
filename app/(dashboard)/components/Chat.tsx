@@ -2093,11 +2093,11 @@ export default function Chat() {
 
       if (session?.user?.token) {
         const call = await startMeshCall({
-          callId: `call-${activeRoom}-${crypto.randomUUID().slice(0, 8)}`,
+          callId: `call-${activeRoom}`, // dummy, will be replaced
           roomId: activeRoom,
           localStream: stream,
-          token: session.user.token,
-          userName: session?.user?.fullName || "Anonymous",
+          token: session.user.token!,
+          userName: session.user.name || "You",
           onRemoteStream: (remoteStream, peerId, userName) => {
             setRemoteStreams((prev) => ({
               ...prev,
@@ -2111,13 +2111,27 @@ export default function Chat() {
               return newStreams;
             });
           },
-          onCallStarted: (callId) => {
+          onCallStarted: (realCallId) => {
             // This runs when WS connects
-            sendCallInvitation(activeRoom, callId); // ← THIS IS KEY
-            if (typeof window !== "undefined") {
-              window.history.replaceState(null, "", `/call/${callId}`);
-            }
-            callRef.current = { ...call, id: callId };
+            // Add call invitation message optimistically
+            const callMessage: Message = {
+              id: realCallId,
+              type: 'call_invitation',
+              text: `${session?.user?.fullName || "Someone"} started a call.`,
+              userId: session?.user?._id || 'system',
+              fullName: session?.user?.fullName || "Someone",
+              createdAt: new Date().toISOString(),
+              callId: realCallId,
+            } as any;
+
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === callMessage.id)) return prev;
+              return [...prev, callMessage];
+            });
+
+            sendCallInvitation(activeRoom, realCallId); // Also send via WS for others
+            router.push(`/call/${realCallId}`);
+            callRef.current = { ...call, id: realCallId };
           },
         });
         if (call) {
@@ -2321,9 +2335,8 @@ export default function Chat() {
                       const room = [session?.user?._id, user._id]
                         .sort()
                         .join("--");
-                      //handleRoomChange(room);
-                      //setIsNewChatDialogOpen(false);
-                      setUsersToInvite((prev) => [...prev, user]);
+                      handleRoomChange(room);
+                      setIsNewChatDialogOpen(false);
                     }}
                     className="w-full flex items-center p-2.5 rounded-xl hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-all duration-200 text-left cursor-pointer"
                   >
@@ -2374,7 +2387,7 @@ export default function Chat() {
               )}
             </div>
           </div>
-          <DialogFooter>
+          {/* <DialogFooter>
             <Button
               type="submit"
               onClick={handleSendCallInvitations}
@@ -2382,7 +2395,7 @@ export default function Chat() {
             >
               Invite
             </Button>
-          </DialogFooter>
+          </DialogFooter> */}
         </DialogContent>
       </Dialog>
       <div className="h-[calc(100vh-11rem)] lg:h-[calc(100vh-6rem)] flex flex-col backdrop-blur-xl bg-background/95 rounded-2xl border border-border/50 overflow-hidden shadow-2xl relative">
@@ -2399,6 +2412,16 @@ export default function Chat() {
           sendReadReceipt={sendReadReceipt}
           onJoinCall={handleJoinCall}
           allUsers={users}
+          openDocPreview={openDocPreview}
+          openLightbox={openLightbox}
+          handleReaction={handleReaction}
+          onAlertClick={handleAlertClick}
+          onReactionClick={handleReactionClick}
+          onStartThread={handleStartThread}
+          onScrollToMessage={handleScrollToMessage}
+          voiceUploadProgress={voiceUploadProgress}
+          isCallActive={isCallActive}
+          onMentionClick={setSelectedUser}
         />
 
         <div className="relative flex-1 flex min-h-0">

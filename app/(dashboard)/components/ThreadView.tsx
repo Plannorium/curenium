@@ -29,6 +29,16 @@ interface ThreadViewProps {
   onJoinCall: (callId: string) => void;
   allUsers: User[];
   className?: string;
+  openDocPreview?: (file: any) => void;
+  openLightbox?: (images: Array<{ url: string; name: string }>, initialIndex: number) => void;
+  handleReaction?: (messageId: string, emoji: string) => void;
+  onAlertClick?: (alert: any) => void;
+  onReactionClick?: (messageId: string, emoji: string, users: any[]) => void;
+  onStartThread?: (message: any) => void;
+  onScrollToMessage?: (messageId: string) => void;
+  voiceUploadProgress?: Record<string, number>;
+  isCallActive?: boolean;
+  onMentionClick?: (user: User) => void;
 }
 
 export const ThreadView: React.FC<ThreadViewProps> = ({
@@ -42,6 +52,16 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   onJoinCall,
   allUsers,
   className,
+  openDocPreview,
+  openLightbox,
+  handleReaction,
+  onAlertClick,
+  onReactionClick,
+  onStartThread,
+  onScrollToMessage,
+  voiceUploadProgress,
+  isCallActive,
+  onMentionClick,
 }) => {
   const [replyContent, setReplyContent] = useState("");
   const parentMessage = messages.find((m) => m.id === threadId);
@@ -94,12 +114,26 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                 return (
                   <div className="border-b border-border/50 pb-4">
                     <MessageBubbleComponent
+                      id={`thread-parent-${parentMessage.id}`}
                       msg={parentMessage}
                       user={user}
                       isSender={false} // This is context-dependent, assuming parent is not the sender
                       showTime={true}
+                      openDocPreview={openDocPreview}
+                      openLightbox={openLightbox}
+                      handleReaction={handleReaction}
+                      onAlertClick={onAlertClick}
+                      onReactionClick={onReactionClick}
+                      onReply={() => {}} // Disable reply in thread view
+                      onDelete={() => {}} // Disable delete in thread view
+                      onStartThread={onStartThread}
+                      onScrollToMessage={onScrollToMessage}
                       sendReadReceipt={sendReadReceipt}
+                      voiceUploadProgress={voiceUploadProgress}
                       onJoinCall={onJoinCall}
+                      isCallActive={isCallActive}
+                      users={allUsers}
+                      onMentionClick={onMentionClick}
                     />
                   </div>
                 );
@@ -112,11 +146,25 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                 const user = allUsers.find(u => u._id === reply.userId);
                 return <MessageBubbleComponent
                   key={reply.id}
+                  id={`thread-reply-${reply.id}`}
                   msg={reply}
                   isSender={false}
                   showTime={true}
+                  openDocPreview={openDocPreview}
+                  openLightbox={openLightbox}
+                  handleReaction={handleReaction}
+                  onAlertClick={onAlertClick}
+                  onReactionClick={onReactionClick}
+                  onReply={() => {}} // Disable reply in thread view
+                  onDelete={() => {}} // Disable delete in thread view
+                  onStartThread={onStartThread}
+                  onScrollToMessage={onScrollToMessage}
                   sendReadReceipt={sendReadReceipt}
+                  voiceUploadProgress={voiceUploadProgress}
                   onJoinCall={onJoinCall}
+                  isCallActive={isCallActive}
+                  users={allUsers}
+                  onMentionClick={onMentionClick}
                   user={user}
                 />;
               })}

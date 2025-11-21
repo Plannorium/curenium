@@ -561,6 +561,16 @@ export default <ExportedHandler<Env>>{
             }
         }
 
+        // Handle call WebSocket connections
+        if (url.pathname.startsWith('/ws/call-')) {
+            const room = url.pathname.replace('/ws/', '');
+            const id = env.CHAT_ROOM.idFromName(room);
+            const stub = env.CHAT_ROOM.get(id);
+            const newRequest = new Request(request.url, request);
+            newRequest.headers.set('X-Env', JSON.stringify(env));
+            return stub.fetch(newRequest);
+        }
+
         // Default route for WebSocket connections and HTTP messages
         const room = url.searchParams.get('room');
         if (room) {

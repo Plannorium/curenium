@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                   src={userData?.image ?? session?.user?.image ?? ''} 
                   alt={userData?.fullName ?? session?.user?.name ?? session?.user?.email ?? ''} 
                 />
-                <AvatarFallback className="bg-primary text-white">
+                <AvatarFallback className="bg-primary text-white dark:text-black">
                   {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
                 </AvatarFallback>
               </Avatar>
