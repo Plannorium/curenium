@@ -17,11 +17,11 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["ChatRoom"]
+new_sqlite_classes = ["ChatRoom"]
 
 [[migrations]]
 tag = "v2"
-new_classes = ["NotificationRoom"]
+new_sqlite_classes = ["NotificationRoom"]
 
 [vars]
 MONGODB_URI="mongodb+srv://almussanplanner12_db_user:Mplannorium%40020525@cluster0.laurh2a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"

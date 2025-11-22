@@ -573,9 +573,20 @@ export class NotificationRoom {
 
     async fetch(request: Request): Promise<Response> {
         const url = new URL(request.url);
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        };
+
         const envHeader = request.headers.get('X-Env');
         if (envHeader) {
             this.env = JSON.parse(envHeader);
+        }
+
+        // Preflight support for browser probes
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { status: 204, headers: corsHeaders });
         }
 
         if (url.pathname === '/api/broadcast-notification') {
@@ -591,7 +602,7 @@ export class NotificationRoom {
                     }
                 }
             });
-            return new Response('Notification broadcasted', { status: 200 });
+            return new Response('Notification broadcasted', { status: 200, headers: corsHeaders });
         }
 
         const isWebSocketUpgrade = request.headers.get("Upgrade") === "websocket";
@@ -602,7 +613,8 @@ export class NotificationRoom {
             await this.handleSession(server, userId);
             return new Response(null, { status: 101, webSocket: client });
         } else {
-            return new Response("Expected websocket", { status: 400 });
+            // For non-websocket requests, return a helpful response with CORS headers so browser probes don't fail.
+            return new Response("Expected websocket", { status: 400, headers: corsHeaders });
         }
     }
 }
