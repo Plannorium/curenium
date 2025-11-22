@@ -213,19 +213,63 @@ export class ChatRoom {
         if (isWebSocketUpgrade) {
             const pair = new WebSocketPair();
             const [client, server] = Object.values(pair);
-            await this.handleSession(server);
+            // Pass token (if provided) from the URL as an optional auth shortcut
+            const token = url.searchParams.get('token') || null;
+            await this.handleSession(server, token);
             return new Response(null, { status: 101, webSocket: client });
         } else {
             return new Response("Expected websocket", { status: 400 });
         }
     }
 
-    async handleSession(webSocket: WebSocket) {
+    async handleSession(webSocket: WebSocket, token: string | null = null) {
         webSocket.accept();
         const session: { socket: WebSocket; user: UserSession | null } = { socket: webSocket, user: null };
         this.sessions.push(session);
 
         console.log("New WebSocket session established");
+
+        // If a token was passed on the WebSocket URL (fallback), try to
+        // authenticate immediately so the client doesn't have to send an
+        // auth message and we avoid auth races.
+        if (token) {
+            try {
+                const tryVerify = async (secretLiteral: string) => {
+                    try {
+                        const secret = new TextEncoder().encode(secretLiteral);
+                        const { payload } = await jose.jwtVerify(token, secret, {});
+                        return payload as unknown as UserSession;
+                    } catch (err) {
+                        return null;
+                    }
+                };
+
+                let userPayload: UserSession | null = null;
+                if (this.env.NEXTAUTH_SECRET) {
+                    userPayload = await tryVerify(this.env.NEXTAUTH_SECRET);
+                }
+                if (!userPayload) {
+                    try {
+                        const maybe = atob(this.env.NEXTAUTH_SECRET || '');
+                        if (maybe) userPayload = await tryVerify(maybe);
+                    } catch (e) {}
+                }
+                if (!userPayload) {
+                    try {
+                        const decoded = typeof Buffer !== 'undefined' ? Buffer.from(this.env.NEXTAUTH_SECRET || '', 'base64').toString('utf-8') : null;
+                        if (decoded) userPayload = await tryVerify(decoded as string);
+                    } catch (e) {}
+                }
+                if (userPayload) {
+                    session.user = userPayload;
+                    this.users.set(userPayload.id as string, { id: userPayload.id as string, name: userPayload.name as string, image: userPayload.image as string });
+                    this.broadcastPresence();
+                    console.log('Authenticated (via token param) user:', userPayload.name, userPayload.id);
+                }
+            } catch (err) {
+                console.warn('Token param auth attempt failed', err);
+            }
+        }
 
         webSocket.send(JSON.stringify({ type: "messages", messages: this.messages }));
         this.broadcastPresence();
@@ -235,22 +279,80 @@ export class ChatRoom {
             console.log("Received message:", data);
 
             if (data.type === 'auth') {
-                try {
-                    const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
-                    const { payload } = await jose.jwtVerify(data.token, secret, {
-                        // The issuer/audience are not set during signing, so we don't check them here.
-                        // The key is to verify the signature and extract the payload.
-                    });
+                // Robust JWT verification with a couple fallback attempts. In
+                // production we've seen tokens that fail verification due to
+                // secret encoding differences (raw vs base64). Try sensible
+                // alternatives before rejecting.
+                const attempts: string[] = [];
+                const tryVerify = async (secretLiteral: string) => {
+                    try {
+                        const secret = new TextEncoder().encode(secretLiteral);
+                        const { payload } = await jose.jwtVerify(data.token, secret, {});
+                        return payload as unknown as UserSession;
+                    } catch (err) {
+                        attempts.push(String(err?.message || err));
+                        return null;
+                    }
+                };
 
-                    const userPayload = payload as unknown as UserSession;
+                try {
+                    let userPayload: UserSession | null = null;
+
+                    // 1) Try the configured NEXTAUTH_SECRET as-is
+                    if (this.env.NEXTAUTH_SECRET) {
+                        userPayload = await tryVerify(this.env.NEXTAUTH_SECRET);
+                    }
+
+                    // 2) If that failed, and the secret looks base64-ish, try decoding it
+                    if (!userPayload) {
+                        try {
+                            const maybe = atob(this.env.NEXTAUTH_SECRET || '');
+                            if (maybe) {
+                                userPayload = await tryVerify(maybe);
+                            }
+                        } catch (e) {
+                            // ignore atob errors
+                        }
+                    }
+
+                    // 3) Try interpreting the secret as pure base64 bytes
+                    if (!userPayload) {
+                        try {
+                            const decoded = typeof Buffer !== 'undefined' ? Buffer.from(this.env.NEXTAUTH_SECRET || '', 'base64').toString('utf-8') : null;
+                            if (decoded) {
+                                userPayload = await tryVerify(decoded);
+                            }
+                        } catch (e) {
+                            // ignore
+                        }
+                    }
+
+                    // 4) As a last resort, attempt to decode without verification to at
+                    // least extract the payload for debugging (do NOT treat this as auth success)
+                    if (!userPayload) {
+                        try {
+                            const decoded = jose.decodeJwt(data.token);
+                            console.warn('Auth failed - token payload (unverified):', decoded);
+                        } catch (e) {
+                            console.warn('Auth failed and unable to decode token payload');
+                        }
+                    }
+
+                    if (!userPayload) {
+                        console.error('Authentication failed. Attempts:', attempts);
+                        webSocket.send(JSON.stringify({ error: 'Authentication failed' }));
+                        webSocket.close(1008, 'Authentication failed');
+                        return;
+                    }
+
                     session.user = userPayload;
                     this.users.set(userPayload.id as string, { id: userPayload.id as string, name: userPayload.name as string, image: userPayload.image as string });
                     this.broadcastPresence();
-                    console.log("Authenticated user:", userPayload.name, userPayload.id);
+                    console.log('Authenticated user:', userPayload.name, userPayload.id);
                 } catch (error) {
-                    console.error("Authentication failed:", error);
+                    console.error('Authentication unexpected error:', error);
                     webSocket.send(JSON.stringify({ error: 'Authentication failed' }));
-                    webSocket.close(1008, "Authentication failed");
+                    webSocket.close(1008, 'Authentication failed');
                 }
                 return;
             }
@@ -515,7 +617,7 @@ export class NotificationRoom {
         this.env = env;
     }
 
-    async handleSession(socket: WebSocket, userId: string) {
+    async handleSession(socket: WebSocket, userId: string, token: string | null = null) {
         socket.accept();
         const session = { socket, userId: null as string | null };
         this.sessions.push(session);
@@ -528,32 +630,98 @@ export class NotificationRoom {
             }
         }, 10000);
 
+        // If a token param was provided on the upgrade URL, try to verify it
+        // immediately and set session.userId to avoid auth races.
+        if (token) {
+            try {
+                const tryVerify = async (secretLiteral: string) => {
+                    try {
+                        const secret = new TextEncoder().encode(secretLiteral);
+                        const { payload } = await jose.jwtVerify(token, secret);
+                        return payload as any;
+                    } catch (err) {
+                        return null;
+                    }
+                };
+
+                let payload: any = null;
+                if (this.env.NEXTAUTH_SECRET) payload = await tryVerify(this.env.NEXTAUTH_SECRET);
+                if (!payload) {
+                    try {
+                        const maybe = atob(this.env.NEXTAUTH_SECRET || '');
+                        if (maybe) payload = await tryVerify(maybe);
+                    } catch (e) {}
+                }
+                if (!payload) {
+                    try {
+                        const decoded = typeof Buffer !== 'undefined' ? Buffer.from(this.env.NEXTAUTH_SECRET || '', 'base64').toString('utf-8') : null;
+                        if (decoded) payload = await tryVerify(decoded as string);
+                    } catch (e) {}
+                }
+
+                if (payload && payload.id === userId) {
+                    session.userId = userId;
+                    console.log('Notification WebSocket pre-authenticated for user:', userId);
+                    socket.send(JSON.stringify({ type: 'authenticated', message: 'WebSocket authenticated successfully' }));
+                }
+            } catch (err) {
+                console.warn('NotificationRoom token param auth failed', err);
+            }
+        }
+
         socket.addEventListener("message", async (event) => {
             try {
                 const data = JSON.parse(event.data as string);
                 console.log("NotificationRoom received message:", data);
 
                 if (data.type === 'auth') {
-                    try {
-                        const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
-                        const { payload } = await jose.jwtVerify(data.token, secret);
+                    // Try a few variants of the secret to be resilient to
+                    // encoding differences (raw vs base64). Must match the
+                    // requested userId.
+                    const attempts: string[] = [];
+                    const tryVerify = async (secretLiteral: string) => {
+                        try {
+                            const secret = new TextEncoder().encode(secretLiteral);
+                            const { payload } = await jose.jwtVerify(data.token, secret);
+                            return payload as any;
+                        } catch (err) {
+                            attempts.push(String(err?.message || err));
+                            return null;
+                        }
+                    };
 
-                        if (payload.id === userId) {
+                    try {
+                        let payload: any = null;
+                        if (this.env.NEXTAUTH_SECRET) payload = await tryVerify(this.env.NEXTAUTH_SECRET);
+                        if (!payload) {
+                            try {
+                                const maybe = atob(this.env.NEXTAUTH_SECRET || '');
+                                if (maybe) payload = await tryVerify(maybe);
+                            } catch (e) {}
+                        }
+                        if (!payload) {
+                            try {
+                                const decoded = typeof Buffer !== 'undefined' ? Buffer.from(this.env.NEXTAUTH_SECRET || '', 'base64').toString('utf-8') : null;
+                                if (decoded) payload = await tryVerify(decoded as string);
+                            } catch (e) {}
+                        }
+
+                        if (payload && payload.id === userId) {
                             session.userId = userId;
                             clearTimeout(authTimeout);
-                            console.log("Notification WebSocket authenticated for user:", userId);
+                            console.log('Notification WebSocket authenticated for user:', userId);
                             socket.send(JSON.stringify({ type: 'authenticated', message: 'WebSocket authenticated successfully' }));
                         } else {
-                            console.error("Authentication failed: user ID mismatch");
+                            console.error('Authentication failed: user ID mismatch or no payload. Attempts:', attempts);
                             clearTimeout(authTimeout);
                             socket.send(JSON.stringify({ error: 'Authentication failed' }));
-                            socket.close(1008, "Authentication failed");
+                            socket.close(1008, 'Authentication failed');
                         }
                     } catch (error) {
-                        console.error("Authentication failed:", error);
+                        console.error('Authentication failed:', error);
                         clearTimeout(authTimeout);
                         socket.send(JSON.stringify({ error: 'Authentication failed' }));
-                        socket.close(1008, "Authentication failed");
+                        socket.close(1008, 'Authentication failed');
                     }
                 } else if (!session.userId) {
                     // Reject any messages before authentication
@@ -615,7 +783,8 @@ export class NotificationRoom {
             const pair = new WebSocketPair();
             const [client, server] = Object.values(pair);
             const userId = url.searchParams.get('user') || '';
-            await this.handleSession(server, userId);
+            const token = url.searchParams.get('token') || null;
+            await this.handleSession(server, userId, token);
             return new Response(null, { status: 101, webSocket: client });
         } else {
             // For non-websocket requests, return a helpful response with CORS headers so browser probes don't fail.

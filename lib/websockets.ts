@@ -23,8 +23,9 @@ const connect = (room: string, token: string) => {
     // Normalize workerUrl: allow entries like "curenium.chat...workers.dev" without protocol
     const normalized = /^https?:\/\//i.test(workerUrl) ? workerUrl : `https://${workerUrl}`;
     const url = new URL(normalized);
-    const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
-    wsUrl = `${wsProtocol}://${url.host}/api/chat/socket?room=${room}`;
+  const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
+  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+  wsUrl = `${wsProtocol}://${url.host}/api/chat/socket?room=${room}${tokenParam}`;
   } catch (error) {
     console.error("Invalid worker URL:", workerUrl, error);
     return;

@@ -218,7 +218,9 @@ export const useChat = (room: string) => {
         const normalized = /^https?:\/\//i.test(workerUrl) ? workerUrl : `https://${workerUrl}`;
         const url = new URL(normalized);
         const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
-        wsUrl = `${wsProtocol}://${url.host}/api/chat/socket?room=${room}`;
+        // Append token as query param as a fallback so the worker can pre-authenticate
+        const tokenParam = session.user?.token ? `&token=${encodeURIComponent(session.user.token)}` : '';
+        wsUrl = `${wsProtocol}://${url.host}/api/chat/socket?room=${room}${tokenParam}`;
       } catch (error) {
         console.error("Invalid worker URL:", workerUrl, error);
         return;

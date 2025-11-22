@@ -107,7 +107,8 @@ export const useNotifications = () => {
         const normalized = /^https?:\/\//i.test(workerUrl) ? workerUrl : `https://${workerUrl}`;
         const url = new URL(normalized);
         const wsProtocol = url.protocol === "https:" ? "wss" : "ws";
-        wsUrl = `${wsProtocol}://${url.host}/api/notifications/socket?user=${session.user.id}`;
+        const tokenParam = session.user?.token ? `&token=${encodeURIComponent(session.user.token)}` : '';
+        wsUrl = `${wsProtocol}://${url.host}/api/notifications/socket?user=${session.user.id}${tokenParam}`;
       } catch (error) {
         console.error("Invalid worker URL:", workerUrl, error);
         return;
