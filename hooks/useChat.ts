@@ -90,6 +90,9 @@ export const useChat = (room: string) => {
   const retryCount = useRef(0);
   const retryTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingMessageRef = useRef<Message | null>(null);
+  // Track the last room name so we only clear messages when the room truly
+  // changes (not on transient reconnects).
+  const prevRoomRef = useRef<string | null>(null);
 
   // Initialize Pusher fallback (receive-only). We keep this minimal: subscribe to a private room channel
   // and append incoming messages to the UI. Sending is unchanged and will continue to use the WS when available.
@@ -163,7 +166,7 @@ export const useChat = (room: string) => {
   const connect = useCallback(() => {
     const maxRetries = 3;
     let currentWs: WebSocket | null = null;
-    
+    let tokenRetryCount = 0;
     const doConnect = () => {
       if (retryCount.current >= maxRetries) {
         console.error("Max retry attempts reached");
@@ -178,8 +181,26 @@ export const useChat = (room: string) => {
 
       if (!session || !room) return;
 
-      setMessages([]); // Clear messages when room changes
-      setTypingUsers([]); // Clear typing users when room changes
+      // Wait for the session token to be available. Sometimes the session
+      // object is present but the custom signed token is not yet attached
+      // (race during sign-in). Retry briefly instead of failing auth.
+      if (!session.user?.token) {
+        tokenRetryCount++;
+        if (tokenRetryCount > 10) {
+          console.error('No session token available after retries; aborting WS connect');
+          return;
+        }
+        setTimeout(doConnect, 500);
+        return;
+      }
+
+      // Only clear messages/typing when the logical room actually changed.
+      // Avoid clearing on transient reconnects which causes UI flashing.
+      if (prevRoomRef.current !== room) {
+        setMessages([]); // Clear messages when room truly changes
+        setTypingUsers([]); // Clear typing users when room changes
+        prevRoomRef.current = room;
+      }
 
       const workerUrl =
         process.env.NODE_ENV === "development"

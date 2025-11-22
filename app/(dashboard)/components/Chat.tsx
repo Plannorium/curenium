@@ -1105,6 +1105,7 @@ export default function Chat() {
   };
 
   const prevMessagesLengthRef = useRef(messages.length);
+  const initialMessagesLoadRef = useRef(true);
 
   useEffect(() => {
     const ws = getWs();
@@ -1139,6 +1140,15 @@ export default function Chat() {
 
   // Play sound on new message received
   useEffect(() => {
+    // Suppress playing sounds during the initial historical messages load
+    if (initialMessagesLoadRef.current && messages.length > 0) {
+      // initialize the previous length to the current length and skip the first
+      // sound pass to avoid playing notification sounds for historical messages
+      initialMessagesLoadRef.current = false;
+      prevMessagesLengthRef.current = messages.length;
+      return;
+    }
+
     const wasMessageAdded = messages.length > prevMessagesLengthRef.current;
     if (wasMessageAdded) {
       const newMessage = messages[messages.length - 1];
