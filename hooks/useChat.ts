@@ -305,9 +305,10 @@ export const useChat = (room: string) => {
                   // Check if there's an optimistic message to replace
                   const optimisticIndex = prevMessages.findIndex((m) =>
                     m.id.startsWith('temp-') && // optimistic messages have temp IDs
-                    m.userId === newMessage.userId &&
-                    m.text === newMessage.text &&
-                    m.threadId === (message.threadId || null) // match threadId
+                    (m.id === message.optimisticId ||
+                      (m.userId === newMessage.userId &&
+                        m.text === newMessage.text &&
+                        m.threadId === (message.threadId || null)))
                   );
 
                   if (optimisticIndex !== -1) {

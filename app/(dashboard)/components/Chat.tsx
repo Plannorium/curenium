@@ -3029,6 +3029,7 @@ export default function Chat() {
                         isCallActive={isCallActive}
                         users={users}
                         onMentionClick={setSelectedUser}
+                        
                       />
                     </div>
                   );

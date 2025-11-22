@@ -19417,12 +19417,12 @@ var require_browser_umd = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-XBKn1G/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-ofwziB/middleware-loader.entry.ts
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-XBKn1G/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-ofwziB/middleware-insertion-facade.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
@@ -20547,6 +20547,7 @@ var ChatRoom = class {
           file: data.files,
           files: data.files,
           replyTo: data.replyTo,
+          // This was missing
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           sender: {
             _id: this.getUserFromSession(session).id,
@@ -20968,7 +20969,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-XBKn1G/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-ofwziB/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -21003,7 +21004,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-XBKn1G/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-ofwziB/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

@@ -295,7 +295,7 @@ export class ChatRoom {
                     content: data.content,
                     file: data.files,
                     files: data.files,
-                    replyTo: data.replyTo,
+                    replyTo: data.replyTo, // This was missing
                     createdAt: new Date().toISOString(),
                     sender: {
                         _id: this.getUserFromSession(session).id,
