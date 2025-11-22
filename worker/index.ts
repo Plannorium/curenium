@@ -278,6 +278,43 @@ export class ChatRoom {
             const data = JSON.parse(event.data as string);
             console.log("Received message:", data);
 
+            // Handle WebRTC signaling messages
+            if (!session.user) {
+                webSocket.send(JSON.stringify({ error: 'Not authenticated' }));
+                return;
+            }
+
+            if (data.type === 'join') {
+                // Send welcome with current users
+                const userList = Array.from(this.users.values()).map(u => ({ id: u.id, name: u.name }));
+                webSocket.send(JSON.stringify({ type: 'welcome', you: session.user.id, userList }));
+
+                // Broadcast to others that someone joined
+                this.broadcast(JSON.stringify({ type: 'joined', from: session.user.id, user: { name: session.user.name } }));
+                return;
+            } else if (data.type === 'offer' && data.to) {
+                // Send offer to specific user
+                const targetSession = this.sessions.find(s => s.user && s.user.id === data.to);
+                if (targetSession) {
+                    targetSession.socket.send(JSON.stringify({ type: 'offer', from: session.user.id, sdp: data.sdp, user: { name: session.user.name } }));
+                }
+                return;
+            } else if (data.type === 'answer' && data.to) {
+                // Send answer to specific user
+                const targetSession = this.sessions.find(s => s.user && s.user.id === data.to);
+                if (targetSession) {
+                    targetSession.socket.send(JSON.stringify({ type: 'answer', from: session.user.id, sdp: data.sdp }));
+                }
+                return;
+            } else if (data.type === 'candidate' && data.to) {
+                // Send ICE candidate to specific user
+                const targetSession = this.sessions.find(s => s.user && s.user.id === data.to);
+                if (targetSession) {
+                    targetSession.socket.send(JSON.stringify({ type: 'candidate', from: session.user.id, candidate: data.candidate }));
+                }
+                return;
+            }
+
             if (data.type === 'auth') {
                 // Robust JWT verification with a couple fallback attempts. In
                 // production we've seen tokens that fail verification due to
@@ -530,6 +567,8 @@ export class ChatRoom {
             const session = this.sessions.find(s => s.socket === webSocket);
             if (session && session.user && session.user.id) {
                 this.users.delete(session.user.id);
+                // Broadcast peer-left for WebRTC signaling
+                this.broadcast(JSON.stringify({ type: 'peer-left', from: session.user.id }));
             }
             this.sessions = this.sessions.filter((s) => s.socket !== webSocket);
             this.broadcastPresence();
