@@ -110,9 +110,10 @@ export const authOptions: NextAuthOptions = {
       // This is separate from NextAuth's own session token.
       const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
       const customToken = await new SignJWT({
-        id: token.id,
+        sub: token.id ?? undefined, // Add subject claim, which is required by jose for verification
+        id: token.id ?? undefined,
         name: token.name,
-        image: token.picture,
+        image: token.picture ?? undefined,
       }).setProtectedHeader({ alg: 'HS256' }).sign(secret);
 
       token.accessToken = customToken; // Attach our new signed token to the NextAuth token

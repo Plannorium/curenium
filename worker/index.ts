@@ -21,7 +21,7 @@ interface UserSession {
 
 export class ChatRoom {
     state: DurableObjectState;
-    sessions: { socket: WebSocket, user: UserSession | null }[] = [];
+    sessions: { socket: WebSocket; user: UserSession | null }[] = [];
     messages: any[] = [];
     users: Map<string, { id: string; name: string; image?: string }> = new Map();
     env: Env;
@@ -222,7 +222,7 @@ export class ChatRoom {
 
     async handleSession(webSocket: WebSocket) {
         webSocket.accept();
-        const session = { socket: webSocket, user: null };
+        const session: { socket: WebSocket; user: UserSession | null } = { socket: webSocket, user: null };
         this.sessions.push(session);
 
         console.log("New WebSocket session established");
@@ -237,11 +237,16 @@ export class ChatRoom {
             if (data.type === 'auth') {
                 try {
                     const secret = new TextEncoder().encode(this.env.NEXTAUTH_SECRET);
-                    const { payload } = await jose.jwtVerify(data.token, secret);
-                    (session as any).user = payload as unknown as UserSession;
-                    this.users.set(payload.id as string, { id: payload.id as string, name: payload.name as string, image: payload.image as string });
+                    const { payload } = await jose.jwtVerify(data.token, secret, {
+                        // The issuer/audience are not set during signing, so we don't check them here.
+                        // The key is to verify the signature and extract the payload.
+                    });
+
+                    const userPayload = payload as unknown as UserSession;
+                    session.user = userPayload;
+                    this.users.set(userPayload.id as string, { id: userPayload.id as string, name: userPayload.name as string, image: userPayload.image as string });
                     this.broadcastPresence();
-                    console.log("Authenticated user:", session.user);
+                    console.log("Authenticated user:", userPayload.name, userPayload.id);
                 } catch (error) {
                     console.error("Authentication failed:", error);
                     webSocket.send(JSON.stringify({ error: 'Authentication failed' }));
