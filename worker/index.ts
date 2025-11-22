@@ -229,13 +229,62 @@ export class ChatRoom {
 
         console.log("New WebSocket session established");
 
-        let authenticated = false;
-        let messageQueue: any[] = [];
+        // If a token was passed on the WebSocket URL (fallback), try to
+        // authenticate immediately so the client doesn't have to send an
+        // auth message and we avoid auth races.
+        if (token) {
+            try {
+                const tryVerify = async (secretLiteral: string) => {
+                    try {
+                        const secret = new TextEncoder().encode(secretLiteral);
+                        const { payload } = await jose.jwtVerify(token, secret, {});
+                        return payload as unknown as UserSession;
+                    } catch (err) {
+                        return null;
+                    }
+                };
 
-        const processMessage = async (data: any) => {
+                let userPayload: UserSession | null = null;
+                if (this.env.NEXTAUTH_SECRET) {
+                    userPayload = await tryVerify(this.env.NEXTAUTH_SECRET);
+                }
+                if (!userPayload) {
+                    try {
+                        const maybe = atob(this.env.NEXTAUTH_SECRET || '');
+                        if (maybe) userPayload = await tryVerify(maybe);
+                    } catch (e) {}
+                }
+                if (!userPayload) {
+                    try {
+                        const decoded = typeof Buffer !== 'undefined' ? Buffer.from(this.env.NEXTAUTH_SECRET || '', 'base64').toString('utf-8') : null;
+                        if (decoded) userPayload = await tryVerify(decoded as string);
+                    } catch (e) {}
+                }
+                if (userPayload) {
+                    session.user = userPayload;
+                    this.users.set(userPayload.id as string, { id: userPayload.id as string, name: userPayload.name as string, image: userPayload.image as string });
+                    this.broadcastPresence();
+                    console.log('Authenticated (via token param) user:', userPayload.name, userPayload.id);
+                }
+            } catch (err) {
+                console.warn('Token param auth attempt failed', err);
+            }
+        }
+
+        webSocket.send(JSON.stringify({ type: "messages", messages: this.messages }));
+        this.broadcastPresence();
+
+        webSocket.addEventListener("message", async (event) => {
+            const data = JSON.parse(event.data as string);
+            console.log("Received message:", data);
+
             // Handle WebRTC signaling messages
+            if (!session.user) {
+                webSocket.send(JSON.stringify({ error: 'Not authenticated' }));
+                return;
+            }
+
             if (data.type === 'join') {
-                if (!session.user) return; // Should not happen
                 // Send welcome with current users
                 const userList = Array.from(this.users.values()).map(u => ({ id: u.id, name: u.name }));
                 webSocket.send(JSON.stringify({ type: 'welcome', you: session.user.id, userList }));
@@ -244,7 +293,6 @@ export class ChatRoom {
                 this.broadcast(JSON.stringify({ type: 'joined', from: session.user.id, user: { name: session.user.name } }));
                 return;
             } else if (data.type === 'offer' && data.to) {
-                if (!session.user) return;
                 // Send offer to specific user
                 const targetSession = this.sessions.find(s => s.user && s.user.id === data.to);
                 if (targetSession) {
@@ -252,7 +300,6 @@ export class ChatRoom {
                 }
                 return;
             } else if (data.type === 'answer' && data.to) {
-                if (!session.user) return;
                 // Send answer to specific user
                 const targetSession = this.sessions.find(s => s.user && s.user.id === data.to);
                 if (targetSession) {
@@ -260,7 +307,6 @@ export class ChatRoom {
                 }
                 return;
             } else if (data.type === 'candidate' && data.to) {
-                if (!session.user) return;
                 // Send ICE candidate to specific user
                 const targetSession = this.sessions.find(s => s.user && s.user.id === data.to);
                 if (targetSession) {
@@ -269,7 +315,6 @@ export class ChatRoom {
                 return;
             }
 
-            // Handle other message types...
             if (data.type === 'auth') {
                 // Robust JWT verification with a couple fallback attempts. In
                 // production we've seen tokens that fail verification due to
@@ -341,13 +386,6 @@ export class ChatRoom {
                     this.users.set(userPayload.id as string, { id: userPayload.id as string, name: userPayload.name as string, image: userPayload.image as string });
                     this.broadcastPresence();
                     console.log('Authenticated user:', userPayload.name, userPayload.id);
-
-                    // Process queued messages
-                    authenticated = true;
-                    for (const queuedMsg of messageQueue) {
-                        await processMessage(queuedMsg);
-                    }
-                    messageQueue = [];
                 } catch (error) {
                     console.error('Authentication unexpected error:', error);
                     webSocket.send(JSON.stringify({ error: 'Authentication failed' }));
@@ -521,20 +559,7 @@ export class ChatRoom {
 
                 this.broadcast(JSON.stringify(finalMessage));
                 await this.state.storage.put("messages", this.messages);
-                return;
             }
-        };
-
-        webSocket.addEventListener("message", async (event) => {
-            const data = JSON.parse(event.data as string);
-            console.log("Received message:", data);
-
-            if (!authenticated && data.type !== 'auth') {
-                messageQueue.push(data);
-                return;
-            }
-
-            await processMessage(data);
         });
 
         webSocket.addEventListener("close", async () => {

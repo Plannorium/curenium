@@ -54,13 +54,17 @@ export async function startMeshCall({
       ? "http://127.0.0.1:8787"
       : (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL as string);
 
-  let wsUrl = `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`;
+  // Include token as an optional query param so the worker can pre-authenticate
+  // the WebSocket upgrade and avoid auth races. Don't change behavior if token
+  // is not provided.
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+  let wsUrl = `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}${tokenParam}`;
   try {
     if (defaultWorker) {
       const normalized = /^https?:\/\//i.test(defaultWorker) ? defaultWorker : `https://${defaultWorker}`;
       const u = new URL(normalized);
       const wsProtocol = u.protocol === "https:" ? "wss" : "ws";
-      wsUrl = `${wsProtocol}://${u.host}/ws/call-${encodeURIComponent(roomId)}`;
+      wsUrl = `${wsProtocol}://${u.host}/ws/call-${encodeURIComponent(roomId)}${tokenParam}`;
     }
   } catch (err) {
     console.warn('Failed to normalize worker URL for mesh call; falling back to location.origin', err);
@@ -225,13 +229,14 @@ export async function joinMeshCall({
       ? "http://127.0.0.1:8787"
       : (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL as string);
 
-  let joinWsUrl = `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`;
+  const joinTokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+  let joinWsUrl = `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}${joinTokenParam}`;
   try {
     if (joinDefaultWorker) {
       const normalized = /^https?:\/\//i.test(joinDefaultWorker) ? joinDefaultWorker : `https://${joinDefaultWorker}`;
       const u = new URL(normalized);
       const wsProtocol = u.protocol === "https:" ? "wss" : "ws";
-      joinWsUrl = `${wsProtocol}://${u.host}/ws/call-${encodeURIComponent(roomId)}`;
+      joinWsUrl = `${wsProtocol}://${u.host}/ws/call-${encodeURIComponent(roomId)}${joinTokenParam}`;
     }
   } catch (err) {
     console.warn('Failed to normalize worker URL for mesh join; falling back to location.origin', err);
