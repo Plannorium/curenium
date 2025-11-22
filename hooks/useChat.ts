@@ -403,7 +403,28 @@ export const useChat = (room: string) => {
                   return base;
                 });
 
-              setMessages(historicalMessages || []);
+              // Merge optimistic local messages (temp-*) into the historical
+              // snapshot so sending from a thread doesn't get lost if the
+              // server returns a messages array that doesn't yet include the
+              // newly-created thread reply (race in persistence).
+              setMessages((prevMessages) => {
+                try {
+                  const optimistic = (prevMessages || []).filter((m) => typeof m.id === 'string' && m.id.startsWith('temp-'));
+
+                  const merged = [...(historicalMessages || [])];
+
+                  for (const opt of optimistic) {
+                    // If the optimistic message has already been replaced by a persisted message, skip it
+                    const exists = merged.some((m) => m.id === opt.id || (m.userId === opt.userId && m.text === opt.text && (m.threadId || null) === (opt.threadId || null)));
+                    if (!exists) merged.push(opt);
+                  }
+
+                  return merged;
+                } catch (e) {
+                  console.error('Error merging optimistic messages into historical snapshot', e);
+                  return historicalMessages || [];
+                }
+              });
             } else if (message.type === "reaction") {
               if (message.payload) {
                 const { messageId, emoji, userId, fullName } = message.payload;

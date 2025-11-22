@@ -48,7 +48,7 @@ import LabOrdersDisplay from "./LabOrdersDisplay";
      <motion.div 
        initial={{ opacity: 0, y: 10  }} 
        animate={{ opacity: 1, y: 0  }} 
-       className="w-full backdrop-blur-xl bg-white/70 dark:bg-gray-950/60 shadow-2xl rounded-3xl border border-white/20 dark:border-gray-800 overflow-hidden transition-all" 
+       className="w-full backdrop-blur-xl bg-white/70 dark:bg-gray-950/60 shadow-2xl rounded-3xl border border-white/20 dark:border-gray-800 overflow-hidden transition-all lg:max-w-4xl xl:max-w-5xl" 
      > 
        {/* Header */} 
        <div className="relative bg-linear-to-tr from-primary/10 via-white/60 to-transparent dark:from-primary/20 dark:via-gray-900 p-4 sm:p-8 border-b border-white/20 dark:border-gray-800" > 
@@ -91,7 +91,7 @@ import LabOrdersDisplay from "./LabOrdersDisplay";
        {/* Tabs */} 
        <div className="p-0">
          <Tabs defaultValue="overview" className="w-full">
-         <TabsList className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:flex lg:flex-nowrap lg:justify-center lg:gap-x-2 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
+         <TabsList className="grid grid-cols-4 lg:gap-x-2 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
             <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
               <ClipboardCheck className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Overview</span>

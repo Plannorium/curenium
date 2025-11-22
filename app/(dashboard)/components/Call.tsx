@@ -220,6 +220,38 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
 const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStreams, onEndCall, userName, onToggleScreenShare, isScreenSharing, screenStream, isMuted, isVideoOff, onToggleMute, onToggleVideo }) => {
   const { width, height } = useWindowSize();
   const isMobile = width < 768;
+  // Ensure we have a canonical call id (so invite links and join actions point to the
+  // exact same call instance). If the incoming `callId` is missing an instance
+  // suffix, append a short uuid and rewrite the URL with history.replaceState.
+  const [normalizedCallId, setNormalizedCallId] = useState<string>(callId);
+
+  useEffect(() => {
+    if (!callId || typeof window === 'undefined') return;
+
+    // Heuristic: canonical instance id is `call-<room>-<instance>` (>= 3 parts)
+    const parts = callId.split('-');
+    let normalized = callId;
+
+    if (!(parts.length >= 3 && parts[0] === 'call')) {
+      // If it already starts with 'call-' but lacks suffix, append a short id
+      if (callId.startsWith('call-')) {
+        normalized = `${callId}-${crypto.randomUUID().slice(0, 8)}`;
+      } else {
+        // Otherwise, construct a call- prefixed id
+        normalized = `call-${callId || 'room'}-${crypto.randomUUID().slice(0, 8)}`;
+      }
+
+      // Replace URL so share & join actions use the canonical id
+      const newPath = `/call/${normalized}`;
+      try {
+        window.history.replaceState(null, '', newPath);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    setNormalizedCallId(normalized);
+  }, [callId]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -371,7 +403,8 @@ const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStream
   }, []);
 
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/call/${callId}`;
+    // Use normalizedCallId so invitations always point to the canonical call instance
+    const link = `${window.location.origin}/call/${normalizedCallId}`;
     navigator.clipboard.writeText(link);
     toast.success("Call link copied to clipboard!");
   };

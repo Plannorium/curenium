@@ -86,7 +86,7 @@ export default function PatientsPage() {
       )}
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="hidden md:block w-1/3 border-r border-gray-200 dark:border-gray-800 p-4 overflow-y-auto">
+        <aside className="hidden md:block w-1/4 border-r border-gray-200 dark:border-gray-800 p-4 overflow-y-auto">
           <div className="mb-4">
             {isClient && (
               <PatientSearch 
@@ -95,7 +95,7 @@ export default function PatientsPage() {
             )}
           </div>
         </aside>
-        <main className="flex-1 p-2 sm:p-6 overflow-y-auto">
+        <main className="flex-1 p-2 sm:p-6 overflow-y-auto lg:max-md">
           {selectedPatient ? (
             <PatientDetail patient={selectedPatient} />
           ) : (
