@@ -45,11 +45,28 @@ export async function startMeshCall({
   // Generate callId properly: call-{roomId}-{randomId}
   const properCallId = `call-${roomId}-${crypto.randomUUID().slice(0, 8)}`;
 
-  const ws = new WebSocket(
-    `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(
-      roomId
-    )}`
-  );
+  // Determine worker URL (same logic as useChat) so we connect directly to the
+  // Durable Object WebSocket endpoint instead of the frontend origin. This
+  // avoids routing issues in dev where the frontend does not proxy /ws paths
+  // to the worker.
+  const defaultWorker =
+    process.env.NODE_ENV === "development"
+      ? "http://127.0.0.1:8787"
+      : (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL as string);
+
+  let wsUrl = `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`;
+  try {
+    if (defaultWorker) {
+      const normalized = /^https?:\/\//i.test(defaultWorker) ? defaultWorker : `https://${defaultWorker}`;
+      const u = new URL(normalized);
+      const wsProtocol = u.protocol === "https:" ? "wss" : "ws";
+      wsUrl = `${wsProtocol}://${u.host}/ws/call-${encodeURIComponent(roomId)}`;
+    }
+  } catch (err) {
+    console.warn('Failed to normalize worker URL for mesh call; falling back to location.origin', err);
+  }
+
+  const ws = new WebSocket(wsUrl);
   const pcMap: Record<string, RTCPeerConnection> = {};
 
   ws.onopen = () => {
@@ -201,9 +218,26 @@ export async function joinMeshCall({
     throw new Error("Invalid callId format");
   }
 
-  const ws = new WebSocket(
-    `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`
-  );
+  // joinMeshCall should also connect to the worker host so it reaches the
+  // Durable Object that manages call signaling.
+  const joinDefaultWorker =
+    process.env.NODE_ENV === "development"
+      ? "http://127.0.0.1:8787"
+      : (process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL as string);
+
+  let joinWsUrl = `${location.origin.replace(/^http/, "ws")}/ws/call-${encodeURIComponent(roomId)}`;
+  try {
+    if (joinDefaultWorker) {
+      const normalized = /^https?:\/\//i.test(joinDefaultWorker) ? joinDefaultWorker : `https://${joinDefaultWorker}`;
+      const u = new URL(normalized);
+      const wsProtocol = u.protocol === "https:" ? "wss" : "ws";
+      joinWsUrl = `${wsProtocol}://${u.host}/ws/call-${encodeURIComponent(roomId)}`;
+    }
+  } catch (err) {
+    console.warn('Failed to normalize worker URL for mesh join; falling back to location.origin', err);
+  }
+
+  const ws = new WebSocket(joinWsUrl);
   const pcMap: Record<string, RTCPeerConnection> = {};
 
   ws.onopen = () => {

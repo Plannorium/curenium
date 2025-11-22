@@ -19417,12 +19417,12 @@ var require_browser_umd = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-F7l9Pg/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-zRhHWj/middleware-loader.entry.ts
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// .wrangler/tmp/bundle-F7l9Pg/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-zRhHWj/middleware-insertion-facade.js
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
@@ -20326,6 +20326,19 @@ var ChatRoom = class {
     }
     return session.user;
   }
+  // Prune stored messages to keep the durable object's storage bounded while
+  // preferentially preserving threaded replies and important notifications.
+  pruneMessages() {
+    const cap = 500;
+    while (this.messages.length > cap) {
+      const idx = this.messages.findIndex((m) => !m.threadId && m.type !== "alert_notification" && m.type !== "call_invitation" && m.type !== "call_join");
+      if (idx > -1) {
+        this.messages.splice(idx, 1);
+      } else {
+        this.messages.shift();
+      }
+    }
+  }
   broadcastPresence() {
     const online = Array.from(this.users.values());
     this.broadcast(JSON.stringify({ type: "presence", onlineUsers: online }));
@@ -20338,6 +20351,14 @@ var ChatRoom = class {
   }
   async fetch(request) {
     const url = new URL(request.url);
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    };
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
     const envHeader = request.headers.get("X-Env");
     if (envHeader) {
       this.env = JSON.parse(envHeader);
@@ -20360,9 +20381,37 @@ var ChatRoom = class {
           await this.state.storage.put("messages", this.messages);
           this.broadcast(JSON.stringify({ type: "message_updated", payload: this.messages[messageIndex] }));
         }
-        return new Response("Call ended", { status: 200 });
+        return new Response("Call ended", { status: 200, headers: corsHeaders });
       }
-      return new Response("Method not allowed", { status: 405 });
+      return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    }
+    if (url.pathname === "/api/call-invitation") {
+      if (request.method === "POST") {
+        try {
+          const { callId, callerName, timestamp } = await request.json();
+          const finalMessage = {
+            type: "call_invitation",
+            id: callId,
+            text: `${callerName || "Someone"} started a call.`,
+            userId: "system",
+            fullName: callerName || "Someone",
+            createdAt: timestamp || (/* @__PURE__ */ new Date()).toISOString(),
+            callId,
+            sender: null
+          };
+          if (!this.messages.some((m) => m.id === finalMessage.id)) {
+            this.messages.push(finalMessage);
+            this.pruneMessages();
+            await this.state.storage.put("messages", this.messages);
+            this.broadcast(JSON.stringify(finalMessage));
+          }
+          return new Response("Call invitation persisted", { status: 200, headers: corsHeaders });
+        } catch (err) {
+          console.error("Error persisting call_invitation via HTTP POST", err);
+          return new Response("Bad request", { status: 400, headers: corsHeaders });
+        }
+      }
+      return new Response("Method not allowed", { status: 405, headers: corsHeaders });
     }
     if (request.method === "POST") {
       try {
@@ -20376,7 +20425,47 @@ var ChatRoom = class {
             await this.state.storage.put("messages", this.messages);
             this.broadcast(JSON.stringify({ type: "message_updated", payload: this.messages[messageIndex] }));
           }
-          return new Response("Call ended", { status: 200 });
+          return new Response("Call ended", { status: 200, headers: corsHeaders });
+        }
+        if (data.type === "call_join") {
+          const finalMessage = {
+            type: "call_join",
+            id: `${data.callId}-join-${data.callerName || "unknown"}-${Date.now()}`,
+            text: `${data.callerName || "Someone"} joined the call.`,
+            userId: data.userId || "system",
+            fullName: data.callerName || "Someone",
+            createdAt: data.timestamp || (/* @__PURE__ */ new Date()).toISOString(),
+            callId: data.callId,
+            sender: null
+          };
+          this.messages.push(finalMessage);
+          if (this.messages.length > 50) this.messages.shift();
+          await this.state.storage.put("messages", this.messages);
+          this.broadcast(JSON.stringify(finalMessage));
+          return new Response("Call join persisted", { status: 200 });
+        }
+        if (data.type === "call_invitation") {
+          try {
+            const finalMessage = {
+              type: "call_invitation",
+              id: data.callId,
+              text: `${data.callerName || "Someone"} started a call.`,
+              userId: data.userId || "system",
+              fullName: data.callerName || "Someone",
+              createdAt: data.timestamp || (/* @__PURE__ */ new Date()).toISOString(),
+              callId: data.callId,
+              sender: null
+            };
+            if (!this.messages.some((m) => m.id === finalMessage.id)) {
+              this.messages.push(finalMessage);
+              this.pruneMessages();
+              await this.state.storage.put("messages", this.messages);
+              this.broadcast(JSON.stringify(finalMessage));
+            }
+            return new Response("Call invitation persisted", { status: 200 });
+          } catch (err) {
+            console.error("Failed to persist call_invitation in generic POST handler:", err);
+          }
         }
       } catch (error3) {
       }
@@ -20456,10 +20545,8 @@ var ChatRoom = class {
           threadId: data.threadId,
           content: data.content,
           file: data.files,
-          // Ensure single file is also handled
           files: data.files,
           replyTo: data.replyTo,
-          // This will now include the 'file' property
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           sender: {
             _id: this.getUserFromSession(session).id,
@@ -20469,11 +20556,32 @@ var ChatRoom = class {
           status: "sent"
         };
         this.messages.push(finalMessage);
-        if (this.messages.length > 50) {
-          this.messages.shift();
-        }
+        this.pruneMessages();
         this.broadcast(JSON.stringify(finalMessage));
         await this.state.storage.put("messages", this.messages);
+      } else if (data.type === "call_join") {
+        try {
+          const finalMessage = {
+            type: "call_join",
+            id: `${data.callId}-join-${session.user.id}-${Date.now()}`,
+            text: `${data.callerName} joined the call.`,
+            userId: session.user.id,
+            fullName: data.callerName,
+            createdAt: data.timestamp || (/* @__PURE__ */ new Date()).toISOString(),
+            callId: data.callId,
+            sender: {
+              _id: session.user.id,
+              fullName: session.user.name,
+              image: session.user.image || null
+            }
+          };
+          this.messages.push(finalMessage);
+          this.pruneMessages();
+          this.broadcast(JSON.stringify(finalMessage));
+          await this.state.storage.put("messages", this.messages);
+        } catch (err) {
+          console.error("Failed to persist call_join:", err);
+        }
       } else if (data.type === "message_status_update") {
         const { messageId, status } = data.payload;
         const messageIndex = this.messages.findIndex((msg) => msg.id === messageId);
@@ -20519,7 +20627,6 @@ var ChatRoom = class {
             text: "This message was deleted",
             file: void 0,
             files: void 0,
-            // Clear files
             deleted: {
               by: session.user?.name || "A user",
               at: (/* @__PURE__ */ new Date()).toISOString()
@@ -20544,9 +20651,7 @@ var ChatRoom = class {
           }
         };
         this.messages.push(finalMessage);
-        if (this.messages.length > 50) {
-          this.messages.shift();
-        }
+        this.pruneMessages();
         this.broadcast(JSON.stringify(finalMessage));
         await this.state.storage.put("messages", this.messages);
       }
@@ -20855,7 +20960,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-F7l9Pg/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-zRhHWj/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -20890,7 +20995,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-F7l9Pg/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-zRhHWj/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

@@ -1151,6 +1151,47 @@ export default function Chat() {
     prevMessagesLengthRef.current = messages.length;
   }, [messages, session?.user?._id]);
 
+  // If a persisted call_end arrives (message updated with callEnded), ensure
+  // the inline call UI cleans up media & UI state. This handles the case where
+  // someone ends the call from the full call page or the last participant leaves.
+  useEffect(() => {
+    if (!isCallActive || !callRef.current) return;
+
+    const activeCallId = (callRef.current as any).id;
+    const callMessage = messages.find((m) => m.id === activeCallId);
+    if (callMessage && callMessage.callEnded) {
+      playSound('callEnd');
+
+      // End the underlying call object if present
+      try {
+        if ((callRef.current as any).endCall) {
+          (callRef.current as any).endCall();
+        }
+      } catch (err) {
+        console.warn('Error ending call object during remote call_end:', err);
+      }
+
+      // Stop local media and screen share
+      try {
+        localStream?.getTracks().forEach((t) => t.stop());
+      } catch (e) {}
+      try {
+        screenStream?.getTracks().forEach((t) => t.stop());
+      } catch (e) {}
+
+      // Clear call state
+      try {
+        callRef.current = null;
+      } catch (e) {}
+      setLocalStream(null);
+      setRemoteStreams({});
+      setIsCallActive(false);
+      setIsScreenSharing(false);
+      setScreenStream(null);
+      setCallRoom(null);
+    }
+  }, [messages, isCallActive, callRef, localStream, screenStream]);
+
   // Heartbeat to update online status
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -1382,9 +1423,16 @@ export default function Chat() {
 
   const handleEndCall = () => {
     playSound("callEnd");
-    if (callRef.current) {
-      callRef.current.endCall();
-      callRef.current = null;
+    // Preserve a reference to the active call object so we can end it and
+    // still access its id for persistence updates.
+    const activeCall = callRef.current;
+    if (activeCall) {
+      try {
+        activeCall.endCall();
+      } catch (err) {
+        console.warn('Error while ending call object:', err);
+      }
+      // do not null out callRef.current yet — we still need the id below
     }
     if (localStream) {
       localStream.getTracks().forEach((track) => track.stop());
@@ -1399,23 +1447,21 @@ export default function Chat() {
       const seconds = durationInSeconds % 60;
       const durationString = `${minutes}m ${seconds}s`;
 
-      // Send call_end message to update the message in the database
-      if (callRef.current && (callRef.current as any).id) {
-        sendCallEnd(
-          (callRef.current as any).id,
-          durationString,
-          callRoom || undefined
-        );
+      // Send call_end message to update the message in the database and update UI
+      const callIdToNotify = activeCall?.id || (callRef.current as any)?.id;
+      if (callIdToNotify) {
+        sendCallEnd(callIdToNotify, durationString, callRoom || undefined);
       }
 
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === callRef.current?.id
-            ? { ...m, callEnded: true, duration: durationString }
-            : m
-        )
+        prev.map((m) => (m.id === callIdToNotify ? { ...m, callEnded: true, duration: durationString } : m))
       );
     }
+
+    // Now clear the call reference and local media state
+    try {
+      callRef.current = null;
+    } catch (e) {}
 
     setLocalStream(null);
     setRemoteStreams({});
@@ -2146,8 +2192,13 @@ export default function Chat() {
             });
 
             sendCallInvitation(activeRoom, realCallId); // Also send via WS for others
-            router.push(`/call/${realCallId}`);
-            callRef.current = { ...call, id: realCallId };
+            // Keep call inline (Slack-like huddle) instead of navigating to the call page.
+            // Set local call state so `Call` component is rendered inside Chat.
+            setCallRoom(activeRoom);
+            setCallStartTime(Date.now());
+            // Set a minimal callRef so UI can reference the call id; the real call
+            // object will be stored on `callRef` after startMeshCall resolves below.
+            callRef.current = { id: realCallId, endCall: () => {}, replaceTrack: () => {} } as any;
           },
         });
         if (call) {

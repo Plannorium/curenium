@@ -43,6 +43,22 @@ export class ChatRoom {
         });
     }
 
+    // Prune stored messages to keep the durable object's storage bounded while
+    // preferentially preserving threaded replies and important notifications.
+    pruneMessages() {
+        const cap = 500;
+        while (this.messages.length > cap) {
+            // Prefer removing the oldest non-thread, non-alert, non-call message first
+            const idx = this.messages.findIndex((m: any) => !m.threadId && m.type !== 'alert_notification' && m.type !== 'call_invitation' && m.type !== 'call_join');
+            if (idx > -1) {
+                this.messages.splice(idx, 1);
+            } else {
+                // Fallback: remove the oldest message
+                this.messages.shift();
+            }
+        }
+    }
+
     broadcastPresence() {
         const online = Array.from(this.users.values());
         this.broadcast(JSON.stringify({ type: 'presence', onlineUsers: online }));
@@ -57,6 +73,17 @@ export class ChatRoom {
 
     async fetch(request: Request) {
         const url = new URL(request.url);
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        };
+
+        // Handle CORS preflight early so browser POSTs with Content-Type: application/json
+        // don't fail with a closed connection when hitting the worker in dev.
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { status: 204, headers: corsHeaders });
+        }
         const envHeader = request.headers.get('X-Env');
         if (envHeader) {
             this.env = JSON.parse(envHeader);
@@ -81,15 +108,47 @@ export class ChatRoom {
                     await this.state.storage.put("messages", this.messages);
                     this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
                 }
-                return new Response('Call ended', { status: 200 });
+                return new Response('Call ended', { status: 200, headers: corsHeaders });
             }
-            return new Response('Method not allowed', { status: 405 });
+            return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+        }
+
+        if (url.pathname === '/api/call-invitation') {
+            if (request.method === 'POST') {
+                try {
+                    const { callId, callerName, timestamp } = await request.json() as any;
+                    const finalMessage = {
+                        type: 'call_invitation',
+                        id: callId,
+                        text: `${callerName || 'Someone'} started a call.`,
+                        userId: 'system',
+                        fullName: callerName || 'Someone',
+                        createdAt: timestamp || new Date().toISOString(),
+                        callId: callId,
+                        sender: null,
+                    };
+
+                    // Avoid duplicates
+                    if (!this.messages.some((m: any) => m.id === finalMessage.id)) {
+                        this.messages.push(finalMessage);
+                        this.pruneMessages();
+                        await this.state.storage.put("messages", this.messages);
+                        this.broadcast(JSON.stringify(finalMessage));
+                    }
+
+                    return new Response('Call invitation persisted', { status: 200, headers: corsHeaders });
+                } catch (err) {
+                    console.error('Error persisting call_invitation via HTTP POST', err);
+                    return new Response('Bad request', { status: 400, headers: corsHeaders });
+                }
+            }
+            return new Response('Method not allowed', { status: 405, headers: corsHeaders });
         }
 
         // Handle POST requests for call_end messages sent via HTTP
         if (request.method === 'POST') {
             try {
-                const data = await request.json() as { type: string; callId: string; duration: string };
+                const data = await request.json() as any;
                 if (data.type === 'call_end') {
                     const { callId, duration } = data;
                     const messageIndex = this.messages.findIndex(msg => msg.id === callId);
@@ -99,10 +158,53 @@ export class ChatRoom {
                         await this.state.storage.put("messages", this.messages);
                         this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
                     }
-                    return new Response('Call ended', { status: 200 });
+                    return new Response('Call ended', { status: 200, headers: corsHeaders });
                 }
+
+                if (data.type === 'call_join') {
+                    // Create a join notice and persist it
+                    const finalMessage = {
+                        type: 'call_join',
+                        id: `${data.callId}-join-${data.callerName || 'unknown'}-${Date.now()}`,
+                        text: `${data.callerName || 'Someone'} joined the call.`,
+                        userId: data.userId || 'system',
+                        fullName: data.callerName || 'Someone',
+                        createdAt: data.timestamp || new Date().toISOString(),
+                        callId: data.callId,
+                        sender: null,
+                    };
+                    this.messages.push(finalMessage);
+                    if (this.messages.length > 50) this.messages.shift();
+                    await this.state.storage.put("messages", this.messages);
+                    this.broadcast(JSON.stringify(finalMessage));
+                    return new Response('Call join persisted', { status: 200 });
+                }
+                    if (data.type === 'call_invitation') {
+                        try {
+                            const finalMessage = {
+                                type: 'call_invitation',
+                                id: data.callId,
+                                text: `${data.callerName || 'Someone'} started a call.`,
+                                userId: data.userId || 'system',
+                                fullName: data.callerName || 'Someone',
+                                createdAt: data.timestamp || new Date().toISOString(),
+                                callId: data.callId,
+                                sender: null,
+                            };
+
+                            if (!this.messages.some((m: any) => m.id === finalMessage.id)) {
+                                this.messages.push(finalMessage);
+                                this.pruneMessages();
+                                await this.state.storage.put("messages", this.messages);
+                                this.broadcast(JSON.stringify(finalMessage));
+                            }
+                            return new Response('Call invitation persisted', { status: 200 });
+                        } catch (err) {
+                            console.error('Failed to persist call_invitation in generic POST handler:', err);
+                        }
+                    }
             } catch (error) {
-                // Not JSON or not a call_end message, continue to WebSocket handling
+                // Not JSON or not a recognized POST payload, continue to WebSocket handling
             }
         }
 
@@ -185,14 +287,15 @@ export class ChatRoom {
                     webSocket.send(JSON.stringify({ error: 'Not authenticated' }));
                     return;
                 }
+
                 const finalMessage = {
                     type: 'message',
                     id: crypto.randomUUID(),
                     threadId: data.threadId,
                     content: data.content,
-                    file: data.files, // Ensure single file is also handled
+                    file: data.files,
                     files: data.files,
-                    replyTo: data.replyTo, // This will now include the 'file' property
+                    replyTo: data.replyTo,
                     createdAt: new Date().toISOString(),
                     sender: {
                         _id: this.getUserFromSession(session).id,
@@ -203,12 +306,34 @@ export class ChatRoom {
                 };
 
                 this.messages.push(finalMessage);
-                if (this.messages.length > 50) {
-                    this.messages.shift();
-                }
-                
+                this.pruneMessages();
                 this.broadcast(JSON.stringify(finalMessage));
                 await this.state.storage.put("messages", this.messages);
+            } else if (data.type === 'call_join') {
+                // Persist a join notice so the chat retains who joined the call
+                try {
+                    const finalMessage = {
+                        type: 'call_join',
+                        id: `${data.callId}-join-${(session.user as unknown as UserSession).id}-${Date.now()}`,
+                        text: `${data.callerName} joined the call.`,
+                        userId: (session.user as unknown as UserSession).id,
+                        fullName: data.callerName,
+                        createdAt: data.timestamp || new Date().toISOString(),
+                        callId: data.callId,
+                        sender: {
+                            _id: (session.user as unknown as UserSession).id,
+                            fullName: (session.user as unknown as UserSession).name,
+                            image: (session.user as unknown as UserSession).image || null,
+                        },
+                    };
+
+                    this.messages.push(finalMessage);
+                    this.pruneMessages();
+                    this.broadcast(JSON.stringify(finalMessage));
+                    await this.state.storage.put("messages", this.messages);
+                } catch (err) {
+                    console.error('Failed to persist call_join:', err);
+                }
             } else if (data.type === 'message_status_update') {
                 const { messageId, status } = data.payload;
                 const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
@@ -230,10 +355,8 @@ export class ChatRoom {
 
                     let newUsersForEmoji;
                     if (userIndex > -1) {
-                        // User is removing reaction: create a new array without the user
                         newUsersForEmoji = usersForEmoji.filter((u: any) => u.userId !== userId);
                     } else {
-                        // User is adding reaction: create a new array with the new user
                         newUsersForEmoji = [...usersForEmoji, { userId, userName }];
                     }
 
@@ -244,7 +367,6 @@ export class ChatRoom {
                         newReactions[emoji] = newUsersForEmoji;
                     }
 
-                    // Create a new message object with the new reactions
                     const updatedMessage = { ...originalMessage, reactions: newReactions };
                     this.messages[messageIndex] = updatedMessage;
                     await this.state.storage.put("messages", this.messages);
@@ -257,13 +379,12 @@ export class ChatRoom {
                 const messageIndex = this.messages.findIndex(msg => msg.id === messageId);
 
                 if (messageIndex > -1) {
-                    // "Soft delete" the message by updating its properties
                     this.messages[messageIndex] = {
                         ...this.messages[messageIndex],
                         content: 'This message was deleted',
                         text: 'This message was deleted',
                         file: undefined,
-                        files: undefined, // Clear files
+                        files: undefined,
                         deleted: {
                             by: (session.user as unknown as UserSession)?.name || 'A user',
                             at: new Date().toISOString(),
@@ -271,7 +392,6 @@ export class ChatRoom {
                     };
 
                     await this.state.storage.put("messages", this.messages);
-                    // Broadcast the updated message object
                     this.broadcast(JSON.stringify({ type: 'message_updated', payload: this.messages[messageIndex] }));
                 }
             } else if (data.type === 'call_invitation') {
@@ -291,9 +411,7 @@ export class ChatRoom {
                 };
 
                 this.messages.push(finalMessage);
-                if (this.messages.length > 50) {
-                    this.messages.shift();
-                }
+                this.pruneMessages();
 
                 this.broadcast(JSON.stringify(finalMessage));
                 await this.state.storage.put("messages", this.messages);

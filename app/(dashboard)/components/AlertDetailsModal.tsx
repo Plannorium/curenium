@@ -63,7 +63,7 @@ const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, lab
 export const AlertDetailsModal = ({ alert, onClose }: AlertDetailsModalProps) => {
   if (!alert) return null;
 
-  const config = alertLevelConfig[alert.level];
+  const config = alertLevelConfig[alert.level] || alertLevelConfig.info;
   const createdDate = new Date(alert.createdAt);
 
   return (

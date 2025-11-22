@@ -44,21 +44,36 @@ export class GestureDetector {
   }
 
   private async detect() {
-    if (this.handLandmarker && this.faceLandmarker && this.video.readyState >= 2) {
-      const handResults = this.handLandmarker.detectForVideo(this.video, performance.now());
-      const faceResults = this.faceLandmarker.detectForVideo(this.video, performance.now());
+    try {
+      if (this.handLandmarker && this.faceLandmarker && this.video.readyState >= 2) {
+        // Some environments (remote tracks) may not have dimensions immediately.
+        // Bail out early if video metadata/dimensions are not yet available.
+        const { videoWidth, videoHeight } = this.video as HTMLVideoElement;
+        if (!videoWidth || !videoHeight) return;
 
-      const gesture = this.recognizeGesture(handResults, faceResults);
+        const handResults = this.handLandmarker.detectForVideo(this.video, performance.now());
+        const faceResults = this.faceLandmarker.detectForVideo(this.video, performance.now());
 
-      if (gesture && gesture !== this.lastGesture) {
-        if (this.gestureTimeout) clearTimeout(this.gestureTimeout);
-        this.onGesture(gesture);
-        this.lastGesture = gesture;
-        this.gestureTimeout = setTimeout(() => {
-          this.lastGesture = null;
-        }, 1000); // 1 second cooldown
+        const gesture = this.recognizeGesture(handResults, faceResults);
+
+        if (gesture && gesture !== this.lastGesture) {
+          if (this.gestureTimeout) clearTimeout(this.gestureTimeout);
+          this.onGesture(gesture);
+          this.lastGesture = gesture;
+          this.gestureTimeout = setTimeout(() => {
+            this.lastGesture = null;
+          }, 1000); // 1 second cooldown
+        }
       }
+    } catch (err: any) {
+      // Ignore transient errors related to missing track/video metadata (these
+      // often happen immediately after attaching a MediaStream and are benign).
+      // Log at debug level to avoid alarming the console in dev.
+      // Example message from underlying libs: "could not determine track dimensions, using defaults {}"
+      // We intentionally swallow these.
+      // console.debug('GestureDetector.detect error (ignored):', err?.message || err);
     }
+
     requestAnimationFrame(() => this.detect());
   }
 

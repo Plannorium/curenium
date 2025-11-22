@@ -27,7 +27,7 @@ export interface Message {
   file?: MessageFile;
   content?: any;
   createdAt?: string;
-  type?: "message" | "alert_notification" | "call_invitation";
+  type?: "message" | "alert_notification" | "call_invitation" | "call_join";
   alert?: any;
   reactions?: { [emoji: string]: { userId: string; fullName: string }[] };
   sender?: {
@@ -116,7 +116,6 @@ export const useChat = (room: string) => {
     };
 
     try {
-      // @ts-ignore
       const pusher = new Pusher(key, opts);
       pusherRef.current = pusher;
       const channelName = `private-room-${room}`;
@@ -242,27 +241,7 @@ export const useChat = (room: string) => {
             const message = JSON.parse(event.data);
             console.log("Received message:", message);
 
-            // Handle optimistic message replacement
-            if (message.type === "message" && message.optimisticId) {
-              setMessages((prevMessages) =>
-                prevMessages.map((m) =>
-                  m.id === message.optimisticId
-                    ? {
-                        ...message, // Start with server message
-                        threadId: m.threadId || message.threadId, // Preserve threadId from optimistic message
-                        replyTo: m.replyTo || message.replyTo, // Preserve replyTo from optimistic message
-                        id: message.id || message._id, // Use real DB ID
-                        file: message.files || message.file, // Use real file object
-                        status: "sent",
-                      }
-                    : m
-                )
-              );
-              pendingMessageRef.current = null; // Clear ref used for text messages
-              return; // IMPORTANT: Stop further processing to prevent duplicates
-            }
-
-            // Handle other incoming websocket events
+            // Handle incoming websocket events
             if (message.type === "typing") {
               if (message.isTyping) {
                 setTypingUsers((prev) => [
@@ -274,7 +253,7 @@ export const useChat = (room: string) => {
                 );
               }
             } else if (message.type === "message") {
-              // Handle new messages from other users
+              // Handle new messages (including own messages)
               if (message.sender) {
                 const newMessage: Message = {
                   id: message._id || message.id, // Prioritize DB ID
@@ -302,11 +281,30 @@ export const useChat = (room: string) => {
                 };
 
                 setMessages((prevMessages) => {
-                  // Prevent adding a message that already exists
-                  if (prevMessages.some((m) => m.id === newMessage.id)) {
-                    return prevMessages;
+                  // Check if there's an optimistic message to replace
+                  const optimisticIndex = prevMessages.findIndex((m) =>
+                    m.id.startsWith('temp-') && // optimistic messages have temp IDs
+                    m.userId === newMessage.userId &&
+                    m.text === newMessage.text &&
+                    m.threadId === (message.threadId || null) // match threadId
+                  );
+
+                  if (optimisticIndex !== -1) {
+                    // Replace the optimistic message with the real one, preserving threadId and replyTo
+                    const updatedMessages = [...prevMessages];
+                    updatedMessages[optimisticIndex] = {
+                      ...newMessage,
+                      threadId: prevMessages[optimisticIndex].threadId || newMessage.threadId,
+                      replyTo: prevMessages[optimisticIndex].replyTo || newMessage.replyTo,
+                    };
+                    return updatedMessages;
+                  } else {
+                    // Prevent adding a message that already exists
+                    if (prevMessages.some((m) => m.id === newMessage.id)) {
+                      return prevMessages;
+                    }
+                    return [...(prevMessages || []), newMessage];
                   }
-                  return [...(prevMessages || []), newMessage];
                 });
 
                 // Remove the sender from typing users
@@ -344,46 +342,47 @@ export const useChat = (room: string) => {
               const historicalMessages = (message.messages || [])
                 .filter(Boolean)
                 .map((msg: any) => {
+                  // Keep the original message.type where possible so UI can render call/alert types
+                  const base: any = {
+                    id: msg._id || msg.id, // Prioritize DB ID
+                    userId: msg.sender?._id || msg.userId,
+                    fullName: msg.sender?.fullName || msg.fullName,
+                    threadId: msg.threadId || null,
+                    userImage: msg.sender?.image || undefined,
+                    text: msg.content || msg.text || "",
+                    file: msg.files || msg.file,
+                    sender: msg.sender || undefined,
+                    createdAt: msg.createdAt || msg.timestamp,
+                    reactions: msg.reactions,
+                    deleted: msg.deleted,
+                    replyTo: msg.replyTo
+                      ? {
+                          id: msg.replyTo.id,
+                          text: msg.replyTo.text || msg.replyTo.content || "",
+                          fullName:
+                            msg.replyTo.fullName || (msg.replyTo as any).userName || "Unknown",
+                          file: msg.replyTo.file,
+                        }
+                      : undefined,
+                    // preserve type and call metadata if present
+                    type: msg.type || undefined,
+                    callId: msg.callId || undefined,
+                    callEnded: msg.callEnded || undefined,
+                    duration: msg.duration || undefined,
+                  };
+
                   if (msg.type === "alert_notification") {
-                    // Handle alert messages differently
                     return {
-                      id: msg.id,
+                      ...base,
                       type: "alert_notification",
                       alert: msg.alert,
-                      text: msg.text,
-                      userId: msg.userId,
-                      fullName: msg.fullName,
-                      createdAt: msg.createdAt,
-                    };
-                  } else {
-                    // Handle regular messages
-                    return {
-                      id: msg._id || msg.id, // Prioritize DB ID
-                      userId: msg.sender?._id,
-                      fullName: msg.sender?.fullName,
-                      threadId: msg.threadId || null, // Map threadId from historical messages
-                      userImage: msg.sender?.image,
-                      text: msg.content || "",
-                      file: msg.files || msg.file,
-                      sender: msg.sender, // Preserve the sender object
-                      createdAt: msg.createdAt || msg.timestamp,
-                      reactions: msg.reactions,
-                      deleted: msg.deleted, // Preserve the deleted property
-                      replyTo: msg.replyTo
-                        ? {
-                            id: msg.replyTo.id,
-                            text: msg.replyTo.text || msg.replyTo.content || "",
-                            fullName:
-                              msg.replyTo.fullName ||
-                              (msg.replyTo as any).userName ||
-                              "Unknown",
-                            file: msg.replyTo.file,
-                          }
-                        : undefined,
                     };
                   }
+
+                  return base;
                 });
-              setMessages(historicalMessages);
+
+              setMessages(historicalMessages || []);
             } else if (message.type === "reaction") {
               if (message.payload) {
                 const { messageId, emoji, userId, fullName } = message.payload;
@@ -479,6 +478,26 @@ export const useChat = (room: string) => {
                 playSound("callRinging");
                 return [...prev, callMessage];
               });
+            } else if (message.type === 'call_join') {
+              // Real-time notice that someone joined the call
+              try {
+                const callJoinMsg: Message = {
+                  id: message.id || `${message.callId}-join-${message.callerName || message.sender?.fullName || 'unknown'}-${Date.now()}`,
+                  type: 'call_join',
+                  text: message.text || `${message.callerName || message.sender?.fullName || 'Someone'} joined the call.`,
+                  userId: message.sender?._id || 'system',
+                  fullName: message.callerName || message.sender?.fullName || 'Someone',
+                  createdAt: message.timestamp || new Date().toISOString(),
+                  callId: message.callId,
+                } as any;
+
+                setMessages((prev) => {
+                  if (prev.some((m) => m.id === callJoinMsg.id)) return prev;
+                  return [...(prev || []), callJoinMsg];
+                });
+              } catch (err) {
+                console.error('Error handling call_join message:', err);
+              }
             } else if (message.error) {
               console.error("WebSocket error:", message.error);
             }
@@ -722,54 +741,134 @@ export const useChat = (room: string) => {
 
   const sendCallInvitation = useCallback(
     (roomId: string, callId: string) => {
+      const payload = {
+        type: "call_invitation",
+        room: roomId,
+        callId,
+        callerName: session?.user?.fullName || "Someone",
+        timestamp: new Date().toISOString(),
+      };
+
+      // Try sending over WebSocket (so realtime clients see it immediately).
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        const payload = {
-          type: "call_invitation",
-          room: roomId,
-          callId,
-          callerName: session?.user?.fullName || "Someone",
-          timestamp: new Date().toISOString(),
-        };
-        ws.current.send(JSON.stringify(payload));
+        try {
+          ws.current.send(JSON.stringify(payload));
+        } catch (err) {
+          console.warn('sendCallInvitation: failed to send over WS', err);
+        }
       }
+
+      // Always POST to the worker as a reliable persistence path. We do this
+      // even when WS send was attempted because the WS may be connected but
+      // not yet authenticated on the DO side (race), which would cause the
+      // DO to ignore or error on the WS message. The worker dedupes by id so
+      // duplicate deliveries are harmless.
+      const workerUrl = process.env.NODE_ENV === "development"
+        ? "http://127.0.0.1:8787"
+        : process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+
+      if (!workerUrl) {
+        console.error('Worker URL not configured; cannot persist call_invitation');
+        return;
+      }
+
+      const endpoint = `${workerUrl.replace(/\/$/, '')}/api/call-invitation?room=${encodeURIComponent(roomId)}`;
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(res => {
+          if (!res.ok) {
+            console.warn('sendCallInvitation: non-OK response from', endpoint, res.status);
+          }
+        })
+        .catch(err => console.error('sendCallInvitation: failed POST to', endpoint, err));
     },
     [session?.user?.fullName]
   );
 
   const sendCallEnd = useCallback(
     async (callId: string, duration: string, targetRoom?: string) => {
+      // Always send call_end via HTTP to the worker so the Durable Object can
+      // persist the updated call state (callEnded/duration). The previous
+      // code attempted to use WebSocket when in the same room, but the worker
+      // only persisted call_end when received via HTTP/POST.
       const messageRoom = targetRoom || room;
-      if (messageRoom === room) {
-        // Same room, send via WebSocket
-        _sendMessage({
-          type: "call_end",
+      const workerUrl = process.env.NODE_ENV === "development"
+        ? "http://127.0.0.1:8787"
+        : process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+
+      if (!workerUrl) {
+        console.error("Worker URL is not configured; cannot persist call_end");
+        return;
+      }
+
+      const payload = { type: "call_end", callId, duration };
+
+      // Try explicit REST endpoint first, then fallback to generic POST handler.
+      const endpoints = [
+        `${workerUrl.replace(/\/$/, '')}/api/call-end?room=${encodeURIComponent(messageRoom)}`,
+        `${workerUrl}?room=${encodeURIComponent(messageRoom)}`,
+      ];
+
+      let succeeded = false;
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            succeeded = true;
+            break;
+          } else {
+            console.warn(`sendCallEnd: non-OK response from ${endpoint}:`, res.status, await res.text().catch(() => '<no-body>'));
+          }
+        } catch (error) {
+          console.error(`sendCallEnd: failed POST to ${endpoint}:`, error);
+        }
+      }
+
+      if (!succeeded) {
+        console.error('sendCallEnd: all attempts to notify worker failed for callId', callId);
+      }
+    },
+    [room]
+  );
+
+  // Notify the room that a user has joined a call and persist that join as a message
+  const sendCallJoin = useCallback(
+    (roomId: string, callId: string, callerName?: string) => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        const payload = {
+          type: 'call_join',
+          room: roomId,
           callId,
-          duration,
-        });
+          callerName: callerName || session?.user?.fullName || session?.user?.name || 'Someone',
+          timestamp: new Date().toISOString(),
+        };
+        ws.current.send(JSON.stringify(payload));
       } else {
-        // Different room, send via HTTP to ensure it goes to the correct Durable Object
+        // As a fallback, attempt to POST to the worker so that the join is persisted
         const workerUrl = process.env.NODE_ENV === "development"
           ? "http://127.0.0.1:8787"
           : process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
-
-        if (workerUrl) {
-          try {
-            await fetch(`${workerUrl}?room=${messageRoom}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: "call_end",
-                callId,
-                duration,
-              }),
-            });
-          } catch (error) {
-            console.error("Failed to send call_end via HTTP:", error);
-          }
-        }
+        if (!workerUrl) return;
+        fetch(`${workerUrl}?room=${encodeURIComponent(roomId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'call_join',
+            callId,
+            callerName: callerName || session?.user?.fullName || session?.user?.name || 'Someone',
+            timestamp: new Date().toISOString(),
+          }),
+        }).catch((err) => console.error('Failed to POST call_join fallback', err));
       }
     },
-    [_sendMessage, room]
+    [session?.user?.fullName, session?.user?.name]
   );
 
   const uploadFile = useCallback(
@@ -872,6 +971,7 @@ export const useChat = (room: string) => {
     getWs,
     sendCallInvitation,
     sendCallEnd,
+    sendCallJoin,
     getCallById,
   };
 
