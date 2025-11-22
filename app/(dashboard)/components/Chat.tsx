@@ -916,6 +916,8 @@ export default function Chat() {
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<Message | null>(null);
+  const ringIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -1069,12 +1071,41 @@ export default function Chat() {
     startCall,
     sendCallInvitation,
     sendCallEnd,
+    sendCallJoin,
     sendReadReceipt,
     deleteMessage,
     setIsMuted,
     setIsVideoOff,
     getWs,
   } = useChat(activeRoom);
+
+  // Handle incoming call notifications and ringing
+  useEffect(() => {
+    const latestMessage = messages[messages.length - 1];
+    if (
+      latestMessage &&
+      latestMessage.type === 'call_invitation' &&
+      latestMessage.userId !== session?.user?._id &&
+      !incomingCall
+    ) {
+      setIncomingCall(latestMessage);
+      // Start ringing every 3 seconds for 1 minute
+      if (!ringIntervalRef.current) {
+        playSound("callRinging");
+        ringIntervalRef.current = setInterval(() => {
+          playSound("callRinging");
+        }, 3000);
+        // Stop after 1 minute
+        setTimeout(() => {
+          if (ringIntervalRef.current) {
+            clearInterval(ringIntervalRef.current);
+            ringIntervalRef.current = null;
+          }
+          setIncomingCall(null);
+        }, 60000);
+      }
+    }
+  }, [messages, session?.user?._id, incomingCall, playSound]);
 
   const handleToggleMute = () => {
     setIsMuted((prev) => {
@@ -2068,14 +2099,26 @@ export default function Chat() {
 
   const handleJoinCall = async (callId: string) => {
     try {
-      const callDetails = await getCallById(callId);
-      if (!callDetails) {
-        toast.error("Call details not found.");
-        return;
+      // Stop incoming call ring if joining
+      if (incomingCall && incomingCall.callId === callId) {
+        if (ringIntervalRef.current) {
+          clearInterval(ringIntervalRef.current);
+          ringIntervalRef.current = null;
+        }
+        setIncomingCall(null);
       }
 
-      // Navigate to the call page
-      router.push(`/call/${callId}`);
+      // End any existing call first
+      if (callRef.current) {
+        callRef.current.endCall();
+        callRef.current = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+        setLocalStream(null);
+      }
+      setRemoteStreams({});
+      setIsCallActive(false);
 
       initAudio(); // Ensure audio is ready
       const devices = await navigator.mediaDevices.enumerateDevices();
@@ -2125,9 +2168,9 @@ export default function Chat() {
           },
         });
         callRef.current = call;
-        if (typeof window !== "undefined") {
-          window.history.replaceState(null, "", `/call/${callId}`);
-        }
+
+        // Send call_join message to notify others
+        sendCallJoin(activeRoom, callId, session?.user?.fullName);
       }
     } catch (error) {
       console.error("Error joining call:", error);
@@ -2189,11 +2232,16 @@ export default function Chat() {
             const callMessage: Message = {
               id: realCallId,
               type: 'call_invitation',
-              text: `${session?.user?.fullName || "Someone"} started a call.`,
+              text: `${session?.user?.name || "Someone"} started a call.`,
               userId: session?.user?._id || 'system',
-              fullName: session?.user?.fullName || "Someone",
+              fullName: session?.user?.name || "Someone",
               createdAt: new Date().toISOString(),
               callId: realCallId,
+              sender: {
+                _id: session?.user?._id || 'system',
+                fullName: session?.user?.name || "Someone",
+                image: session?.user?.image || null,
+              },
             } as any;
 
             setMessages((prev) => {
@@ -2202,6 +2250,34 @@ export default function Chat() {
             });
 
             sendCallInvitation(activeRoom, realCallId); // Also send via WS for others
+
+            // For DMs, send direct notification to the recipient
+            if (isDmRoom && otherUser) {
+              const notification = {
+                _id: realCallId,
+                title: 'Incoming Call',
+                message: `${session?.user?.name} is calling you`,
+                createdBy: {
+                  _id: session.user._id,
+                  fullName: session.user.name,
+                  image: session.user.image,
+                },
+                createdAt: new Date().toISOString(),
+                type: 'call_invitation',
+                relatedId: realCallId,
+                room: activeRoom, // Include room for navigation
+              };
+
+              fetch('/api/broadcast-alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  notification,
+                  recipients: [otherUser._id],
+                }),
+              }).catch((err) => console.error('Failed to send call notification:', err));
+            }
+
             // Keep call inline (Slack-like huddle) instead of navigating to the call page.
             // Set local call state so `Call` component is rendered inside Chat.
             setCallRoom(activeRoom);
@@ -3521,7 +3597,7 @@ export default function Chat() {
           isOpen={isMembersModalOpen}
           onClose={() => setMembersModalOpen(false)}
           users={channelUsers}
-          onlineUserIds={onlineUsers}
+          onlineUserIds={users.filter(u => u.online).map(u => u._id)}
           onViewProfile={(user) => setSelectedUser(user)}
         />
 

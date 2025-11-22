@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export interface Notification {
   id: string;
-  type: "new_message" | "system_alert" | "new_patient";
+  type: "new_message" | "system_alert" | "new_patient" | "call_invitation";
   title: string;
   message: string;
   createdAt: string;

@@ -49,11 +49,16 @@ const DashboardContent: React.FC = () => {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState('');
 
-  const { data: organization, error: orgError } = useSWR<Organization>(session?.user?.organizationId ? `/api/organization?id=${session.user.organizationId}` : null, fetcher);
-  const { data: shifts, error: shiftsError } = useSWR<Shift[]>(session?.user?.organizationId ? '/api/shifts' : null, fetcher);
-  const { data: alerts, error: alertsError } = useSWR<Alert[]>(session?.user?.organizationId ? '/api/alerts' : null, fetcher);
-  const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(session?.user?.organizationId ? '/api/appointments' : null, fetcher);
-  const { data: users, error: usersError } = useSWR<User[]>(session?.user?.organizationId ? '/api/users' : null, fetcher);
+  // First fetch user profile to get organizationId
+  const { data: userProfile, error: profileError } = useSWR(session?.user?.id ? '/api/profile' : null, fetcher);
+
+  const orgId = userProfile?.organizationId;
+
+  const { data: organization, error: orgError } = useSWR<Organization>(orgId ? `/api/organization?id=${orgId}` : null, fetcher);
+  const { data: shifts, error: shiftsError } = useSWR<Shift[]>(orgId ? '/api/shifts' : null, fetcher);
+  const { data: alerts, error: alertsError } = useSWR<Alert[]>(orgId ? '/api/alerts' : null, fetcher);
+  const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(orgId ? '/api/appointments' : null, fetcher);
+  const { data: users, error: usersError } = useSWR<User[]>(orgId ? '/api/users' : null, fetcher);
 
   useEffect(() => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));

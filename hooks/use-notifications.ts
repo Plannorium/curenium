@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Notification } from '@/app/(dashboard)/components/NotificationItem';
 import Pusher from 'pusher-js';
+import { toast } from 'sonner';
 
 let retryCount = 0;
 const maxRetries = 5;
@@ -48,6 +49,20 @@ export const useNotifications = () => {
       }
       return [newNotification, ...prev];
     });
+
+    // Special handling for call invitations
+    if (newNotification.type === 'call_invitation') {
+      toast.info(`Incoming call from ${newNotification.sender?.fullName || 'Someone'}`, {
+        description: 'Tap to join the call',
+        action: {
+          label: 'Join',
+          onClick: () => {
+            window.location.href = `/dashboard/chat?room=${data.room || 'general'}`;
+          },
+        },
+        duration: 30000, // 30 seconds
+      });
+    }
     // Optional: play a sound
   }, [setNotifications]);
 
