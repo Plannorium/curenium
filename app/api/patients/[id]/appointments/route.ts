@@ -9,14 +9,15 @@ import User from "@/models/User";
 import mongoose from "mongoose";
 import { sendAppointmentConfirmationEmail } from "@/lib/resendEmail";
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { params } = context;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     await connectDB();
-    const appointments = await Appointment.find({ patientId: params.id, orgId: session.user.organizationId }).sort({ date: -1 });
+    const appointments = await Appointment.find({ patientId: id, orgId: session.user.organizationId }).sort({ date: -1 });
     return NextResponse.json(appointments);
   } catch (error) {
     console.error("Failed to fetch appointments:", error);
@@ -26,9 +27,10 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
 
 export async function POST(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { params } = context;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -51,7 +53,7 @@ export async function POST(
   const a = await Appointment.create({
     ...rest,
     doctorId: personnelId,
-    patientId: params.id,
+    patientId: id,
     orgId: session.user.organizationId,
     createdBy: session.user.id,
   });
@@ -68,25 +70,26 @@ export async function POST(
 }
 
 export async function PUT(
- req: NextRequest,
- context: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
- const { params } = context;
- const session = await getServerSession(authOptions);
- if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { params } = context;
+  const { id } = await params;
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
- const allowed = ["doctor", "admin", "staff"];
- if (!allowed.includes(session.user.role))
-   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const allowed = ["doctor", "admin", "staff"];
+  if (!allowed.includes(session.user.role))
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
- const body: { appointmentId: string, status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' } = await req.json();
- await connectDB();
+  const body: { appointmentId: string, status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' } = await req.json();
+  await connectDB();
 
- const appointment = await Appointment.findOne({
-   _id: body.appointmentId,
-   patientId: params.id,
-   orgId: session.user.organizationId,
- });
+  const appointment = await Appointment.findOne({
+    _id: body.appointmentId,
+    patientId: id,
+    orgId: session.user.organizationId,
+  });
 
  if (!appointment) {
    return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
