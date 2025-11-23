@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
 
 export async function POST(
   req: NextRequest,
-  context: any
+  context: { params: { id: string } }
 ) {
   const { params } = context;
   const session = await getServerSession(authOptions);
@@ -69,7 +69,7 @@ export async function POST(
 
 export async function PUT(
  req: NextRequest,
- context: any
+ context: { params: { id: string } }
 ) {
  const { params } = context;
  const session = await getServerSession(authOptions);

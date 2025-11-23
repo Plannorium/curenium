@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, context: any) {
 
   try {
     await connectDB();
-    const labOrders = await LabOrder.find({ patientId: params.id, orgId: token.orgId }).sort({ createdAt: -1 });
+    const labOrders = await LabOrder.find({ patientId: params.id, orgId: token.organizationId }).sort({ createdAt: -1 });
     return NextResponse.json(labOrders);
   } catch (error) {
     console.error("Failed to fetch lab orders:", error);

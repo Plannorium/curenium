@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ServerCrash, Beaker, Calendar, CheckCircle, PlusCircle } from "lucide-react";
 import { AddLabOrderModal } from "./AddLabOrderModal";
 import { ILabOrder } from "@/models/LabOrder";
+import Link from 'next/link';
 
 interface LabOrdersDisplayProps {
   patientId: string;
@@ -84,14 +85,26 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
           <Beaker className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           <span className="text-lg sm:text-2xl">Lab Orders</span>
         </CardTitle>
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          size="sm"
-          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-        >
-          <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="text-sm sm:text-base">Request Lab Order</span>
-        </Button>
+        <div className="flex gap-x-2">
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            size="sm"
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          >
+            <PlusCircle className="md:mr-2 h-3 w-3" />
+            <span className="text-sm hidden md:block">Request Lab Order</span>
+          </Button>
+          <Link href="/dashboard/lab" passHref>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <Beaker className="md:mr-2 h-3 w-3" />
+              <span className="text-sm hidden md:block">Lab Dashboard</span>
+            </Button>
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
         {labOrders.length > 0 ? (
