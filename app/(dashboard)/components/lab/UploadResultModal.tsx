@@ -66,7 +66,7 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
     setError(null);
 
     try {
-      let resultData = Array.isArray(order.results) ? [...order.results] : (order.results ? [order.results] : []);
+      const resultData = Array.isArray(order.results) ? [...order.results] : (order.results ? [order.results] : []);
 
       if (files.length > 0) {
         for (const file of files) {
