@@ -28,7 +28,7 @@ const PatientSchema = new Schema(
   { timestamps: true }
 );
 
-PatientSchema.plugin(auditPlugin, { targetType: "Patient" });
+// PatientSchema.plugin(auditPlugin, { targetType: "Patient" });
 
 PatientSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;

@@ -6,10 +6,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ServerCrash, Beaker, Calendar, CheckCircle, PlusCircle } from "lucide-react";
+import { ServerCrash, Beaker, Calendar, CheckCircle, PlusCircle, Eye } from "lucide-react";
 import { AddLabOrderModal } from "./AddLabOrderModal";
 import { ILabOrder } from "@/models/LabOrder";
 import Link from 'next/link';
+import { TestDetailsModal } from '../lab/TestDetailsModal';
 
 interface LabOrdersDisplayProps {
   patientId: string;
@@ -20,6 +21,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [detailsOrder, setDetailsOrder] = useState<ILabOrder | null>(null);
 
   const fetchLabOrders = async () => {
     try {
@@ -111,10 +113,21 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
           <div className="space-y-4">
             {labOrders.map((order, index) => (
               <div key={order._id?.toString() || Math.random()} className="p-4 bg-white/80 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-800/50 rounded-xl shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
                   <InfoItem icon={Beaker} label="Tests" value={order.tests} />
                   <InfoItem icon={CheckCircle} label="Status" value={order.status} />
                   <InfoItem icon={Calendar} label="Date" value={new Date(order.createdAt).toLocaleDateString()} />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => setDetailsOrder(order)}
+                      size="sm"
+                      variant="outline"
+                      className="shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View Details
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -145,6 +158,12 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
         onClose={() => setIsModalOpen(false)}
         onLabOrderAdded={fetchLabOrders}
       />
+      {detailsOrder && (
+        <TestDetailsModal
+          order={detailsOrder}
+          onClose={() => setDetailsOrder(null)}
+        />
+      )}
     </Card>
   );
 };

@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document, models, Model } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
+import Patient from "./Patient";
 
 export interface ILabOrder {
   _id: string;
@@ -8,7 +9,14 @@ export interface ILabOrder {
   testName: string;
   tests: string[];
   status: "Pending" | "Completed" | "Cancelled";
-  results?: string;
+  results?: {
+    public_id: string;
+    secure_url: string;
+    format: string;
+    bytes: number;
+    original_filename: string;
+  }[];
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +24,14 @@ export interface ILabOrder {
 export interface ILabOrderDocument extends ILabOrder, Document {
   _id: any; // Override _id for Document compatibility
 }
+
+const ResultSchema = new Schema({
+  public_id: { type: String, required: true },
+  secure_url: { type: String, required: true },
+  format: { type: String, required: true },
+  bytes: { type: Number, required: true },
+  original_filename: { type: String, required: true },
+});
 
 const LabOrderSchema: Schema<ILabOrderDocument> = new Schema(
   {
@@ -29,11 +45,12 @@ const LabOrderSchema: Schema<ILabOrderDocument> = new Schema(
       enum: ["Pending", "Completed", "Cancelled"],
       default: "Pending",
     },
-    results: { type: String },
+    results: [{ type: ResultSchema, required: false }],
+    notes: { type: String },
   },
   { timestamps: true }
 );
 
-const LabOrder: Model<ILabOrderDocument> = models.LabOrder || mongoose.model<ILabOrderDocument>("LabOrder", LabOrderSchema);
+const LabOrder: Model<ILabOrderDocument> = mongoose.models.LabOrder || mongoose.model<ILabOrderDocument>("LabOrder", LabOrderSchema);
 
 export default LabOrder;

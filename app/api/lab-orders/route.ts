@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import dbConnect from '@/lib/dbConnect';
+import Patient from '@/models/Patient'; // Ensure Patient model is imported first
 import LabOrder from '@/models/LabOrder';
-import Patient from '@/models/Patient'; // Ensure Patient model is imported
 
 export async function GET(req: NextRequest) {
   await dbConnect();

@@ -1,5 +1,31 @@
 import mongoose from 'mongoose';
 
+// Import all models to ensure they are registered with Mongoose
+import '@/models/Alert';
+import '@/models/Appointment';
+import '@/models/Attachment';
+import '@/models/AuditLog';
+import '@/models/CallSession';
+import '@/models/Channel';
+import '@/models/ClinicalNote';
+import '@/models/DMRoom';
+import '@/models/Encounter';
+import '@/models/Insurance';
+import '@/models/Invite';
+import '@/models/LabOrder';
+import '@/models/LabResult';
+import '@/models/Medication';
+import '@/models/Message';
+import '@/models/Note';
+import '@/models/Notification';
+import '@/models/NursingCarePlan';
+import '@/models/Organization';
+import '@/models/Patient';
+import '@/models/Prescription';
+import '@/models/Shift';
+import '@/models/User';
+import '@/models/Vital';
+
 declare global {
   // allow global `var` declarations
   var mongooseCache: {

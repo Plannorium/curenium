@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 type LabOrderWithPatient = Omit<ILabOrder, 'patientId'> & {
   patientId: {
@@ -37,15 +38,15 @@ interface CloudinaryUploadResponse {
 }
 
 export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadResultModalProps) => {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notes, setNotes] = useState(order.notes || '');
+  const isEditing = order.status === 'Completed';
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles && acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0]);
-      setError(null);
-    }
+    setFiles(acceptedFiles);
+    setError(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -54,90 +55,97 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
       'application/pdf': ['.pdf'],
       'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
     },
-    multiple: false,
+    multiple: true,
   });
 
-  const handleUpload = async () => {
-    if (!file || !order.patientId) return;
+  const handleSubmit = async () => {
+    if (!order.patientId) return;
+    if (!isEditing && files.length === 0) return;
 
     setUploading(true);
     setError(null);
 
     try {
-      const signatureResponse = await fetch('/api/uploads/cloudinary-presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, folder: 'lab_results' }),
-      });
+      let resultData = Array.isArray(order.results) ? [...order.results] : (order.results ? [order.results] : []);
 
-      if (!signatureResponse.ok) {
-        const errorData = await signatureResponse.json();
-        let message = 'Failed to get upload signature.';
-        if (errorData && typeof errorData === 'object' && 'error' in errorData) {
-          message = String(errorData.error);
+      if (files.length > 0) {
+        for (const file of files) {
+          const signatureResponse = await fetch('/api/uploads/cloudinary-presign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, folder: 'lab_results' }),
+          });
+
+          if (!signatureResponse.ok) {
+            const errorData = await signatureResponse.json();
+            let message = 'Failed to get upload signature.';
+            if (errorData && typeof errorData === 'object' && 'error' in errorData) {
+              message = String(errorData.error);
+            }
+            throw new Error(message);
+          }
+
+          const { signature, timestamp, apiKey, uploadUrl }: SignatureResponse = await signatureResponse.json();
+
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('signature', signature);
+          formData.append('timestamp', timestamp.toString());
+          formData.append('api_key', apiKey);
+          formData.append('folder', 'lab_results');
+
+          const cloudinaryResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!cloudinaryResponse.ok) {
+            const errorData = await cloudinaryResponse.json();
+            let message = 'Failed to upload file to Cloudinary.';
+            if (errorData && typeof errorData === 'object' && 'error' in errorData && errorData.error && typeof errorData.error === 'object' && 'message' in errorData.error) {
+              message = String((errorData.error as {message: unknown}).message);
+            }
+            throw new Error(message);
+          }
+
+          const cloudinaryData: CloudinaryUploadResponse = await cloudinaryResponse.json();
+          const fileResult = {
+            public_id: cloudinaryData.public_id,
+            secure_url: cloudinaryData.secure_url,
+            format: cloudinaryData.format,
+            bytes: cloudinaryData.bytes,
+            original_filename: file.name,
+          };
+
+          resultData.push(fileResult);
+
+          // Create attachment for new uploads
+          if (!isEditing) {
+            const attachmentResponse = await fetch(`/api/patients/${order.patientId._id}/attachments`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...fileResult,
+                category: 'lab',
+              }),
+            });
+
+            if (!attachmentResponse.ok) {
+              throw new Error('Failed to create attachment record.');
+            }
+          }
         }
-        throw new Error(message);
       }
 
-      const { signature, timestamp, apiKey, uploadUrl }: SignatureResponse = await signatureResponse.json();
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('signature', signature);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('api_key', apiKey);
-      formData.append('folder', 'lab_results'); 
-
-      const cloudinaryResponse = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!cloudinaryResponse.ok) {
-        const errorData = await cloudinaryResponse.json();
-        let message = 'Failed to upload file to Cloudinary.';
-        if (errorData && typeof errorData === 'object' && 'error' in errorData && errorData.error && typeof errorData.error === 'object' && 'message' in errorData.error) {
-          message = String((errorData.error as {message: unknown}).message);
-        }
-        throw new Error(message);
-      }
-
-      const cloudinaryData: CloudinaryUploadResponse = await cloudinaryResponse.json();
-
-      // Create the attachment record in your database
-      const attachmentResponse = await fetch(`/api/patients/${order.patientId._id}/attachments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          public_id: cloudinaryData.public_id,
-          secure_url: cloudinaryData.secure_url,
-          format: cloudinaryData.format,
-          bytes: cloudinaryData.bytes,
-          category: 'lab',
-          original_filename: file.name,
-        }),
-      });
-
-      if (!attachmentResponse.ok) {
-        throw new Error('Failed to create attachment record.');
-      }
-
-      // Update the lab order status
+      // Update the lab order
       await fetch(`/api/lab-orders/${order._id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             status: 'Completed',
-            result: {
-              public_id: cloudinaryData.public_id,
-              secure_url: cloudinaryData.secure_url,
-              format: cloudinaryData.format,
-              bytes: cloudinaryData.bytes,
-              original_filename: file.name,
-            }
+            notes: notes.trim() || undefined,
+            results: resultData,
           }),
         }
       );
@@ -157,7 +165,7 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
             <UploadCloud className="h-6 w-6 mr-3 text-primary" />
-            Upload Lab Result
+            {isEditing ? 'Edit Lab Result' : 'Upload Lab Result'}
           </DialogTitle>
         </DialogHeader>
 
@@ -186,41 +194,72 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
             </div>
           </div>
 
-          {file && (
-            <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <File className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{file.name}</span>
-              </div>
-              <button onClick={() => setFile(null)} className="text-gray-500 hover:text-red-500 transition-colors">
-                <X className="h-4 w-4" />
-              </button>
+          <div className="space-y-2">
+            <label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Notes (optional)
+            </label>
+            <Textarea
+              id="notes"
+              placeholder="Add any additional notes or details about the lab result..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[100px] bg-white/50 dark:bg-gray-900/50"
+            />
+          </div>
+
+          {files.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Files:</p>
+              {files.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <File className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-xs">{file.name}</span>
+                  </div>
+                  <button onClick={() => setFiles(files.filter((_, i) => i !== index))} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <X className="h-4 w-4 text-gray-500" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
-          {error && <p className="text-red-500 text-sm mt-2">Error: {error}</p>}
+          {files.length === 0 && isEditing && order.results && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Current Results:</p>
+              {(Array.isArray(order.results) ? order.results : [order.results]).map((result, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <File className="h-5 w-5 text-gray-500" />
+                    <a
+                      href={result.secure_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-primary hover:underline truncate max-w-xs"
+                    >
+                      {result.original_filename || 'View Result'}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-red-500 bg-red-100/50 dark:bg-red-900/20 p-3 rounded-lg">{error}</p>
+          )}
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            disabled={uploading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUpload}
-            disabled={!file || uploading}
-            className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
-          >
+        <DialogFooter className="p-6 pt-4 bg-gray-50/50 dark:bg-gray-900/50">
+          <Button variant="outline" onClick={onClose} disabled={uploading}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={uploading || (files.length === 0 && !isEditing)} className="bg-primary hover:bg-primary/90 text-white dark:text-black">
             {uploading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {files.length > 0 ? 'Uploading...' : 'Updating...'}
               </>
             ) : (
-              'Upload & Complete'
+              files.length > 0 ? (isEditing ? 'Add Results' : 'Upload Results') : (isEditing ? 'Update Notes' : 'Upload Result')
             )}
           </Button>
         </DialogFooter>

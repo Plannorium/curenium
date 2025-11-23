@@ -2,8 +2,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ILabOrder } from '@/models/LabOrder';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Beaker, CheckCircle, Clock, Search, User, FileText, Upload } from 'lucide-react';
+import { Beaker, CheckCircle, Clock, Search, User, FileText, Upload, Pencil, Eye } from 'lucide-react';
 import { UploadResultModal } from './UploadResultModal';
+import { TestDetailsModal } from './TestDetailsModal';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ const LabDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<LabOrderWithPatient | null>(null);
+  const [detailsOrder, setDetailsOrder] = useState<LabOrderWithPatient | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isClient, setIsClient] = useState(false);
@@ -160,14 +162,22 @@ const LabDashboard = () => {
                           <FileText className="mr-2 h-5 w-5 text-primary" /> 
                           <span>Tests Requested</span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 pl-7">{order.tests.join(', ')}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{order.tests.join(', ')}</p>
                       </div>
+                      {order.notes && (
+                        <div className="mt-4">
+                          <div className="font-semibold flex items-center mb-2 text-md">
+                          
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{order.notes}</p>
+                        </div>
+                      )}
                       <div>
                         <div className="font-semibold flex items-center mt-4 mb-2 text-md">
                           <Clock className="mr-2 h-5 w-5 text-primary" /> 
                           <span>Requested On</span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 pl-7">{new Date(order.createdAt).toLocaleString()}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{new Date(order.createdAt).toLocaleString()}</p>
                       </div>
                       {order.status === 'Completed' && order.updatedAt && (
                         <div>
@@ -175,13 +185,23 @@ const LabDashboard = () => {
                             <CheckCircle className="mr-2 h-5 w-5 text-green-500" /> 
                             <span>Submitted On</span>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 pl-7">{new Date(order.updatedAt).toLocaleString()}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{new Date(order.updatedAt).toLocaleString()}</p>
                         </div>
                       )}
+                      <Button onClick={() => setDetailsOrder(order)} className="w-full mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white shadow-md hover:shadow-lg transition-all duration-300">
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </Button>
                       {order.status === 'Pending' && (
                         <Button onClick={() => setSelectedOrder(order)} className="w-full mt-4 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                           <Upload className="mr-2 h-4 w-4" />
                           Upload Result
+                        </Button>
+                      )}
+                      {order.status === 'Completed' && (
+                        <Button onClick={() => setSelectedOrder(order)} className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit Result
                         </Button>
                       )}
                     </CardContent>
@@ -207,6 +227,13 @@ const LabDashboard = () => {
             fetchLabOrders();
             setSelectedOrder(null);
           }}
+        />
+      )}
+
+      {detailsOrder && (
+        <TestDetailsModal
+          order={detailsOrder}
+          onClose={() => setDetailsOrder(null)}
         />
       )}
     </div>

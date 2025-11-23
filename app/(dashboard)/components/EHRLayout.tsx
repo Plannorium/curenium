@@ -5,16 +5,30 @@ import { Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useRole } from "@/components/auth/RoleProvider";
 
 const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const pathname = usePathname();
+  const { role } = useRole();
 
-  const menuItems = [
+  const baseMenuItems = [
     { href: "/dashboard/ehr/patients", label: "All Patients" },
     { href: "/dashboard/ehr/appointments", label: "Appointments" },
+    { href: "/dashboard/ehr/lab", label: "Lab" },
     { href: "/dashboard/ehr/audit-logs", label: "Audit Logs" },
   ];
+
+  // Add role-based menu items
+  const menuItems = [...baseMenuItems];
+
+  if (role === 'doctor') {
+    menuItems.push({ href: "/dashboard/ehr/doctor-dashboard", label: "Doctor Dashboard" });
+  }
+
+  if (role === 'nurse') {
+    menuItems.push({ href: "/dashboard/ehr/nurse-dashboard", label: "Nurse Dashboard" });
+  }
 
   const renderSidebarContent = () => (
     <>

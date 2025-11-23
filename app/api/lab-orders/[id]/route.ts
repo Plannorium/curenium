@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import dbConnect from '@/lib/dbConnect';
 import LabOrder, { ILabOrder } from '@/models/LabOrder';
+import AuditLog from '@/models/AuditLog';
 
 export async function PUT(
   req: NextRequest,
@@ -9,32 +10,35 @@ export async function PUT(
 ) {
   await dbConnect();
   const session = await getSession();
-  const params = await paramsPromise;
-
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
+  const params = await paramsPromise;
   const { id: orderId } = params;
-  const { status }: { status: ILabOrder['status'] } = await req.json();
+  const body: any = await req.json();
+
+  // results is now an array of objects, no need to stringify
 
   try {
-    const labOrder = await LabOrder.findById(orderId);
+    await dbConnect();
 
-    if (!labOrder) {
-      return NextResponse.json({ message: 'Lab order not found' }, { status: 404 });
+    const updatedLabOrder = await LabOrder.findByIdAndUpdate(
+      orderId,
+      { $set: body },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedLabOrder) {
+      return NextResponse.json({ error: "Lab order not found" }, { status: 404 });
     }
 
-    if (labOrder.orgId.toString() !== session.user.organizationId) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
-    }
-
-    labOrder.status = status;
-    await labOrder.save();
-
-    return NextResponse.json(labOrder, { status: 200 });
-  } catch (error) {
-    console.error('Error updating lab order:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(updatedLabOrder.toObject());
+  } catch (error: any) {
+    console.error("Error updating lab order:", error);
+    return NextResponse.json(
+      { error: "Error updating lab order", details: error.message },
+      { status: 500 }
+    );
   }
 }

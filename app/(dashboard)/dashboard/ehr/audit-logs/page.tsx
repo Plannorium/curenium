@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ServerCrash } from "lucide-react";
+import { ServerCrash, ClipboardListIcon } from "lucide-react";
 
 interface AuditLog {
   _id: string;
@@ -66,36 +66,52 @@ const AuditLogPage = () => {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Global Audit Log</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4" />
-        </CardContent>
-      </Card>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <Card className="backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl">
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center text-lg font-semibold text-foreground dark:text-white">
+              <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
+                <ClipboardListIcon className="h-5 w-5 text-blue-500" />
+              </div>
+              Global Audit Logs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-8 w-full mb-4" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <ServerCrash className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <Alert variant="destructive">
+          <ServerCrash className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Global Audit Log</CardTitle>
+      <Card className="backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 dark:from-blue-500/10 via-transparent to-purple-500/5 dark:to-purple-500/10 rounded-xl pointer-events-none"></div>
+        <CardHeader className="relative">
+          <CardTitle className="flex items-center text-lg font-semibold text-foreground dark:text-white">
+            <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
+              <ClipboardListIcon className="h-5 w-5 text-blue-500" />
+            </div>
+            Global Audit Logs
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           {auditLogs.length > 0 ? (
             <Table>
               <TableHeader>
