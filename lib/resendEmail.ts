@@ -9,7 +9,7 @@ const isPlaceholderKey = (key: string) => {
 
 console.log("RESEND_API_KEY loaded:", RESEND_API_KEY);
 
-const resend = RESEND_API_KEY && !isPlaceholderKey(RESEND_API_KEY) ? new Resend(RESEND_API_KEY) : null;
+export const resend = RESEND_API_KEY && !isPlaceholderKey(RESEND_API_KEY) ? new Resend(RESEND_API_KEY) : null;
 
 export const sendConfirmationEmail = async (email: string, name: string, confirmationLink: string) => {
   if (!resend || isPlaceholderKey(RESEND_API_KEY)) {
@@ -237,6 +237,77 @@ export const sendAddedToOrgEmail = async (email: string, fullName: string, organ
     return { ok: true };
   } catch (error) {
     console.error("Error sending added to org email:", error);
+    return { ok: false, message: "send_failed", error };
+  }
+};
+
+export const sendAppointmentConfirmationEmail = async (email: string, patientName: string, doctorName: string, appointmentDate: string, appointmentType: string) => {
+  if (!resend || isPlaceholderKey(RESEND_API_KEY)) {
+    console.warn("RESEND_API_KEY is not set or is a placeholder. Skipping appointment confirmation email.");
+    return { ok: false, message: "email_skipped" };
+  }
+
+  try {
+    await resend.emails.send({
+      from: "Plannorium <noreply@plannorium.com>",
+      to: email,
+      subject: `Appointment Confirmed - ${appointmentType}`,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Appointment Confirmed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+        @media screen {
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 400;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+            @font-face {
+                font-family: 'Inter';
+                font-style: normal;
+                font-weight: 600;
+                src: url(https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2) format('woff2');
+            }
+        }
+        body, table, td, a { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+        table, td { mso-table-rspace: 0pt; mso-table-lspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; }
+        a[x-apple-data-detectors] { font-family: inherit !important; font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; color: inherit !important; text-decoration: none !important; }
+        div[style*="margin: 16px 0;"] { margin: 0 !important; }
+        body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; }
+        table { border-collapse: collapse !important; }
+        a { color: #22c55e; }
+        img { height: auto; line-height: 100%; text-decoration: none; border: 0; outline: none; }
+        .gradient-bg { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+        .btn-primary { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff !important; padding: 16px 32px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 700; font-size: 16px; text-align: center; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4); }
+    </style>
+</head>
+<body style="background-color: #f8fafc;">
+    <div style="display: none; font-size: 1px; color: #fefefe; line-height: 1px; font-family: 'Inter', Helvetica, Arial, sans-serif; max-height: 0; max-width: 0; opacity: 0; overflow: hidden;">
+        Your appointment has been confirmed.
+    </div>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr><td align="center" bgcolor="#f8fafc" style="padding: 40px 24px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+            <tr><td align="center" class="gradient-bg" style="padding: 48px 24px 0; font-family: 'Inter', Helvetica, Arial, sans-serif; border-radius: 16px 16px 0 0;"><h1 style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: -1px; line-height: 48px; color: #ffffff;">Appointment Confirmed</h1></td></tr>
+            <tr><td align="center" bgcolor="#ffffff" style="padding: 48px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 18px; line-height: 28px; color: #374151;"><p style="margin: 0 0 24px 0;">Hi ${patientName},</p><p style="margin: 0 0 32px 0;">Your appointment has been confirmed and scheduled.</p><p style="margin: 0 0 16px 0;"><strong>Appointment Details:</strong></p><ul style="margin: 0 0 40px 0; padding-left: 20px;"><li><strong>Doctor:</strong> ${doctorName}</li><li><strong>Date & Time:</strong> ${new Date(appointmentDate).toLocaleString()}</li><li><strong>Type:</strong> ${appointmentType}</li></ul><p style="margin: 0 0 40px 0; font-size: 16px; color: #6b7280;">Please arrive 15 minutes early for your appointment. If you need to reschedule, contact us as soon as possible.</p></td></tr>
+            <tr><td align="center" bgcolor="#f8fafc" style="padding: 32px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px; color: #6b7280; border-radius: 0 0 16px 16px;"><p style="margin: 0;">Thank you for choosing Curenium. We look forward to seeing you!</p></td></tr>
+        </table></td></tr>
+        <tr><td align="center" bgcolor="#f8fafc" style="padding: 24px;"><table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+            <tr><td align="center" bgcolor="#f8fafc" style="padding: 12px 24px; font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 20px; color: #9ca3af;"><p style="margin: 0;">This email was sent because your appointment was confirmed on Curenium.</p></td></tr>
+        </table></td></tr>
+    </table>
+</body>
+</html>`,
+    });
+    return { ok: true };
+  } catch (error) {
+    console.error("Error sending appointment confirmation email:", error);
     return { ok: false, message: "send_failed", error };
   }
 };

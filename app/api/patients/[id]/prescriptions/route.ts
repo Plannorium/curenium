@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   try {
     await connectDB();
-    let query = Prescription.find({ patientId: resolvedParams.id, orgId: token.orgId }).sort({ datePrescribed: -1 });
+    let query = Prescription.find({ patientId: resolvedParams.id, orgId: token.organizationId }).sort({ datePrescribed: -1 });
 
     if (limit) {
       query = query.limit(parseInt(limit));
@@ -37,7 +37,7 @@ export async function POST(
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const resolvedParams = await params;
-  const allowed = ["doctor"];
+  const allowed = ["doctor", "admin"];
   if (!token.role || !allowed.includes(token.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const body: PrescriptionType = await req.json();
@@ -45,7 +45,7 @@ export async function POST(
   const p = await Prescription.create({
     ...body,
     patientId: resolvedParams.id,
-    orgId: token.orgId, // Assuming orgId is in the token
+    orgId: token.organizationId,
     prescribedBy: token.sub || token.id,
   });
 

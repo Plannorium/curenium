@@ -36,6 +36,19 @@ export interface IUser extends Document {
     marketing_emails: boolean;
     security_emails: boolean;
   };
+  availabilitySettings: {
+    isAvailable: boolean;
+    workingHours: {
+      monday: { start: string; end: string; enabled: boolean };
+      tuesday: { start: string; end: string; enabled: boolean };
+      wednesday: { start: string; end: string; enabled: boolean };
+      thursday: { start: string; end: string; enabled: boolean };
+      friday: { start: string; end: string; enabled: boolean };
+      saturday: { start: string; end: string; enabled: boolean };
+      sunday: { start: string; end: string; enabled: boolean };
+    };
+    timeZone: string;
+  };
 }
 
 const UserSchema = new mongoose.Schema(
@@ -80,6 +93,47 @@ const UserSchema = new mongoose.Schema(
       social_emails: { type: Boolean, default: true },
       marketing_emails: { type: Boolean, default: false },
       security_emails: { type: Boolean, default: true },
+    },
+    availabilitySettings: {
+      isAvailable: { type: Boolean, default: true },
+      workingHours: {
+        monday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        tuesday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        wednesday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        thursday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        friday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        saturday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: false }
+        },
+        sunday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: false }
+        },
+      },
+      timeZone: { type: String, default: "UTC" },
     },
   },
   { timestamps: true }

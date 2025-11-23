@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import connectDB from "@/lib/dbConnect";
 import LabOrder from "@/models/LabOrder";
+import { pusher } from "../../../../lib/pusher";
 import AuditLog from "@/models/AuditLog";
-import { io } from "socket.io-client";
-
-const socket = io();
 
 export async function GET(req: NextRequest, context: any) {
   const { params } = context;
@@ -30,7 +28,7 @@ export async function POST(
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const allowed = ["doctor"];
+  const allowed = ["doctor", "admin"];
   if (!allowed.includes(token.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -55,7 +53,7 @@ export async function POST(
     details: `Lab order ${labOrder._id} created for patient ${params.id}`,
   });
 
-  socket.emit("new_lab_order", { orgId: token.organizationId, labOrder });
+  await pusher.trigger(token.organizationId, "new_lab_order", labOrder);
 
   return NextResponse.json({ ok: true, labOrder }, { status: 201 });
 }
