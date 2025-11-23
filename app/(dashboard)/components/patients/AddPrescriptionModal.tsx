@@ -54,7 +54,7 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="dark:bg-slate-900/80">
         <DialogHeader>
           <DialogTitle>Add Prescription</DialogTitle>
         </DialogHeader>

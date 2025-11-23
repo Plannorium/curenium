@@ -50,7 +50,7 @@ export const AddLabOrderModal = ({ patientId, isOpen, onClose, onLabOrderAdded }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="dark:bg-slate-900/80">
         <DialogHeader>
           <DialogTitle>Request Lab Order</DialogTitle>
         </DialogHeader>

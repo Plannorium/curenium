@@ -9,7 +9,7 @@ export interface Appointment {
   date: string;
   reason: string;
   type: string;
-  status: "scheduled" | "completed" | "cancelled";
+  status: "scheduled" | "confirmed" | "completed" | "cancelled";
   notes?: string;
   createdBy: string;
   createdAt: string;

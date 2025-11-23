@@ -1,3 +1,4 @@
+import { pusher } from './../../../../lib/pusher';
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import dbConnect from "@/lib/dbConnect";
@@ -5,6 +6,7 @@ import Attachment, { IAttachment } from "@/models/Attachment";
 import Patient, { IPatient } from "@/models/Patient";
 import { headers } from "next/headers";
 import * as z from "zod";
+import AuditLog from "@/models/AuditLog";
 
 export async function GET(
   req: NextRequest,
@@ -94,6 +96,7 @@ export async function POST(
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
+    const attachmentCategory = category || "other";
     const newAttachment: IAttachment = new Attachment({
       orgId: session.user.organizationId,
       patientId,
@@ -102,14 +105,36 @@ export async function POST(
       secure_url,
       format,
       bytes,
-      category: category || "other",
+      category: attachmentCategory,
       notes: notes || null,
       original_filename,
     });
 
-    newAttachment._setAuditContext(session.user.id, session.user.role, ip, { uploadProvider: "cloudinary", originalFilename: original_filename });
-
     await newAttachment.save();
+
+    // Create an audit log entry
+    await AuditLog.create({
+      orgId: session.user.organizationId,
+      userId: session.user.id,
+      action: 'attachment.create',
+      targetId: newAttachment._id,
+      targetType: 'Attachment',
+      details: `Uploaded an attachment (${attachmentCategory}) for patient ${patientId}`,
+    });
+
+    // Trigger a real-time notification
+    await Promise.all([
+      pusher.trigger(
+        `patient-${patientId}`,
+        'attachment:new',
+        newAttachment
+      ),
+      pusher.trigger(
+        `organization-${session.user.organizationId}`,
+        'attachment:new',
+        newAttachment
+      )
+    ]);
 
     return NextResponse.json(newAttachment, { status: 201 });
   } catch (error) {

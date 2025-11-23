@@ -43,6 +43,28 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
     }
   };
 
+  const handleConfirmAppointment = async (appointmentId: string) => {
+    try {
+      const res = await fetch(`/api/patients/${patientId}/appointments`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appointmentId,
+          status: 'confirmed',
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to confirm appointment");
+      }
+      // Refresh appointments
+      fetchAppointments();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   useEffect(() => {
     fetchAppointments();
   }, [patientId]);
@@ -118,18 +140,32 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
                     </TableCell>
                     <TableCell className="text-gray-700 dark:text-gray-300">{a.reason}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          a.status === "scheduled"
-                            ? "default"
-                            : a.status === "completed"
-                            ? "secondary"
-                            : "destructive"
-                        }
-                        className="font-medium"
-                      >
-                        {a.status}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge
+                          variant={
+                            a.status === "scheduled"
+                              ? "default"
+                              : a.status === "confirmed"
+                              ? "secondary"
+                              : a.status === "completed"
+                              ? "secondary"
+                              : "destructive"
+                          }
+                          className="font-medium"
+                        >
+                          {a.status}
+                        </Badge>
+                        {a.status === "scheduled" && session?.user?.role && ['doctor', 'admin', 'staff'].includes(session.user.role) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleConfirmAppointment(a._id)}
+                            className="text-xs"
+                          >
+                            Confirm
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
