@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "./ImageLightbox";
 import { Input } from "@/components/ui/input";
@@ -1598,40 +1598,24 @@ export default function Chat() {
   }, [activeRoom, messages.length, scrollPositions]);
 
   // Keep user near bottom when new messages arrive, but don't fight modals
-  useEffect(() => {
+  const scrollIfNeeded = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    const shouldScrollToBottom = !hasUserScrolledUp;
-
-    const scrollIfNeeded = () => {
-      if (shouldScrollToBottom && !isDocModalOpen && lightbox === null) {
+    // Only scroll if the user hasn't scrolled up, and no modals are open.
+    if (!hasUserScrolledUp && !isDocModalOpen && lightbox === null) {
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 5; // 5px threshold
+      // Avoid forcing a scroll if we are already at the bottom.
+      if (!isAtBottom) {
         container.scrollTop = container.scrollHeight;
       }
-    };
-
-    // Only auto-scroll for new messages if user hasn't scrolled up
-    if (!hasUserScrolledUp) {
-      scrollIfNeeded();
     }
+  }, [hasUserScrolledUp, isDocModalOpen, lightbox]);
 
-    const observer = new MutationObserver(() => {
-      if (!hasUserScrolledUp) {
-        scrollIfNeeded();
-      }
-    });
-
-    observer.observe(container, {
-      childList: true,
-      subtree: true,
-      attributes: false,
-      characterData: false,
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [messages, isDocModalOpen, lightbox, hasUserScrolledUp]);
+  useEffect(() => {
+    // This effect runs when new messages are added.
+    scrollIfNeeded();
+  }, [messages, scrollIfNeeded]);
 
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
