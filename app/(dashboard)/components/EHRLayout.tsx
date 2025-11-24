@@ -37,9 +37,9 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
     menuItems.push({ href: "/dashboard/ehr/lab", label: "Lab" });
   }
 
-  if (role === 'admin' || role === 'sales-representative') {
-    menuItems.push({ href: "/dashboard/ehr/billing", label: "Billing" });
-  } 
+  // if (role === 'admin' || role === 'sales-representative') {
+  //   menuItems.push({ href: "/dashboard/ehr/billing", label: "Billing" });
+  // } 
 
   const renderSidebarContent = () => (
     <>
