@@ -16,7 +16,23 @@ export default withAuth(
       return new NextResponse("You are not authorized to access this page.", { status: 403 });
     }
 
-    if (pathname.startsWith("/dashboard/clinical") && !["admin", "doctor"].includes(userRole)) {
+    if (pathname.startsWith("/dashboard/ehr/lab") && !["admin", "doctor", "pharmacist", "nurse"].includes(userRole)) {
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
+    }
+
+    if (pathname.startsWith("/dashboard/ehr/pharmacy") && !["admin", "doctor", "pharmacist", "nurse"].includes(userRole)) {
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
+    }
+
+    if (pathname.startsWith("/dashboard/ehr/doctor-dashboard") && userRole !== "doctor") {
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
+    }
+
+    if (pathname.startsWith("/dashboard/ehr/nurses-dashboard") && userRole !== "nurse") {
+      return new NextResponse("You are not authorized to access this page.", { status: 403 });
+    }
+
+    if (pathname.startsWith("/dashboard/clinical") && !["admin", "doctor", "nurse"].includes(userRole)) {
       return new NextResponse("You are not authorized to access this page.", { status: 403 });
     }
 
