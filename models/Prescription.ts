@@ -22,6 +22,8 @@ const PrescriptionSchema = new Schema(
       enum: ["active", "completed", "cancelled"],
       default: "active",
     },
+    dispensedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    dispensedNotes: String,
   },
   { timestamps: true }
 );

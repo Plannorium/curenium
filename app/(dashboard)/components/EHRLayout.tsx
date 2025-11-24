@@ -15,20 +15,31 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   const baseMenuItems = [
     { href: "/dashboard/ehr/patients", label: "All Patients" },
     { href: "/dashboard/ehr/appointments", label: "Appointments" },
-    { href: "/dashboard/ehr/lab", label: "Lab" },
-    { href: "/dashboard/ehr/audit-logs", label: "Audit Logs" },
+    { href: "/dashboard/ehr/audit-logs", label: "Audit Logs" }
   ];
 
   // Add role-based menu items
   const menuItems = [...baseMenuItems];
 
-  if (role === 'doctor') {
+  if (role === 'doctor' || role === 'admin') {
     menuItems.push({ href: "/dashboard/ehr/doctor-dashboard", label: "Doctor Dashboard" });
   }
 
-  if (role === 'nurse') {
-    menuItems.push({ href: "/dashboard/ehr/nurse-dashboard", label: "Nurse Dashboard" });
+  if (role === 'nurse' || role === 'admin'  ) {
+    menuItems.push({ href: "/dashboard/ehr/nurses-dashboard", label: "Nurse Dashboard" });
   }
+
+  if (role === 'pharmacist' || role === 'admin' || role === 'doctor') {
+    menuItems.push({ href: "/dashboard/ehr/pharmacy", label: "Pharmacy" });
+  }
+
+  if (role === 'nurse' || role === 'admin' || role === 'doctor' || role === 'lab-technician') {
+    menuItems.push({ href: "/dashboard/ehr/lab", label: "Lab" });
+  }
+
+  if (role === 'admin' || role === 'sales-representative') {
+    menuItems.push({ href: "/dashboard/ehr/billing", label: "Billing" });
+  } 
 
   const renderSidebarContent = () => (
     <>

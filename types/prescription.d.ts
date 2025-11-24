@@ -12,6 +12,8 @@ export interface Prescription {
   durationDays: number;
   status: 'active' | 'completed' | 'cancelled';
   notes?: string;
+  dispensedBy?: string;
+  dispensedNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }

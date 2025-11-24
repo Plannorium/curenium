@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getSession } from "@/lib/session";
 import connectDB from "@/lib/dbConnect";
 import Prescription from "@/models/Prescription";
 import { Prescription as PrescriptionType } from "@/types/prescription";
 import AuditLog from "@/models/AuditLog";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSession();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const resolvedParams = await params;
   const { searchParams } = new URL(req.url);
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   try {
     await connectDB();
-    let query = Prescription.find({ patientId: resolvedParams.id, orgId: token.organizationId }).sort({ datePrescribed: -1 });
+    let query = Prescription.find({ patientId: resolvedParams.id, orgId: session.user.organizationId }).sort({ datePrescribed: -1 });
 
     if (limit) {
       query = query.limit(parseInt(limit));
@@ -33,25 +33,25 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSession();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const resolvedParams = await params;
   const allowed = ["doctor", "admin"];
-  if (!token.role || !allowed.includes(token.role))
+  if (!session.user.role || !allowed.includes(session.user.role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const body: PrescriptionType = await req.json();
   await connectDB();
   const p = await Prescription.create({
     ...body,
     patientId: resolvedParams.id,
-    orgId: token.organizationId,
-    prescribedBy: token.sub || token.id,
+    orgId: session.user.organizationId,
+    prescribedBy: session.user.id,
   });
 
   await AuditLog.create({
-    orgId: token.orgId,
-    userId: token.sub || token.id,
+    orgId: session.user.organizationId,
+    userId: session.user.id,
     action: "prescription.create",
     details: `Prescription ${p._id} created for patient ${resolvedParams.id}`,
   });

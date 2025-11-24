@@ -75,7 +75,7 @@ import { useChatContext } from "@/contexts/ChatContext";
 import PdfPreviewCard from "./PdfPreviewCard";
 import AudioVisualizer from "./AudioVisualizer";
 import LiveAudioVisualizer from "./LiveAudioVisualizer";
-import { IUser } from "@/models/User";
+import type { IUser } from "@/models/User";
 
 interface User {
   id: string;

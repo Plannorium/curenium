@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Card, CardContent, CardHeader, CardTitle
 } from "@/components/ui/card";
@@ -7,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Prescription } from "@/types/prescription";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ServerCrash, Pill, Calendar, Repeat, CheckCircle, PlusCircle } from "lucide-react";
+import { ServerCrash, Pill, Calendar, Repeat, CheckCircle, PlusCircle, ArrowRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { AddPrescriptionModal } from "./AddPrescriptionModal";
 
 interface PrescriptionsDisplayProps {
@@ -19,6 +21,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: session } = useSession();
 
   const fetchPrescriptions = async () => {
     try {
@@ -84,14 +87,28 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
           <Pill className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           <span className="text-lg sm:text-2xl">Prescriptions</span>
         </CardTitle>
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          size="sm"
-          className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-        >
-          <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="text-sm sm:text-base">Add Prescription</span>
-        </Button>
+        <div className="flex items-center space-x-2">
+          {session?.user?.role === 'doctor' && (
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            size="sm"
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          >
+            <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="text-sm sm:text-base">Add Prescription</span>
+          </Button>
+          )}
+          <Link href="/dashboard/pharmacy" passHref>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <span className="text-sm sm:text-base">Pharmacy View</span>
+              <ArrowRight className="ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+          </Link>
+        </div>
       </CardHeader>
       <CardContent>
         {prescriptions.length > 0 ? (
@@ -116,6 +133,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base px-4">
               Prescriptions and medications will be displayed here once they are prescribed.
             </p>
+            {session?.user?.role === 'doctor' && (
             <Button
               onClick={() => setIsModalOpen(true)}
               size="sm"
@@ -124,6 +142,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
               <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-sm sm:text-base">Add First Prescription</span>
             </Button>
+            )}
           </div>
         )}
       </CardContent>

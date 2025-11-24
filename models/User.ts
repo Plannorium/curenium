@@ -1,4 +1,4 @@
-import mongoose, { Document, Model } from "mongoose";
+import mongoose, { Document, Model, models } from "mongoose";
 
 export interface IUser extends Document {
   _id: mongoose.Schema.Types.ObjectId;
@@ -139,6 +139,11 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const UserModel: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+// Access mongoose.models directly to avoid issues with named imports under
+// certain bundlers/runtimes (Turbopack/Next.js). Some environments expose
+// the models map only on the default mongoose export, so referencing the
+// imported `models` can be undefined and cause a runtime TypeError.
+const existing = (mongoose && (mongoose as any).models && (mongoose as any).models.User) as Model<IUser> | undefined;
+const UserModel: Model<IUser> = existing || mongoose.model<IUser>("User", UserSchema);
 
 export default UserModel;

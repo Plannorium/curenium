@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import dbConnect from '@/lib/dbConnect';
 import LabOrder, { ILabOrder } from '@/models/LabOrder';
-import AuditLog from '@/models/AuditLog';
+import LabResult from '@/models/LabResult';
 
 export async function PUT(
   req: NextRequest,
@@ -18,8 +18,6 @@ export async function PUT(
   const { id: orderId } = params;
   const body: any = await req.json();
 
-  // results is now an array of objects, no need to stringify
-
   try {
     await dbConnect();
 
@@ -31,6 +29,16 @@ export async function PUT(
 
     if (!updatedLabOrder) {
       return NextResponse.json({ error: "Lab order not found" }, { status: 404 });
+    }
+
+    if (updatedLabOrder.status === 'Completed' && body.results) {
+      const newLabResult = new LabResult({
+        patientId: updatedLabOrder.patientId,
+        labOrderId: updatedLabOrder._id,
+        results: body.results,
+        collectedAt: new Date(),
+      });
+      await newLabResult.save();
     }
 
     return NextResponse.json(updatedLabOrder.toObject());
