@@ -75,7 +75,7 @@ import { useChatContext } from "@/contexts/ChatContext";
 import PdfPreviewCard from "./PdfPreviewCard";
 import AudioVisualizer from "./AudioVisualizer";
 import LiveAudioVisualizer from "./LiveAudioVisualizer";
-import { IUser } from "@/models/User";
+import type { IUser } from "@/models/User";
 
 interface User {
   id: string;
@@ -219,7 +219,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-gradient-to-r from-background/80 to-background/60 dark:from-gray-800/80 dark:to-gray-800/60 backdrop-blur-sm border border-border/50 dark:border-gray-700/50 shadow-lg w-[16.5rem] lg:w-[18.5rem]">
+    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-linear-to-r from-background/80 to-background/60 dark:from-gray-800/80 dark:to-gray-800/60 backdrop-blur-sm border border-border/50 dark:border-gray-700/50 shadow-lg w-66 lg:w-74">
       <audio
         ref={audioRef}
         src={src}
@@ -252,7 +252,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
           onMouseUp={handleMouseUp}
         >
           <div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-100"
+            className="absolute top-0 left-0 h-full bg-linear-to-r from-primary to-primary/80 rounded-full transition-all duration-100"
             style={{ width: `${progressPercentage}%` }}
           />
           <div

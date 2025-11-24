@@ -12,7 +12,20 @@ export async function GET(request: Request) {
 
     try {
         await dbConnect();
-        const channels = await Channel.find({ organizationId: session.user.organizationId });
+        let channels = await Channel.find({ organizationId: session.user.organizationId });
+
+        // Create default 'General' channel if no channels exist
+        if (channels.length === 0) {
+            const defaultChannel = new Channel({
+                name: 'General',
+                organizationId: session.user.organizationId,
+                members: [session.user.id],
+                isDefault: true,
+            });
+            await defaultChannel.save();
+            channels = [defaultChannel];
+        }
+
         return NextResponse.json({ channels });
     } catch (error) {
         console.error('Error fetching channels:', error);

@@ -9,6 +9,7 @@ interface DisplaySettings {
   items: string[];
   language: string;
   timezone: string;
+  calendarType?: 'gregorian' | 'hijri';
 }
 
 interface UserWithDisplaySettings {
@@ -32,7 +33,10 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const settings = { ...user.displaySettings };
+    const settings = {
+      ...user.displaySettings,
+      calendarType: user.displaySettings?.calendarType ?? 'gregorian'
+    };
 
     return NextResponse.json(settings);
   } catch (error) {
@@ -53,21 +57,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const { items, language, timezone, calendarType }: DisplaySettings = await req.json();
 
-    const updatedUser = (await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       session.user.id,
-      { displaySettings: body },
-      { new: true }
+      {
+        $set: {
+          "displaySettings.items": items,
+          "displaySettings.language": language,
+          "displaySettings.timezone": timezone,
+          "displaySettings.calendarType": calendarType,
+        },
+      },
+      { new: true, runValidators: true }
     )
       .select("displaySettings")
-      .lean()) as UserWithDisplaySettings | null;
+      .lean();
 
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const settings = { ...updatedUser.displaySettings };
+    const settings = {
+      ...updatedUser.displaySettings,
+      calendarType: updatedUser.displaySettings?.calendarType ?? 'gregorian'
+    };
 
     return NextResponse.json(settings);
   } catch (error) {

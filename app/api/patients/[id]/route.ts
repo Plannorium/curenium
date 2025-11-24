@@ -57,7 +57,7 @@ export async function PUT(
   }
 
   const { id: patientId } = params;
-  const body = await req.json();
+  const body: Record<string, any> = await req.json();
 
   try {
     const patient: (IPatient & Document) | null = await Patient.findOne({
@@ -73,9 +73,12 @@ export async function PUT(
     }
 
     // Update patient fields
-    Object.assign(patient, body);
+    patient.set(body);
 
-    patient._setAuditContext(session.user.id, session.user.role, ip);
+    // Set audit context for tracking changes
+    if (typeof (patient as any)._setAuditContext === 'function') {
+      patient._setAuditContext(session.user.id, session.user.role, ip, { action: 'Patient Assignment Update' });
+    }
 
     await patient.save();
 
@@ -121,7 +124,16 @@ export async function DELETE(
     // Soft delete
     patient.deleted = true;
 
-    patient._setAuditContext(session.user.id, session.user.role, ip);
+    // Set audit context for tracking changes
+    if (typeof (patient as any)._setAuditContext === 'function') {
+      patient._setAuditContext(session.user.id, session.user.role, ip);
+    } else {
+      // Fallback: manually set audit fields if plugin method is not available
+      (patient as any)._auditUser = session.user.id;
+      (patient as any)._auditUserRole = session.user.role;
+      (patient as any)._auditBefore = (patient as any)._previousState || null;
+      (patient as any)._auditMeta = { ip };
+    }
 
     await patient.save();
 

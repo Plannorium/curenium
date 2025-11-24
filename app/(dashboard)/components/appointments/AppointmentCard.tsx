@@ -2,12 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PopulatedAppointment } from "@/types/appointment";
 import { CheckCircle, XCircle, Calendar as CalendarIcon } from "lucide-react";
+import { useDateFormatter } from "@/lib/date-utils";
 
 interface AppointmentCardProps {
   appointment: PopulatedAppointment;
 }
 
 const AppointmentCard = ({ appointment }: AppointmentCardProps) => {
+  const { formatDateTime } = useDateFormatter();
+
   const getStatusIcon = () => {
     switch (appointment.status) {
       case "scheduled":
@@ -48,7 +51,7 @@ const AppointmentCard = ({ appointment }: AppointmentCardProps) => {
         <div className="flex items-center pt-2">
           {getStatusIcon()}
           <span className="text-xs md:text-sm text-muted-foreground ml-2">
-            {new Date(appointment.date).toLocaleString()}
+            {formatDateTime(appointment.date)}
           </span>
         </div>
         <p className="text-sm md:text-base font-medium leading-none mt-2">{appointment.reason}</p>

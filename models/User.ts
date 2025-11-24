@@ -1,4 +1,4 @@
-import mongoose, { Document, Model } from "mongoose";
+import mongoose, { Document, Model, models } from "mongoose";
 
 export interface IUser extends Document {
   _id: mongoose.Schema.Types.ObjectId;
@@ -23,6 +23,7 @@ export interface IUser extends Document {
     items: string[];
     language: string;
     timezone: string;
+    calendarType?: 'gregorian' | 'hijri';
   };
   appearanceSettings: {
     theme: string;
@@ -35,6 +36,19 @@ export interface IUser extends Document {
     social_emails: boolean;
     marketing_emails: boolean;
     security_emails: boolean;
+  };
+  availabilitySettings: {
+    isAvailable: boolean;
+    workingHours: {
+      monday: { start: string; end: string; enabled: boolean };
+      tuesday: { start: string; end: string; enabled: boolean };
+      wednesday: { start: string; end: string; enabled: boolean };
+      thursday: { start: string; end: string; enabled: boolean };
+      friday: { start: string; end: string; enabled: boolean };
+      saturday: { start: string; end: string; enabled: boolean };
+      sunday: { start: string; end: string; enabled: boolean };
+    };
+    timeZone: string;
   };
 }
 
@@ -68,6 +82,7 @@ const UserSchema = new mongoose.Schema(
       items: { type: [String], default: ["recents", "home"] },
       language: { type: String, default: "en" },
       timezone: { type: String, default: "Asia/Riyadh" },
+      calendarType: { type: String, enum: ['gregorian', 'hijri'], default: 'gregorian' },
     },
     appearanceSettings: {
       theme: { type: String, default: "light" },
@@ -81,10 +96,56 @@ const UserSchema = new mongoose.Schema(
       marketing_emails: { type: Boolean, default: false },
       security_emails: { type: Boolean, default: true },
     },
+    availabilitySettings: {
+      isAvailable: { type: Boolean, default: true },
+      workingHours: {
+        monday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        tuesday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        wednesday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        thursday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        friday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: true }
+        },
+        saturday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: false }
+        },
+        sunday: {
+          start: { type: String, default: "09:00" },
+          end: { type: String, default: "17:00" },
+          enabled: { type: Boolean, default: false }
+        },
+      },
+      timeZone: { type: String, default: "UTC" },
+    },
   },
   { timestamps: true }
 );
 
-const UserModel: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+// Access mongoose.models directly to avoid issues with named imports under
+// certain bundlers/runtimes (Turbopack/Next.js). Some environments expose
+// the models map only on the default mongoose export, so referencing the
+// imported `models` can be undefined and cause a runtime TypeError.
+const existing = (mongoose && (mongoose as any).models && (mongoose as any).models.User) as Model<IUser> | undefined;
+const UserModel: Model<IUser> = existing || mongoose.model<IUser>("User", UserSchema);
 
 export default UserModel;

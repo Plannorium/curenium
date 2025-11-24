@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PatientDetail from '@/app/(dashboard)/components/patients/PatientDetail';
+import LabOrdersDisplay from '@/app/(dashboard)/components/patients/LabOrdersDisplay';
+import HistoricalLabResultsPage from './lab-results/page';
 import { Patient } from '@/types/patient';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function PatientPage() {
   const params = useParams();
@@ -134,8 +137,20 @@ export default function PatientPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6">
-        <div className="max-w-[70rem] mx-auto">
+        <div className="max-w-280 mx-auto">
           <PatientDetail patient={patient} />
+          {/* <Tabs defaultValue="lab-orders" className="w-full mt-8">
+            <TabsList>
+              <TabsTrigger value="lab-orders">Lab Orders</TabsTrigger>
+              <TabsTrigger value="lab-results">Lab Results</TabsTrigger>
+            </TabsList>
+            <TabsContent value="lab-orders">
+              <LabOrdersDisplay patientId={id} />
+            </TabsContent>
+            <TabsContent value="lab-results">
+              <HistoricalLabResultsPage />
+            </TabsContent>
+          </Tabs> */}
         </div>
       </main>
     </div>

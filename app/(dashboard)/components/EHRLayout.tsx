@@ -5,16 +5,41 @@ import { Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useRole } from "@/components/auth/RoleProvider";
 
 const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const pathname = usePathname();
+  const { role } = useRole();
 
-  const menuItems = [
+  const baseMenuItems = [
     { href: "/dashboard/ehr/patients", label: "All Patients" },
     { href: "/dashboard/ehr/appointments", label: "Appointments" },
-    { href: "/dashboard/ehr/audit-logs", label: "Audit Logs" },
+    { href: "/dashboard/ehr/audit-logs", label: "Audit Logs" }
   ];
+
+  // Add role-based menu items
+  const menuItems = [...baseMenuItems];
+
+  if (role === 'doctor' || role === 'admin') {
+    menuItems.push({ href: "/dashboard/ehr/doctor-dashboard", label: "Doctor Dashboard" });
+  }
+
+  if (role === 'nurse' || role === 'admin'  ) {
+    menuItems.push({ href: "/dashboard/ehr/nurses-dashboard", label: "Nurse Dashboard" });
+  }
+
+  if (role === 'pharmacist' || role === 'admin' || role === 'doctor') {
+    menuItems.push({ href: "/dashboard/ehr/pharmacy", label: "Pharmacy" });
+  }
+
+  if (role === 'nurse' || role === 'admin' || role === 'doctor' || role === 'lab-technician') {
+    menuItems.push({ href: "/dashboard/ehr/lab", label: "Lab" });
+  }
+
+  if (role === 'admin' || role === 'sales-representative') {
+    menuItems.push({ href: "/dashboard/ehr/billing", label: "Billing" });
+  } 
 
   const renderSidebarContent = () => (
     <>
@@ -61,7 +86,7 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex h-full flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 flex-shrink-0">
+      <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 shrink-0">
         {renderSidebarContent()}
       </div>
 

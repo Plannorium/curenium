@@ -60,16 +60,19 @@ export function AuditLogPlugin(schema: Schema) {
     if (!this._auditContext) return;
 
     const action = this.isNew ? "create" : "update";
-    const changedFields = this.isNew
-      ? Object.keys(this.toObject())
-      : this.modifiedPaths();
-
-    if (changedFields.length === 0 && !this.isNew) return;
-
     const before: any = {};
     const after: any = {};
+    let changedFields: string[] = [];
 
     if (!this.isNew && this._previousState) {
+      const currentState = this.toObject();
+      changedFields = Object.keys(currentState).filter(key => {
+        // A simple deep comparison might be needed for nested objects if you have them
+        return JSON.stringify(currentState[key]) !== JSON.stringify((this._previousState as any)[key]);
+      });
+
+      if (changedFields.length === 0) return;
+
       changedFields.forEach((field: string) => {
         before[field] = (this._previousState as any)[field];
         after[field] = this.get(field);
@@ -85,7 +88,7 @@ export function AuditLogPlugin(schema: Schema) {
       action: `${model.modelName.toLowerCase()}.${action}`,
       targetType: model.modelName,
       targetId: this._id,
-      before: this.isNew ? undefined : before,
+      before: this.isNew || Object.keys(before).length === 0 ? undefined : before,
       after: this.isNew ? this.toObject() : after,
       meta: this._auditContext.meta,
       orgId: (this as any).orgId,

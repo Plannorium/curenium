@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useCalendar } from "@/components/ui/calendar-context"
 
 const displayFormSchema = z.object({
   items: z.array(z.string()).refine((value) => value.some((item) => item), {
@@ -26,6 +27,7 @@ const displayFormSchema = z.object({
   }),
   language: z.string().min(1, "Please select a language."),
   timezone: z.string().min(1, "Please select a timezone."),
+  calendarType: z.enum(['gregorian', 'hijri']),
 })
 
 type DisplayFormValues = z.infer<typeof displayFormSchema>
@@ -40,10 +42,13 @@ const items = [
 ] as const
 
 export default function DisplayForm() {
+  const { setCalendarType } = useCalendar();
+
   const form = useForm<DisplayFormValues>({
     resolver: zodResolver(displayFormSchema),
     defaultValues: {
       items: [],
+      calendarType: 'gregorian',
     },
   })
 
@@ -54,6 +59,10 @@ export default function DisplayForm() {
         if (response.ok) {
           const data = (await response.json()) as DisplayFormValues;
           form.reset(data);
+          // Also update the calendar context
+          if (data.calendarType) {
+            setCalendarType(data.calendarType);
+          }
         } else {
           console.error("Failed to fetch display settings");
         }
@@ -63,7 +72,7 @@ export default function DisplayForm() {
     }
 
     fetchSettings();
-  }, [form]);
+  }, [form, setCalendarType]);
 
   async function onSubmit(data: DisplayFormValues) {
     try {
@@ -76,6 +85,10 @@ export default function DisplayForm() {
       });
 
       if (response.ok) {
+        // Update the calendar context if calendar type changed
+        if (data.calendarType) {
+          setCalendarType(data.calendarType);
+        }
         toast("Settings updated successfully!");
       } else {
         toast.error("Failed to update settings.");
@@ -137,10 +150,34 @@ export default function DisplayForm() {
               <FormMessage />
             </FormItem>
           )}
-        />
-        <FormField
-          control={form.control}
-          name="items"
+       />
+       <FormField
+         control={form.control}
+         name="calendarType"
+         render={({ field }) => (
+           <FormItem>
+             <FormLabel>Calendar Type</FormLabel>
+             <Select onValueChange={field.onChange} value={field.value}>
+               <FormControl>
+                 <SelectTrigger>
+                   <SelectValue placeholder="Select calendar type" />
+                 </SelectTrigger>
+               </FormControl>
+               <SelectContent>
+                 <SelectItem value="gregorian">Gregorian (AD)</SelectItem>
+                 <SelectItem value="hijri">Hijri (AH)</SelectItem>
+               </SelectContent>
+             </Select>
+             <FormDescription>
+               Choose your preferred calendar system for date displays.
+             </FormDescription>
+             <FormMessage />
+           </FormItem>
+         )}
+       />
+       <FormField
+         control={form.control}
+         name="items"
           render={() => (
             <FormItem>
               <div className="mb-4">

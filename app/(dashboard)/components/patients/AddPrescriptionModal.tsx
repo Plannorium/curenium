@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
@@ -16,12 +17,19 @@ interface AddPrescriptionModalProps {
 
 export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptionAdded }: AddPrescriptionModalProps) {
   const { data: session } = useSession();
-  const [medication, setMedication] = useState('');
+  const [medications, setMedications] = useState<string[]>([]);
   const [dose, setDose] = useState('');
   const [frequency, setFrequency] = useState('');
+  const [route, setRoute] = useState('');
+  const [durationDays, setDurationDays] = useState<number | undefined>();
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [refills, setRefills] = useState<number | undefined>();
+  const [instructions, setInstructions] = useState('');
+  const [reasonForPrescription, setReasonForPrescription] = useState('');
 
   const handleSubmit = async () => {
-    if (!medication || !dose || !frequency) {
+    if (!medications.length || !dose || !frequency) {
       toast.error('All fields are required');
       return;
     }
@@ -32,11 +40,18 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          medication, 
-          dose, 
-          frequency, 
-          prescribedBy: session?.user?.id 
+        body: JSON.stringify({
+          medications,
+          dose,
+          frequency,
+          route,
+          durationDays,
+          startDate: startDate ? new Date(startDate) : undefined,
+          endDate: endDate ? new Date(endDate) : undefined,
+          refills,
+          instructions,
+          reasonForPrescription,
+          prescribedBy: session?.user?.id
         }),
       });
 
@@ -54,15 +69,15 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="dark:bg-slate-900/80">
         <DialogHeader>
           <DialogTitle>Add Prescription</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Input
-            placeholder="Medication"
-            value={medication}
-            onChange={(e) => setMedication(e.target.value)}
+          <Textarea
+            placeholder="Medications (comma-separated)"
+            value={medications.join(', ')}
+            onChange={(e) => setMedications(e.target.value.split(',').map(m => m.trim()).filter(m => m))}
           />
           <Input
             placeholder="Dose"
@@ -73,6 +88,45 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
             placeholder="Frequency"
             value={frequency}
             onChange={(e) => setFrequency(e.target.value)}
+          />
+          <Input
+            placeholder="Route"
+            value={route}
+            onChange={(e) => setRoute(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="Duration (days)"
+            value={durationDays}
+            onChange={(e) => setDurationDays(parseInt(e.target.value))}
+          />
+          <Input
+            type="date"
+            placeholder="Start Date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <Input
+            type="date"
+            placeholder="End Date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="Refills"
+            value={refills}
+            onChange={(e) => setRefills(parseInt(e.target.value))}
+          />
+          <Textarea
+            placeholder="Instructions"
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+          />
+          <Textarea
+            placeholder="Reason for Prescription"
+            value={reasonForPrescription}
+            onChange={(e) => setReasonForPrescription(e.target.value)}
           />
         </div>
         <DialogFooter>

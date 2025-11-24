@@ -7,9 +7,10 @@ export interface IAppointment extends Document {
   date: Date;
   reason: string;
   type: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
   createdBy: Schema.Types.ObjectId;
+  confirmedBy?: Schema.Types.ObjectId;
 }
 
 const AppointmentSchema: Schema = new Schema({
@@ -19,9 +20,10 @@ const AppointmentSchema: Schema = new Schema({
   date: { type: Date, required: true },
   reason: { type: String, required: true },
   type: { type: String, required: true, default: 'Consultation' },
-  status: { type: String, enum: ['scheduled', 'completed', 'cancelled'], default: 'scheduled' },
+  status: { type: String, enum: ['scheduled', 'confirmed', 'completed', 'cancelled'], default: 'scheduled' },
   notes: { type: String },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  confirmedBy: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 const Appointment: Model<IAppointment> = mongoose.models.Appointment || mongoose.model<IAppointment>('Appointment', AppointmentSchema);

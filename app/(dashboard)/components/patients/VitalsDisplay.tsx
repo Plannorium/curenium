@@ -210,8 +210,10 @@ const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
             </Link>
           </Button>
           <Button className="cursor-pointer" size="sm" onClick={() => setIsModalOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle className="lg:mr-1.5 h-4 w-4" />
+            <span className="hidden md:block">
             Record Vitals
+            </span>
           </Button>
         </div>
       </CardHeader>
@@ -220,7 +222,7 @@ const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-4 pt-2">
             <VitalInfo icon={HeartPulse} label="Heart Rate" value={latestVital.heartRate} unit="bpm" />
             <div className="flex items-start space-x-2">
-              <Activity className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <Activity className="h-5 w-5 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Blood Pressure</p>
                 <p className="text-base font-semibold">{`${latestVital.bpSystolic}/${latestVital.bpDiastolic}`} <span className="text-xs font-normal">mmHg</span></p>

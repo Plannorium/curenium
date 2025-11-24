@@ -1,0 +1,36 @@
+export { default as User, type IUser } from './User';
+export { default as Organization, type IOrganization } from './Organization';
+export { default as Patient, type IPatient } from './Patient';
+export { default as Appointment, type IAppointment } from './Appointment';
+export { default as Prescription } from './Prescription';
+export { default as Vital } from './Vital';
+export { default as AuditLog, type IAuditLog } from './AuditLog';
+export { default as Message, type IMessage } from './Message';
+export { default as Channel, type IChannel } from './Channel';
+export { getCallSessionModel as CallSession } from './CallSession';
+export type { ICallSession } from './CallSession';
+export { default as DMRoom, type IDMRoom } from './DMRoom';
+export { default as Notification, type INotification } from './Notification';
+export { default as Alert, type IAlert } from './Alert';
+export { default as LabOrder, type ILabOrder } from './LabOrder';
+export { default as LabResult, type ILabResult } from './LabResult';
+export { default as ClinicalNote, type IClinicalNote } from './ClinicalNote';
+export { default as NursingCarePlan, type INursingCarePlan } from './NursingCarePlan';
+export { default as Encounter, type IEncounter } from './Encounter';
+export { default as Insurance, type IInsurance } from './Insurance';
+export { default as Attachment, type IAttachment } from './Attachment';
+export { default as Shift, type IShift } from './Shift';
+export { default as Medication, type IMedication } from './Medication';
+export { default as Note, type INote } from './Note';
+export { default as Invite, type IInvite } from './Invite';
+
+// New Clinical Documentation Models
+export { default as SOAPNote, type ISOAPNote } from './SOAPNote';
+export { default as Diagnosis, type IDiagnosis } from './Diagnosis';
+export { default as MedicationHistory, type IMedicationHistory } from './MedicationHistory';
+export { default as ProblemList, type IProblemList } from './ProblemList';
+export { default as Allergy, type IAllergy } from './Allergy';
+export { default as CarePlanTemplate, type ICarePlanTemplate } from './CarePlanTemplate';
+export { default as NursingNote, type INursingNote } from './NursingNote';
+export { default as DischargeSummary, type IDischargeSummary } from './DischargeSummary';
+export { default as ConsentForm, type IConsentForm } from './ConsentForm';

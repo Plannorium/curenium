@@ -1,11 +1,11 @@
 import mongoose, { Schema, models, Model, Document } from "mongoose";
 import { Patient } from "@/types/patient";
-import { auditPlugin } from "@/lib/mongooseAuditPlugin";
+import { AuditLogPlugin, IAuditable } from "./AuditLog";
 
 // Define the interface for the Patient document
-export interface IPatient extends Patient {
-  _setAuditContext(userId: string, userRole: string, before?: any, meta?: any): void;
-}
+type PatientDocument = Patient & Document & IAuditable;
+
+export interface IPatient extends PatientDocument {}
 
 const PatientSchema = new Schema(
   {
@@ -24,16 +24,30 @@ const PatientSchema = new Schema(
     metadata: Object,
     deleted: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    // Nursing-specific fields
+    admissionType: { type: String, enum: ["inpatient", "outpatient", "emergency", "day-surgery"] },
+    ward: { type: String },
+    department: { type: String },
+    roomNumber: { type: String },
+    bedNumber: { type: String },
+    assignedNurse: { type: Schema.Types.ObjectId, ref: "User" },
+    assignedDoctor: { type: Schema.Types.ObjectId, ref: "User" },
+    admissionDate: { type: Date },
+    dischargeDate: { type: Date },
+    careLevel: { type: String, enum: ["critical", "intermediate", "basic"] },
+    isolationStatus: { type: String, enum: ["none", "contact", "droplet", "airborne"], default: "none" },
+    fallRisk: { type: String, enum: ["low", "medium", "high"] },
+    mobilityStatus: { type: String, enum: ["independent", "assisted", "wheelchair", "bedridden"] },
   },
   { timestamps: true }
 );
 
-PatientSchema.plugin(auditPlugin, { targetType: "Patient" });
+PatientSchema.plugin(AuditLogPlugin);
 
 PatientSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-const PatientModel = models.Patient || mongoose.model<IPatient & Document>("Patient", PatientSchema);
+const PatientModel = models.Patient || mongoose.model<IPatient>("Patient", PatientSchema);
 
-export default PatientModel as Model<IPatient & Document>;
+export default PatientModel as Model<IPatient>;

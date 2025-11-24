@@ -16,7 +16,7 @@ import { useSession } from 'next-auth/react';
 import { Patient } from '@/types/patient';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IUser as User } from '@/models/User';
+import type { IUser as User } from '@/models/User';
 import {
   Select,
   SelectContent,
@@ -39,7 +39,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, User as UserIcon } from "lucide-react";
 import { useDebounce } from "use-debounce";
 import { Appointment } from '@/types/appointment';
 
@@ -226,29 +226,36 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <CalendarPlus className="h-6 w-6 mr-2" />
-            Book New Appointment
-          </DialogTitle>
-          <DialogDescription>
-            Fill in the details below to book a new appointment.
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl">
+        <DialogHeader className="pb-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
+              <CalendarPlus className="h-5 w-5 text-white" />
+            </div>
+            <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+              Book New Appointment
+            </DialogTitle>
+          </div>
+          <DialogDescription className="text-muted-foreground">
+            Schedule a new appointment for the patient
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4 sm:p-6 space-y-6">
+        <div className="p-6 space-y-6">
           <form onSubmit={handleAppointmentSubmit} className="space-y-6">
             {!patientId && (
-              <div className="space-y-2">
-                <Label htmlFor="patient-search">Find Patient</Label>
+              <div className="space-y-3">
+                <Label htmlFor="patient-search" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                  <UserIcon className="h-4 w-4 mr-2 text-blue-500" />
+                  Find Patient
+                </Label>
                 <Popover open={open} onOpenChange={setOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
                       aria-expanded={open}
-                      className="w-full justify-between"
+                      className="w-full justify-between bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl h-11 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-all duration-200"
                     >
                       {selectedPatient
                         ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
@@ -256,15 +263,16 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-xl">
                     <Command>
                       <CommandInput
                         placeholder="Search patient..."
                         value={searchTerm}
                         onValueChange={setSearchTerm}
+                        className="border-b border-gray-200/50 dark:border-gray-700/50"
                       />
                       <CommandList>
-                        <CommandEmpty>No patient found.</CommandEmpty>
+                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">No patient found.</CommandEmpty>
                         <CommandGroup>
                           {patients.map((p) => (
                             <CommandItem
@@ -277,6 +285,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                                 }
                                 setOpen(false);
                               }}
+                              className="hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg mx-1"
                             >
                               {p.firstName} {p.lastName} (MRN: {p.mrn})
                             </CommandItem>
@@ -289,15 +298,18 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="appointment-type">Appointment Type</Label>
+            <div className="space-y-3">
+              <Label htmlFor="appointment-type" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                <div className="w-4 h-4 mr-2 bg-linear-to-br from-blue-400 to-blue-600 rounded"></div>
+                Appointment Type
+              </Label>
               <Select onValueChange={setAppointmentType} defaultValue="Consultation">
-                <SelectTrigger id="appointment-type">
+                <SelectTrigger id="appointment-type" className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl h-11">
                   <SelectValue placeholder="Select a type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-xl">
                   {Object.keys(appointmentTypes).map((type) => (
-                    <SelectItem key={type} value={type}>
+                    <SelectItem key={type} value={type} className="hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg mx-1">
                       {type}
                     </SelectItem>
                   ))}
@@ -305,8 +317,11 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="purpose-of-visit">Purpose of Visit</Label>
+            <div className="space-y-3">
+              <Label htmlFor="purpose-of-visit" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                <div className="w-4 h-4 mr-2 bg-linear-to-br from-green-400 to-green-600 rounded"></div>
+                Purpose of Visit
+              </Label>
               <Input
                 id="purpose-of-visit"
                 type="text"
@@ -320,6 +335,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                 }}
                 placeholder={appointmentType === 'Other' ? "Please specify the reason" : "Purpose of visit"}
                 required
+                className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-green-400 dark:focus:border-green-500 rounded-xl h-11"
               />
             </div>
 
@@ -404,8 +420,19 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
               </div>
             </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? 'Booking...' : 'Book Appointment'}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl h-11 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                  Booking...
+                </div>
+              ) : (
+                'Book Appointment'
+              )}
             </Button>
           </form>
         </div>

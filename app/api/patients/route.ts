@@ -8,43 +8,48 @@ import { Patient as PatientInterface } from "@/types/patient";
 import connectToDB from "@/lib/dbConnect";
 import { Document } from 'mongoose';
  
- export async function GET(req: NextRequest) { 
-   const { searchParams  } = new URL(req.url ); 
-   const q = searchParams.get("q" ); 
- 
-   if (!q) { 
-     return NextResponse.json( 
-       { message: "Query parameter q is required"  }, 
-       { status: 400  } 
-     ); 
-   } 
- 
-   try { 
-     const session = await getServerSession(authOptions);
-     if (!session || !session.user || !session.user.organizationId) {
-       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-     }
+ export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const q = searchParams.get("q");
+  const assignedNurse = searchParams.get("assignedNurse");
 
-     await connectToDB(); 
- 
-     const patients = await Patient.find({
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || !session.user.organizationId) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectToDB();
+
+    const query: any = {
       orgId: session.user.organizationId,
-      $or: [
+    };
+
+    const userRole = session.user.role;
+
+    if (assignedNurse && userRole !== 'admin' && userRole !== 'doctor') {
+      query.assignedNurse = assignedNurse;
+    } else if (q) {
+      query.$or = [
         { firstName: { $regex: q, $options: "i" } },
         { lastName: { $regex: q, $options: "i" } },
         { mrn: { $regex: q, $options: "i" } },
-      ],
-    }).limit(10); 
- 
-     return NextResponse.json(patients ); 
-   } catch (error) { 
-     console.error("Failed to fetch patients: ", error ); 
-     return NextResponse.json( 
-       { message: "Failed to fetch patients"  }, 
-       { status: 500  } 
-     ); 
-   } 
- } 
+      ];
+    } else {
+      // Return all patients for the organization if no query or assignedNurse is provided
+    }
+
+    const patients = await Patient.find(query).limit(10);
+
+    return NextResponse.json(patients);
+  } catch (error) {
+    console.error("Failed to fetch patients: ", error);
+    return NextResponse.json(
+      { message: "Failed to fetch patients" },
+      { status: 500 }
+    );
+  }
+} 
  
  export async function POST(req: NextRequest) { 
    if (!(await requireRole(req, [ROLE.ADMIN, ROLE.RECEPTIONIST ]))) { 
@@ -80,7 +85,8 @@ import { Document } from 'mongoose';
       createdBy: session.user.id,
     });
 
-    newPatient._setAuditContext(session.user.id || "", session.user.role || "", null, { ip: req.headers.get("x-forwarded-for") || "unknown" });
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    newPatient._setAuditContext(session.user.id || "", session.user.role || "", ip);
     await newPatient.save();
 
     await AuditLog.create({
