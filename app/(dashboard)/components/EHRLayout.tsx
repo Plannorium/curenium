@@ -86,7 +86,7 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex h-full flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 flex-shrink-0">
+      <div className="hidden md:block w-64 backdrop-blur-lg bg-card/80 dark:bg-gray-900/80 border-r border-border/50 dark:border-gray-700/50 shrink-0">
         {renderSidebarContent()}
       </div>
 

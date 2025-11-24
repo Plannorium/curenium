@@ -49,14 +49,16 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 bg-opacity-60 z-50 flex justify-center items-center p-2 sm:p-4 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out scale-95 hover:scale-100">
-        <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
-          <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-            <Beaker className="mr-2 sm:mr-3 text-primary h-5 w-5 sm:h-6 sm:w-6"/>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-9999 flex justify-center items-center p-2 sm:p-4 animate-fade-in">
+      <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out scale-95 hover:scale-100 border border-white/20 dark:border-gray-700/50">
+        <div className="p-4 sm:p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center sticky top-0 bg-linear-to-r from-white/95 to-gray-50/95 dark:from-gray-900/95 dark:to-gray-800/95 backdrop-blur-xl rounded-t-2xl z-10">
+          <h2 className="text-xl sm:text-2xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent flex items-center">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
+              <Beaker className="text-blue-600 dark:text-blue-400 h-5 w-5 sm:h-6 sm:w-6"/>
+            </div>
             <span className="truncate">Test Details</span>
           </h2>
-          <Button onClick={onClose} variant="ghost" size="icon" className="shrink-0">
+          <Button onClick={onClose} variant="ghost" size="icon" className="shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </Button>
         </div>
@@ -139,8 +141,10 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
             </div>
           )}
         </div>
-        <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-2xl flex justify-end">
-          <Button onClick={onClose} variant="outline" className="w-full sm:w-auto">Close</Button>
+        <div className="p-4 sm:p-6 bg-linear-to-r from-gray-50/95 to-white/95 dark:from-gray-800/95 dark:to-gray-900/95 backdrop-blur-xl rounded-b-2xl flex justify-end border-t border-gray-200/50 dark:border-gray-700/50">
+          <Button onClick={onClose} variant="outline" className="w-full sm:w-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
+            Close
+          </Button>
         </div>
       </div>
     </div>

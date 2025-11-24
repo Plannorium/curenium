@@ -229,10 +229,10 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
+            <div className="p-2 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
               <CalendarPlus className="h-5 w-5 text-white" />
             </div>
-            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+            <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
               Book New Appointment
             </DialogTitle>
           </div>
@@ -300,7 +300,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
 
             <div className="space-y-3">
               <Label htmlFor="appointment-type" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
-                <div className="w-4 h-4 mr-2 bg-gradient-to-br from-blue-400 to-blue-600 rounded"></div>
+                <div className="w-4 h-4 mr-2 bg-linear-to-br from-blue-400 to-blue-600 rounded"></div>
                 Appointment Type
               </Label>
               <Select onValueChange={setAppointmentType} defaultValue="Consultation">
@@ -319,7 +319,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
 
             <div className="space-y-3">
               <Label htmlFor="purpose-of-visit" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
-                <div className="w-4 h-4 mr-2 bg-gradient-to-br from-green-400 to-green-600 rounded"></div>
+                <div className="w-4 h-4 mr-2 bg-linear-to-br from-green-400 to-green-600 rounded"></div>
                 Purpose of Visit
               </Label>
               <Input
@@ -423,7 +423,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl h-11 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl h-11 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">

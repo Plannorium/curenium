@@ -15,7 +15,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   try {
     await connectDB();
-    let query = Prescription.find({ patientId: resolvedParams.id, orgId: session.user.organizationId }).sort({ datePrescribed: -1 });
+    let query = Prescription.find({ patientId: resolvedParams.id, orgId: session.user.organizationId })
+      .populate('administrations.administeredBy', 'fullName')
+      .setOptions({ strictPopulate: false })
+      .sort({ datePrescribed: -1 });
 
     if (limit) {
       query = query.limit(parseInt(limit));

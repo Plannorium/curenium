@@ -1,16 +1,34 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { ILabResult } from "@/models/LabResult";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ServerCrash, Search, ArrowUpDown, ArrowUp, ArrowDown, Download, Filter } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Filter,
+  Download,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  TestTube,
+  Calendar,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ServerCrash
+} from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
 
 const HistoricalLabResultsPage = () => {
   const params = useParams();
@@ -146,36 +164,18 @@ const HistoricalLabResultsPage = () => {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/4" />
-        <Card>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                  <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                  <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                  <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                  <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                  <TableHead><Skeleton className="h-4 w-full" /></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-32 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+              ))}
+            </div>
+            <div className="h-96 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -191,14 +191,39 @@ const HistoricalLabResultsPage = () => {
   }
 
   return (
-    <div className="space-y-6 p-2 lg:p-4 rounded-xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Historical Lab Results</h1>
-        <Button onClick={exportToCSV} variant="outline" className="flex items-center gap-2">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
-      </div>
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-8"
+        >
+          <div className="flex items-center space-x-4">
+            <Link href={`/dashboard/ehr/patients/${patientId}`}>
+              <Button variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Patient
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                Lab Results History
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {filteredAndSortedResults.length} test results • Track patient diagnostics over time
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={exportToCSV}
+            variant="outline"
+            className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+        </motion.div>
 
       <Card>
         <CardHeader>
@@ -325,6 +350,7 @@ const HistoricalLabResultsPage = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

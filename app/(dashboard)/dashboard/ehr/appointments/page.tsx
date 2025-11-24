@@ -75,7 +75,7 @@ const AppointmentsPage = () => {
             </CardTitle>
             {session?.user?.role && ['admin', 'receptionist'].includes(session.user.role) && (
               <BookAppointmentModal onAppointmentBooked={fetchAppointments}>
-                <Button className="cursor-pointer" size="sm">
+                <Button className="cursor-pointer dark:text-black" size="sm">
                   <CalendarPlus className="mr-2 h-4 w-4" />
                   Book Appointment
                 </Button>

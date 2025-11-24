@@ -65,7 +65,7 @@ export const DispensePrescriptionModal = ({
         </DialogHeader>
         <div>
           <p><strong>Patient:</strong> {(prescription.patientId as any)?.firstName} {(prescription.patientId as any)?.lastName}</p>
-          <p><strong>Medication:</strong> {prescription.medication}</p>
+          <p><strong>Medications:</strong> {prescription.medications?.join(', ') || prescription.medication || 'N/A'}</p>
           <p><strong>Dose:</strong> {prescription.dose}</p>
           <p><strong>Frequency:</strong> {prescription.frequency}</p>
           <Textarea

@@ -90,10 +90,10 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
       <DialogContent className="sm:max-w-4xl bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg">
+            <div className="p-2 bg-linear-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+            <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
               Add SOAP Note
             </DialogTitle>
           </div>
@@ -102,7 +102,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
-              <label htmlFor="subjective" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+              <label htmlFor="subjective" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
                 Subjective
               </label>
@@ -117,7 +117,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
               {fieldErrors?.subjective && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>{fieldErrors.subjective[0]}</p>}
             </div>
             <div className="space-y-3">
-              <label htmlFor="objective" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+              <label htmlFor="objective" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
                 Objective
               </label>
@@ -132,7 +132,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
               {fieldErrors?.objective && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>{fieldErrors.objective[0]}</p>}
             </div>
             <div className="space-y-3">
-              <label htmlFor="assessment" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+              <label htmlFor="assessment" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
                 Assessment
               </label>
@@ -147,7 +147,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
               {fieldErrors?.assessment && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>{fieldErrors.assessment[0]}</p>}
             </div>
             <div className="space-y-3">
-              <label htmlFor="plan" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+              <label htmlFor="plan" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-pink-500 rounded-full mr-2"></div>
                 Plan
               </label>
@@ -163,8 +163,8 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
             </div>
           </div>
           <div className="space-y-3">
-            <label htmlFor="visibility" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
-              <div className="w-4 h-4 mr-2 bg-gradient-to-br from-gray-400 to-gray-600 rounded"></div>
+            <label htmlFor="visibility" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+              <div className="w-4 h-4 mr-2 bg-linear-to-br from-gray-400 to-gray-600 rounded"></div>
               Visibility
             </label>
             <Select onValueChange={(value: 'team' | 'private' | 'public') => setVisibility(value)} defaultValue={visibility}>
@@ -189,7 +189,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
             </Button>
             <Button
               type="submit"
-              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
+              className="bg-linear-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
             >
               Save SOAP Note
             </Button>

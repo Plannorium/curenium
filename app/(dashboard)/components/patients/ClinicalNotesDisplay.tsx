@@ -48,11 +48,11 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
     <div className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-xl p-6">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
+          <div className="p-2 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
             <FileText className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
               Clinical Notes
             </h2>
             <p className="text-sm text-muted-foreground">Document patient findings and observations</p>
@@ -61,7 +61,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
         <div className="flex space-x-3">
           <Button
             onClick={() => setIsNoteModalOpen(true)}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            className="bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
             <PlusCircle className="lg:mr-1 h-3 w-3" />
             New Note
@@ -112,7 +112,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                   </div>
                 </div>
                 <p className="text-gray-800 dark:text-gray-200 leading-relaxed">{(note as ClinicalNote).content}</p>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] dark:via-white/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/2 dark:via-white/1 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
               </div>
             );
           }
@@ -168,7 +168,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.plan}</p>
                   </div>
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] dark:via-white/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/2 dark:via-white/1 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
               </div>
             );
           }

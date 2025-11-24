@@ -137,9 +137,9 @@ export default function PatientPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6">
-        <div className="max-w-[70rem] mx-auto">
+        <div className="max-w-280 mx-auto">
           <PatientDetail patient={patient} />
-          <Tabs defaultValue="lab-orders" className="w-full mt-8">
+          {/* <Tabs defaultValue="lab-orders" className="w-full mt-8">
             <TabsList>
               <TabsTrigger value="lab-orders">Lab Orders</TabsTrigger>
               <TabsTrigger value="lab-results">Lab Results</TabsTrigger>
@@ -150,7 +150,7 @@ export default function PatientPage() {
             <TabsContent value="lab-results">
               <HistoricalLabResultsPage />
             </TabsContent>
-          </Tabs>
+          </Tabs> */}
         </div>
       </main>
     </div>

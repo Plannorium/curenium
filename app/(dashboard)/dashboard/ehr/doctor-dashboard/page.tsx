@@ -129,12 +129,12 @@ const DoctorDashboard = () => {
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-full shadow-2xl"
+          className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-primary to-primary/80 rounded-full shadow-2xl"
         >
           <Stethoscope className="h-10 w-10 text-white" />
         </motion.div>
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
             Physician Dashboard
           </h1>
           <p className="text-xl text-muted-foreground mt-2">
@@ -456,7 +456,7 @@ const DoctorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <AnimatePresence mode="wait">
           {currentStep === 'select-patient' ? renderPatientSelection() : renderWorkflow()}
