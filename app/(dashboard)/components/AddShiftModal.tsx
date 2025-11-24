@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Calendar, Clock, User, Briefcase, Loader2 } from "lucide-react";
+import HijriCalendar from "@/components/ui/hijri-calendar";
+import { useCalendar } from "@/components/ui/calendar-context";
 
 // ... (interfaces and roles remain the same)
 interface User {
@@ -54,6 +56,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
     const [status, setStatus] = useState("on-shift");
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { calendarType, setCalendarType } = useCalendar();
 
     useEffect(() => {
       const fetchUsers = async () => {
@@ -180,39 +183,50 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="startTime"
-                  className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
+            <div className="space-y-4">
+              <div className="flex items-center justify-center space-x-4">
+                <Button
+                  variant={calendarType === 'gregorian' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCalendarType('gregorian')}
                 >
-                  <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  Start Time
-                </Label>
-                <Input
-                  id="startTime"
-                  type="datetime-local"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
-                />
+                  Gregorian (AD)
+                </Button>
+                <Button
+                  variant={calendarType === 'hijri' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCalendarType('hijri')}
+                >
+                  Hijri (AH)
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="endTime"
-                  className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
-                >
-                  <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  End Time
-                </Label>
-                <Input
-                  id="endTime"
-                  type="datetime-local"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                    Start Time
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                    End Time
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                  />
+                </div>
               </div>
             </div>
 

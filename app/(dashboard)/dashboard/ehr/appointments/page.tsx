@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { useCalendar } from "@/components/ui/calendar-context";
+import HijriCalendar from "@/components/ui/hijri-calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarPlus } from "lucide-react";
@@ -12,6 +13,7 @@ import { Loader } from "@/components/ui/Loader";
 
 const AppointmentsPage = () => {
   const { data: session } = useSession();
+  const { calendarType, setCalendarType } = useCalendar();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [appointments, setAppointments] = useState<PopulatedAppointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<PopulatedAppointment[]>([]);
@@ -50,17 +52,12 @@ const AppointmentsPage = () => {
       <div className="col-span-1 lg:col-span-2">
         <Card className="border-none shadow-none rounded-none">
           <CardContent className="bg-background border-none shadow-none rounded-none p-0 flex justify-center items-start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="premium-calendar rounded-md border"
-              modifiers={{
-                hasAppointment: daysWithAppointments,
-              }}
-              modifiersClassNames={{
-                hasAppointment: 'rdp-day_hasAppointment',
-              }}
+            <HijriCalendar
+              selectedDate={date}
+              onDateSelect={setDate}
+              calendarType={calendarType}
+              onCalendarTypeChange={setCalendarType}
+              highlightedDays={daysWithAppointments}
             />
           </CardContent>
         </Card>

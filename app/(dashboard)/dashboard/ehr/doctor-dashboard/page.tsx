@@ -22,7 +22,8 @@ import {
   Heart,
   Brain,
   Shield,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import CreateDiagnosis from "./components/CreateDiagnosis";
@@ -352,13 +353,23 @@ const DoctorDashboard = () => {
       case 'assessment':
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Patient Assessment
-              </h3>
-              <p className="text-muted-foreground">
-                Review patient history and current status
-              </p>
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Patient Assessment
+                </h3>
+                <p className="text-muted-foreground">
+                  Review patient history and current status
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToPatientSelection}
+                className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <VitalsDisplay patientId={selectedPatient._id} />
@@ -374,13 +385,23 @@ const DoctorDashboard = () => {
       case 'diagnosis':
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Diagnosis & Treatment
-              </h3>
-              <p className="text-muted-foreground">
-                Create diagnoses and treatment plans for the patient
-              </p>
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Diagnosis & Treatment
+                </h3>
+                <p className="text-muted-foreground">
+                  Create diagnoses and treatment plans for the patient
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToPatientSelection}
+                className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
             <CreateDiagnosis
               patientId={selectedPatient._id}
@@ -394,13 +415,23 @@ const DoctorDashboard = () => {
       case 'prescription':
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Prescription Management
-              </h3>
-              <p className="text-muted-foreground">
-                Manage patient prescriptions and medications
-              </p>
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Prescription Management
+                </h3>
+                <p className="text-muted-foreground">
+                  Manage patient prescriptions and medications
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToPatientSelection}
+                className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
             <PrescriptionsDisplay patientId={selectedPatient._id} />
           </div>
@@ -409,13 +440,23 @@ const DoctorDashboard = () => {
       case 'documentation':
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Documentation & Consent
-              </h3>
-              <p className="text-muted-foreground">
-                Complete patient documentation and manage consent forms
-              </p>
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Documentation & Consent
+                </h3>
+                <p className="text-muted-foreground">
+                  Complete patient documentation and manage consent forms
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToPatientSelection}
+                className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
 
             {/* Consent Form Section */}
@@ -438,13 +479,23 @@ const DoctorDashboard = () => {
       case 'followup':
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Follow-up & Scheduling
-              </h3>
-              <p className="text-muted-foreground">
-                Schedule follow-ups and manage appointments
-              </p>
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Follow-up & Scheduling
+                </h3>
+                <p className="text-muted-foreground">
+                  Schedule follow-ups and manage appointments
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBackToPatientSelection}
+                className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
             <AppointmentsDisplay patientId={selectedPatient._id} />
           </div>
@@ -457,7 +508,7 @@ const DoctorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-2.5 md:px-4 py-4 md:py-8">
         <AnimatePresence mode="wait">
           {currentStep === 'select-patient' ? renderPatientSelection() : renderWorkflow()}
         </AnimatePresence>

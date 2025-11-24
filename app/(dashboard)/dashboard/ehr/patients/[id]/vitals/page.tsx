@@ -155,7 +155,7 @@ const HistoricalVitalsPage = () => {
             onClick={() => setIsModalOpen(true)}
             className="bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
+            <PlusCircle className="h-4 w-4 lg:mr-1.5" />
             Record Vitals
           </Button>
         </motion.div>

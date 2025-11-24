@@ -9,6 +9,7 @@ export interface IBooking extends Document {
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
   createdBy: mongoose.Schema.Types.ObjectId;
   notes?: string;
+  displayDateHijri?: string; // For quicker queries
 }
 
 const BookingSchema: Schema = new Schema({
@@ -20,6 +21,7 @@ const BookingSchema: Schema = new Schema({
   status: { type: String, enum: ['scheduled', 'confirmed', 'completed', 'cancelled'], default: 'scheduled' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   notes: { type: String },
+  displayDateHijri: { type: String }, // For quicker queries
 }, { timestamps: true });
 
 export default mongoose.models.Booking || mongoose.model<IBooking>('Booking', BookingSchema);

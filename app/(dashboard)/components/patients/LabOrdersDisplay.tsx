@@ -111,10 +111,10 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
           <Button
             onClick={() => setIsModalOpen(true)}
             size="sm"
-            className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
           >
-            <PlusCircle className="md:mr-2 h-3 w-3" />
-            <span className="text-sm hidden md:block">Request Lab Order</span>
+            <PlusCircle className="md:mr-1.5 h-3 w-3" />
+            <span className="text-sm hidden md:block">New Order</span>
           </Button>
           <Link href="/dashboard/ehr/lab" passHref>
             <Button
@@ -132,7 +132,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
         {labOrders.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <AnimatePresence>
-              {labOrders.map((order, index) => (
+              {labOrders.slice(0,2).map((order, index) => (
                 <motion.div
                   key={order._id?.toString() || Math.random()}
                   initial={{ opacity: 0, y: 20 }}
@@ -210,7 +210,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
                         >
                           <Link href="/dashboard/ehr/lab">
                             <Eye className="mr-2 h-4 w-4" />
-                            View in Lab Dashboard
+                            View
                           </Link>
                         </Button>
                       </div>

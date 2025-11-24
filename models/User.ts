@@ -23,6 +23,7 @@ export interface IUser extends Document {
     items: string[];
     language: string;
     timezone: string;
+    calendarType?: 'gregorian' | 'hijri';
   };
   appearanceSettings: {
     theme: string;
@@ -81,6 +82,7 @@ const UserSchema = new mongoose.Schema(
       items: { type: [String], default: ["recents", "home"] },
       language: { type: String, default: "en" },
       timezone: { type: String, default: "Asia/Riyadh" },
+      calendarType: { type: String, enum: ['gregorian', 'hijri'], default: 'gregorian' },
     },
     appearanceSettings: {
       theme: { type: String, default: "light" },

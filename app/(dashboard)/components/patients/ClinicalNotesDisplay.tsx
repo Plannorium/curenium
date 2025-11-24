@@ -45,34 +45,36 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
   }, [patientId]);
 
   return (
-    <div className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-xl p-6">
-      <div className="flex justify-between items-center mb-8">
+    <div className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-xl p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
-            <FileText className="h-6 w-6 text-white" />
+            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+            <h2 className="text-xl sm:text-2xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
               Clinical Notes
             </h2>
-            <p className="text-sm text-muted-foreground">Document patient findings and observations</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Document patient findings and observations</p>
           </div>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <Button
             onClick={() => setIsNoteModalOpen(true)}
-            className="bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            className="bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer w-full sm:w-auto"
+            size="sm"
           >
-            <PlusCircle className="lg:mr-1 h-3 w-3" />
-            New Note
+            <PlusCircle className="mr-2 h-4 w-4" />
+            <span className="text-sm">New Note</span>
           </Button>
           <Button
             onClick={() => setIsSOAPModalOpen(true)}
             variant="outline"
-            className="border-2 border-purple-200 dark:border-purple-800/50 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100/50 dark:hover:bg-purple-950/30 text-purple-700 dark:text-purple-300 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            className="border-2 border-purple-200 dark:border-purple-800/50 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100/50 dark:hover:bg-purple-950/30 text-purple-700 dark:text-purple-300 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer w-full sm:w-auto"
+            size="sm"
           >
-            <PlusCircle className="lg:mr-1 h-3 w-3" />
-            New SOAP Note
+            <PlusCircle className="mr-2 h-4 w-4" />
+            <span className="text-sm">SOAP Note</span>
           </Button>
         </div>
       </div>
@@ -94,10 +96,10 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
             return (
               <div
                 key={note._id}
-                className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02] hover:-translate-y-1"
+                className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 lg:p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02] hover:-translate-y-1"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                       <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -107,11 +109,11 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                       <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(note.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
+                  <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 capitalize self-start sm:self-center">
                     {note.visibility}
                   </div>
                 </div>
-                <p className="text-gray-800 dark:text-gray-200 leading-relaxed">{(note as ClinicalNote).content}</p>
+                <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-sm sm:text-base">{(note as ClinicalNote).content}</p>
                 <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/2 dark:via-white/1 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
               </div>
             );
@@ -121,10 +123,10 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
             return (
               <div
                 key={soapNote._id}
-                className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02] hover:-translate-y-1"
+                className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 lg:p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50 hover:scale-[1.02] hover:-translate-y-1"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 space-y-2 sm:space-y-0">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                       <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -134,36 +136,36 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                       <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(soapNote.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 capitalize">
+                  <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 capitalize self-start sm:self-center">
                     {soapNote.visibility}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">Subjective</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Subjective</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.subjective}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">Objective</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Objective</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.objective}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">Assessment</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Assessment</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.assessment}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">Plan</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Plan</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.plan}</p>
                   </div>
@@ -175,12 +177,12 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
           return null;
         })}
         {combinedNotes.length === 0 && (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-800/50 rounded-full mb-4">
-              <FileText className="h-8 w-8 text-gray-400 dark:text-gray-600" />
+          <div className="text-center py-12 sm:py-16">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-800/50 rounded-full mb-4">
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No clinical notes yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">No clinical notes yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm sm:text-base px-4">
               Start documenting patient findings and observations by creating your first clinical note.
             </p>
           </div>

@@ -87,7 +87,7 @@ const NotesModal: React.FC<NotesModalProps> = React.memo(function NotesModal({ s
     <Dialog open={!!shift} onOpenChange={onClose}>
       <DialogContent className="backdrop-blur-xl bg-background/95 border-border/50 shadow-2xl max-w-2xl max-h-[80vh] flex flex-col">
         {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-lg pointer-events-none"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-accent/5 rounded-lg pointer-events-none"></div>
         
         <DialogHeader className="relative pb-4 border-b border-border/30">
           <DialogTitle className="text-xl font-semibold text-foreground flex items-center">
@@ -144,7 +144,7 @@ const NotesModal: React.FC<NotesModalProps> = React.memo(function NotesModal({ s
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed break-words">
+                      <p className="text-sm text-muted-foreground leading-relaxed wrap-break-word">
                         {note.content}
                       </p>
                     </div>
@@ -166,7 +166,7 @@ const NotesModal: React.FC<NotesModalProps> = React.memo(function NotesModal({ s
                 value={newNote} 
                 onChange={e => setNewNote(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="min-h-[80px] backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 resize-none"
+                className="min-h-20 backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 resize-none"
                 disabled={isSubmitting}
               />
               <div className="flex items-center justify-between">

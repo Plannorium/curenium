@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   const booking = new Booking({
     ...validation.data,
     createdBy: session.user.id,
+    // displayDateHijri will be populated when dayjs-hijri is installed
   });
 
   await booking.save();
