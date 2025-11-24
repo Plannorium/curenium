@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { sessionOptions } from "@/lib/session";
-import { hasCapability } from "@/lib/auth";
+import { getSession } from "@/lib/session";
+import { hasCapability } from "../../../lib/auth";
 import { z } from "zod";
 import dbConnect from "@/lib/dbConnect";
 import Booking from "@/models/Booking";
 import AuditLog from "@/models/AuditLog";
-import { pusher } from "@/lib/pusher";
-import {NextResponse as Response} from "next/server";
+import { pusher } from "../../../lib/pusher";
 
 const bookingSchema = z.object({
   patientId: z.string(),
@@ -18,9 +16,9 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await getIronSession(req, Response.next(), sessionOptions);
+  const session = await getSession();
 
-  if (!session.isLoggedIn) {
+  if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   if (!validation.success) {
     return NextResponse.json(
-      { message: validation.error.formErrors },
+      { message: validation.error.format() },
       { status: 400 }
     );
   }

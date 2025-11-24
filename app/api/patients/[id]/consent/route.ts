@@ -9,7 +9,7 @@ const allowedRoles = ["admin", "doctor", "nurse"];
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const token = await getToken({ req });
 
@@ -23,7 +23,8 @@ export async function POST(
 
   await dbConnect();
 
-  const patient = await Patient.findById(params.id);
+  const resolvedParams = await params;
+  const patient = await Patient.findById(resolvedParams.id);
 
   if (!patient) {
     return NextResponse.json({ message: "Patient not found" }, { status: 404 });
@@ -40,7 +41,7 @@ export async function POST(
 
   const consent = new ConsentForm({
     orgId: token.orgId,
-    patientId: params.id,
+    patientId: resolvedParams.id,
     formType: formType,
     version: "1.0", // Or derive from formType
     data: {
