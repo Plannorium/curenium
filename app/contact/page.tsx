@@ -10,25 +10,17 @@ import {
   Mail,
   Phone,
   MapPin,
-  Clock,
   Send,
-  Twitter,
-  Linkedin,
-  Facebook,
   MessageSquare,
   Users,
   Headphones,
   CheckCircle,
 } from "lucide-react";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import Image from "next/image";
-import { useTheme } from "@/components/ThemeProvider";
+import { LandingHeader } from "@/components/LandingHeader";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
 
 function ContactPage() {
-  const { theme } = useTheme();
-  const [isHydrated, setIsHydrated] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -39,10 +31,6 @@ function ContactPage() {
     inquiryType: 'general'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -91,12 +79,6 @@ function ContactPage() {
       details: ["Riyadh, Saudi Arabia"],
       description: "Located in the heart of Riyadh, Saudi Arabia."
     },
-    {
-      icon: Clock,
-      title: "Business Hours",
-      details: ["Mon-Fri: 9am - 6pm WAT", "Sat-Sun: By appointment"],
-      description: "We're here when you need us most."
-    }
   ];
 
   return (
@@ -109,91 +91,7 @@ function ContactPage() {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/95 border-b border-border/50 shadow-lg supports-[backdrop-filter]:bg-background/80">
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
-
-        <div className="relative container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          {/* Logo and Brand */}
-          <div className="flex items-center">
-            <Link
-              href="/"
-              className="flex items-center gap-3 group"
-              prefetch={false}
-            >
-              {isHydrated ? (
-                <Image
-                  src={
-                    theme === "dark"
-                      ? "/curenium-logo-d.png"
-                      : "/curenium-logo.png"
-                  }
-                  alt="Curenium Logo"
-                  width={128}
-                  height={32}
-                  className="h-8 w-auto transition-transform duration-200 group-hover:scale-105"
-                />
-              ) : (
-                <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
-              )}
-              <div className="flex items-center">
-                <span className="font-bold text-xl text-foreground tracking-tight group-hover:text-primary transition-colors duration-200">
-                  Curenium
-                </span>
-              </div>
-            </Link>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-2">
-            <Link
-              href="/features"
-              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
-              prefetch={false}
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
-              prefetch={false}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/contact"
-              className="px-4 py-2.5 text-sm font-medium text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
-              prefetch={false}
-            >
-              Contact
-            </Link>
-          </nav>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <Link href="/login" prefetch={false}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup" prefetch={false}>
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
-              >
-                Sign Up
-              </Button>
-            </Link>
-            <div className="ml-2 ">
-              <ThemeSwitcher />
-            </div>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero Section */}
       <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
@@ -447,12 +345,12 @@ function ContactPage() {
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
+              <div className="">
+                {/* <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
                   <Users className="mx-auto h-8 w-8 text-primary mb-2" />
                   <div className="text-2xl font-bold text-foreground">500+</div>
                   <div className="text-sm text-muted-foreground">Hospitals Served</div>
-                </div>
+                </div> */}
                 <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
                   <Headphones className="mx-auto h-8 w-8 text-primary mb-2" />
                   <div className="text-2xl font-bold text-foreground">24/7</div>
@@ -461,7 +359,7 @@ function ContactPage() {
               </div>
 
               {/* Testimonials */}
-              <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl">
+              {/* <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl">
                 <div className="flex items-start">
                   <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 p-3 rounded-xl mr-4">
                     <MessageSquare className="text-primary h-6 w-6" />
@@ -481,7 +379,7 @@ function ContactPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -506,7 +404,7 @@ function ContactPage() {
                 <Button
                   size="lg"
                   variant="secondary"
-                  className="bg-white text-primary dark:text-black/ hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   Start Free Trial
                 </Button>
@@ -515,7 +413,7 @@ function ContactPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02]"
+                  className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   View Pricing
                 </Button>
