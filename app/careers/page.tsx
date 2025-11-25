@@ -145,7 +145,7 @@ function CareersPage() {
             <Link href="/signup" prefetch={false}>
               <Button
                 size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
               >
                 Sign Up
               </Button>
@@ -181,7 +181,7 @@ function CareersPage() {
         <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Why Join Plannorium?
+              Why Join Curenium
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               We're not just another tech company. We're building solutions that save lives and improve healthcare outcomes.
@@ -234,14 +234,14 @@ function CareersPage() {
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 If you're passionate about healthcare innovation and want to be part of our mission,
-                we'd love to hear from you. Send us your resume and let us know why you'd be a great fit.
+                we'd love to hear from you. Send us your resume via mail and let us know why you'd be a great fit.
               </p>
-              <div className="mt-8">
+              {/* <div className="mt-8">
                 <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
                   Send Your Resume
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -349,7 +349,7 @@ function CareersPage() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
               >
                 <Sparkles className="mr-2 h-5 w-5" />
                 View Open Positions
@@ -358,7 +358,7 @@ function CareersPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02]"
+                  className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   Contact Us
                 </Button>

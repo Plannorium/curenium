@@ -103,7 +103,7 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
     { value: 'treatment_consent', label: 'Treatment Consent', description: 'General treatment authorization' },
     { value: 'surgical_consent', label: 'Surgical Consent', description: 'Authorization for surgical procedures' },
     { value: 'medication_consent', label: 'Medication Consent', description: 'Authorization for medication administration' },
-    { value: 'disclosure_consent', label: 'Information Disclosure', description: 'HIPAA authorization for information sharing' },
+    { value: 'disclosure_consent', label: 'Information Disclosure', description: 'authorization for information sharing' },
     { value: 'research_consent', label: 'Research Participation', description: 'Consent for research study participation' },
     { value: 'photography_consent', label: 'Photography Consent', description: 'Authorization for medical photography' },
   ];

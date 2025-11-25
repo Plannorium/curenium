@@ -7,6 +7,7 @@ import {
   Twitter,
   Linkedin,
   Facebook,
+  Instagram,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import Image from "next/image";
@@ -149,21 +150,28 @@ function Footer() {
           </p>
           <div className="flex space-x-4 md:order-2">
             <Link
-              href="#"
+              href="https://x.com/plannorium?t=tmJN2ekMT8Gd2mg_IGaTyw&s=09"
               className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
             >
-              <span className="sr-only">Twitter</span>
+              <span className="sr-only">X (Twitter)</span>
               <Twitter className="h-5 w-5" />
             </Link>
             <Link
-              href="#"
+              href="https://www.linkedin.com/company/plannorium/"
               className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
             >
               <span className="sr-only">LinkedIn</span>
               <Linkedin className="h-5 w-5" />
             </Link>
             <Link
-              href="#"
+              href="https://www.instagram.com/plannorium?igsh=YW10NTU2cWU4c24z"
+              className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
+            >
+              <span className="sr-only">Instagram</span>
+              <Instagram className="h-5 w-5" />
+            </Link>
+            <Link
+              href="https://www.facebook.com/profile.php?id=61579475379975"
               className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
             >
               <span className="sr-only">Facebook</span>

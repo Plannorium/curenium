@@ -347,7 +347,7 @@ function AboutPage() {
                 <Button
                   size="lg"
                   variant="secondary"
-                  className="bg-white text-primary hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   Get In Touch
                 </Button>
@@ -356,7 +356,7 @@ function AboutPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02]"
+                  className="bg-white/10 border-white/30 text-white dark:text-black/80 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   <Users className="mr-2 h-5 w-5" />
                   Join Our Team

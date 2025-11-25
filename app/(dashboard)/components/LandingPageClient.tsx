@@ -1,31 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   ShieldCheck,
   ClockIcon,
   MessageSquare,
-  Bell,
   ArrowRight,
-  Twitter,
-  Linkedin,
-  Facebook,
   Sparkles,
+  Bell, 
 } from "lucide-react";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import Image from "next/image";
-import type { Session } from "next-auth";
-import { useTheme } from "@/components/ThemeProvider";
+import { LandingHeader } from "@/components/LandingHeader";
+import Footer from "@/components/Footer";
 
-function LandingPage({ session }: { session: Session | null }) {
-  const { theme } = useTheme();
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Background blur effects */}
@@ -36,105 +25,7 @@ function LandingPage({ session }: { session: Session | null }) {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/95 border-b border-border/50 shadow-lg supports-[backdrop-filter]:bg-background/80">
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
-
-        <div className="relative container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          {/* Logo and Brand */}
-          <div className="flex items-center">
-            <Link
-              href="/"
-              className="flex items-center gap-3 group"
-              prefetch={false}
-            >
-              {isHydrated ? (
-                <Image
-                  src={
-                    theme === "dark"
-                      ? "/curenium-logo-d.png"
-                      : "/curenium-logo.png"
-                  }
-                  alt="Curenium Logo"
-                  width={128}
-                  height={32}
-                  className="h-8 w-auto transition-transform duration-200 group-hover:scale-105"
-                />
-              ) : (
-                <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
-              )}
-              <div className="flex items-center">
-                <span className="font-bold text-xl text-foreground tracking-tight group-hover:text-primary transition-colors duration-200">
-                  Curenium
-                </span>
-                {/* <div className="h-1.5 w-6 bg-gradient-to-r from-primary to-primary/70 ml-2 rounded-full shadow-sm group-hover:shadow-primary/25 transition-all duration-300"></div> */}
-              </div>
-            </Link>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-2">
-            <Link
-              href="/features"
-              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
-              prefetch={false}
-            >
-              Features
-            </Link>
-            <Link
-              href="/pricing"
-              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
-              prefetch={false}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/contact"
-              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
-              prefetch={false}
-            >
-              Contact
-            </Link>
-          </nav>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            {session ? (
-              <Link href="/dashboard" prefetch={false}>
-                <Button
-                  size="sm"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20 cursor-pointer"
-                >
-                  Dashboard
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" prefetch={false}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                  >
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/signup" prefetch={false}>
-                  <Button
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
-                  >
-                    Sign Up
-                  </Button>
-                </Link>
-              </>
-            )}
-            <div className="ml-2 ">
-              <ThemeSwitcher />
-            </div>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero Section */}
       <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
@@ -160,7 +51,7 @@ function LandingPage({ session }: { session: Session | null }) {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 size="lg"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group dark:text-black cursor-pointer"
               >
                 <Sparkles className="mr-2 h-5 w-5 group-hover:animate-pulse" />
                 Get Started
@@ -168,7 +59,7 @@ function LandingPage({ session }: { session: Session | null }) {
               <Button
                 variant="outline"
                 size="lg"
-                className="backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200"
+                className="backdrop-blur-sm bg-background/50 border-border/60 hover:bg-accent/50 transition-all duration-200 cursor-pointer"
               >
                 Request Demo
               </Button>
@@ -235,7 +126,7 @@ function LandingPage({ session }: { session: Session | null }) {
                     <div className="text-xs text-muted-foreground mt-2 flex items-center">
                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
                       Dr. Rahman • 2m ago
-                    </div>
+                    </div> 
                   </div>
                 </div>
 
@@ -256,7 +147,7 @@ function LandingPage({ session }: { session: Session | null }) {
                 </div>
 
                 <div className="flex items-center justify-center">
-                  <div className="backdrop-blur-sm bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-full px-4 py-2 text-xs font-semibold flex items-center shadow-sm">
+                  <div className="backdrop-blur-sm bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-full px-4 py-2 text-xs font-semibold flex items-center shadow-sm"> 
                     <Bell size={12} className="mr-2 animate-pulse" />
                     Critical Alert Sent
                   </div>
@@ -360,6 +251,174 @@ function LandingPage({ session }: { session: Session | null }) {
         </div>
       </section>
 
+      {/* Why Curenium Section */}
+      <section className="relative py-16 md:py-24 px-6 md:px-12 backdrop-blur-sm bg-muted/20 border-y border-border/30">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-accent/5 pointer-events-none"></div>
+        <div className="relative max-w-7xl mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+              Why Curenium? Because Healthcare Deserves Better
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+              Look, we've all been there chaotic hospital shifts, missed messages, and that sinking feeling when something slips through the cracks. Curenium isn't just another app; it's the chill pill your team needs to keep things running smoothly without the stress. Built specifically for the fast-paced world of healthcare, it turns potential disasters into "no big deal" moments.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
+              <div className="relative">
+                <h3 className="text-xl font-bold text-foreground mb-4">
+                  Real Talk: Saves Lives
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Okay, dramatic? Maybe. But seriously, faster communication means quicker responses. Whether it's a nurse spotting an issue or a doctor needing backup, Curenium gets the word out instantly. No more paging systems from the 90s or shouting down hallways. It's like having a superpower for your team.
+                </p>
+              </div>
+            </div>
+
+            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
+              <div className="relative">
+                <h3 className="text-xl font-bold text-foreground mb-4">
+                  Built for Busy People
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Healthcare workers are juggling a million things at once. Curenium gets that. It's designed to be intuitive no steep learning curve, no confusing interfaces. Jump in, start chatting, handle alerts, and manage shifts all in one place. Because who has time for complicated software?
+                </p>
+              </div>
+            </div>
+
+            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
+              <div className="relative">
+                <h3 className="text-xl font-bold text-foreground mb-4">
+                  Gulf Region Ready
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  We know the Gulf's healthcare scene diverse teams, high standards, and unique challenges. Curenium speaks your language (literally multi-language support) and understands your culture. It's not some generic tool; it's tailored for hospitals in the region, making collaboration feel natural and effective.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+            How Curenium Makes Your Day Easier
+          </h2>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            It's not rocket science, but it might as well be. Here's the lowdown on how Curenium turns healthcare chaos into something manageable.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-8">
+            <div className="flex items-start space-x-4">
+              <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-primary font-bold text-lg">1</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  Sign Up & Set Up
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Get your hospital or ward set up in minutes. Invite your team, create channels for different departments, and you're good to go. No IT headaches we handle the heavy lifting.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-4">
+              <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-primary font-bold text-lg">2</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  Chat & Collaborate
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Start messaging securely. Share patient updates, coordinate care, and keep everyone in the loop. It's like group chat, but for saving lives with end-to-end encryption and all the bells and whistles.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-4">
+              <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-primary font-bold text-lg">3</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  Handle Alerts & Shifts
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Critical alerts? Boom instant notifications. Shift handovers? Seamless notes and schedules. Curenium integrates everything so you can focus on what matters: patient care.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -top-12 -left-12 w-64 h-64 bg-accent/10 rounded-full filter blur-3xl animate-pulse"></div>
+            <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-primary/10 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
+            <div className="relative backdrop-blur-xl bg-card/80 border border-border/50 rounded-2xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
+
+              <div className="relative bg-gradient-to-r from-accent to-accent/90 p-4 text-accent-foreground">
+                <h3 className="font-semibold flex items-center">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Team Coordination
+                  <div className="ml-auto bg-white/20 text-xs px-2 py-1 rounded-full font-medium">
+                    Active
+                  </div>
+                </h3>
+              </div>
+
+              <div className="relative p-6 space-y-4">
+                <div className="flex items-start">
+                  <div className="h-10 w-10 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mr-3 flex-shrink-0">
+                    <span className="text-accent-foreground font-semibold text-sm">
+                      RN
+                    </span>
+                  </div>
+                  <div className="backdrop-blur-sm bg-muted/50 border border-border/30 rounded-2xl p-4 max-w-xs shadow-sm">
+                    <p className="text-sm text-foreground leading-relaxed">
+                      Shift handover complete. Patient in 204 needs vitals check every 2 hours.
+                    </p>
+                    <div className="text-xs text-muted-foreground mt-2 flex items-center">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
+                      Nurse Sarah • 5m ago
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start justify-end">
+                  <div className="backdrop-blur-sm bg-accent/10 border border-accent/20 rounded-2xl p-4 max-w-xs shadow-sm">
+                    <p className="text-sm text-foreground leading-relaxed">
+                      Got it. I'll take over. Any other notes?
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Dr. Ahmed • Just now
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center ml-3 flex-shrink-0">
+                    <span className="text-primary font-semibold text-sm">
+                      DA
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 rounded-full px-4 py-2 text-xs font-semibold flex items-center shadow-sm">
+                    <ClockIcon size={12} className="mr-2 animate-pulse" />
+                    Shift Handover Complete
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
         <div className="relative backdrop-blur-xl bg-gradient-to-r from-primary/90 to-primary border border-primary/20 rounded-3xl p-8 md:p-12 text-primary-foreground shadow-2xl overflow-hidden">
@@ -379,14 +438,14 @@ function LandingPage({ session }: { session: Session | null }) {
               <Button
                 size="lg"
                 variant="secondary"
-                className="bg-white text-primary hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
               >
                 Request Demo
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02]"
+                className="bg-white/10 border-white/30 text-white dark:text-black/80 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
               >
                 Contact Sales
               </Button>
@@ -396,158 +455,7 @@ function LandingPage({ session }: { session: Session | null }) {
       </section>
 
       {/* Footer */}
-      <footer className="relative backdrop-blur-sm bg-muted/50 border-t border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
-        <div className="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="col-span-2 md:col-span-1">
-              {isHydrated ? (
-                <Image
-                  src={
-                    theme === "dark"
-                      ? "/curenium-logo-d.png"
-                      : "/curenium-logo.png"
-                  }
-                  alt="Curenium Logo"
-                  width={128}
-                  height={32}
-                  className="h-8 w-auto"
-                />
-              ) : (
-                <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
-              )}
-              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-                Premium Digital Solutions • SaaS • Design • Development
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4">
-                Product
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    href="/features"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/pricing"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/security"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Security
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4">
-                Company
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    href="/about"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/careers"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Careers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-foreground tracking-wider uppercase mb-4">
-                Legal
-              </h3>
-              <ul className="space-y-3">
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Terms
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/compliance"
-                    className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-1 py-0.5"
-                  >
-                    Compliance
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-border/30 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-muted-foreground md:order-1">
-              &copy; {new Date().getFullYear()} Plannorium. All rights reserved.
-            </p>
-            <div className="flex space-x-4 md:order-2">
-              <Link
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
-              >
-                <span className="sr-only">Twitter</span>
-                <Twitter className="h-5 w-5" />
-              </Link>
-              <Link
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
-              >
-                <span className="sr-only">LinkedIn</span>
-                <Linkedin className="h-5 w-5" />
-              </Link>
-              <Link
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 rounded-lg p-2"
-              >
-                <span className="sr-only">Facebook</span>
-                <Facebook className="h-5 w-5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
