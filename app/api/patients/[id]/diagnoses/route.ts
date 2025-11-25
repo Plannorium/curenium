@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import dbConnect from "@/lib/dbConnect";
 import Patient from "@/models/Patient";
@@ -12,22 +13,22 @@ const diagnosisSchema = z.object({
   icd10Code: z.string(),
   description: z.string(),
   severity: z.string(),
-  onsetDate: z.string(),
+  onsetDate: z.string().optional(),
 });
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const token = await getToken({ req });
+  const session = await getServerSession(authOptions);
   const { id } = await context.params;
 
-  if (!token) {
+  if (!session || !session.user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const allowedRoles = ["doctor", "nurse", "clinical_manager"];
-  if (!token.role || !allowedRoles.includes(token.role as string)) {
+  const allowedRoles = ["doctor", "nurse", "admin"];
+  if (!session.user.role || !allowedRoles.includes(session.user.role as string)) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
@@ -51,18 +52,18 @@ export async function POST(
     diagnosisCode: validation.data.icd10Code,
     description: validation.data.description,
     severity: validation.data.severity,
-    onsetDate: new Date(validation.data.onsetDate),
+    ...(validation.data.onsetDate && { onsetDate: new Date(validation.data.onsetDate) }),
     note: validation.data.note,
     isPrimary: validation.data.isPrimary,
-    documentedBy: token.id,
-    orgId: token.orgId,
+    documentedBy: session.user.id,
+    orgId: session.user.organizationId,
   });
 
   await diagnosis.save();
 
   await AuditLog.create({
-    orgId: token.orgId,
-    userId: token.id,
+    orgId: session.user.organizationId,
+    userId: session.user.id,
     action: "diagnosis.create",
     targetId: diagnosis._id,
     targetType: "Diagnosis",
@@ -76,15 +77,15 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const token = await getToken({ req });
-  if (!token) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   await dbConnect();
 
   try {
-    const diagnoses = await Diagnosis.find({ patientId: id, orgId: token.orgId }).populate('documentedBy', 'firstName lastName');
+    const diagnoses = await Diagnosis.find({ patientId: id, orgId: session.user.organizationId }).populate('documentedBy', 'fullName image');
     return NextResponse.json(diagnoses);
   } catch (error) {
     console.error('Error fetching diagnoses:', error);

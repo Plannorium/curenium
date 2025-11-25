@@ -512,40 +512,48 @@ const NursesDashboard = () => {
       className="space-y-8"
     >
       {/* Header with Patient Info */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2 lg:space-x-3">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="flex items-center justify-between lg:justify-start">
           <Button
             variant="ghost"
             onClick={handleBack}
-            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:block">
               Back to Overview
             </span>
           </Button>
-          <div className="h-8 w-px bg-gray-300 dark:bg-gray-700"></div>
+          <div className="lg:hidden">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <Heart className="h-3 w-3 mr-1" />
+              Under Care
+            </Badge>
+          </div>
+        </div>
+        <div className="flex items-center justify-center lg:justify-start space-x-2 mb-5">
+          <div className="hidden lg:block h-8 w-px bg-gray-300 dark:bg-gray-700"></div>
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {selectedPatient?.firstName[0]}{selectedPatient?.lastName[0]}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="min-w-0 flex-1 lg:flex-initial">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white truncate">
                 {selectedPatient?.firstName} {selectedPatient?.lastName}
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {selectedPatient?.mrn && `MRN: ${selectedPatient.mrn}`}
               </p>
             </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-            <Heart className="h-3 w-3 mr-1" />
-            Under Care
-          </Badge>
+          <div className="hidden lg:flex items-center space-x-2">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <Heart className="h-3 w-3 mr-1" />
+              Under Care
+            </Badge>
+          </div>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import dayjs from 'dayjs';
 import { formatDate } from '@/lib/date-utils';
+import { toHijri } from 'hijri-converter';
 
 interface HijriCalendarProps {
   selectedDate?: Date;
@@ -63,11 +64,21 @@ const HijriCalendar: React.FC<HijriCalendarProps> = ({
     );
   };
 
+  const arabicMonths = [
+    'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى',
+    'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+  ];
+
   const getMonthName = () => {
     if (calendarType === 'hijri') {
-      // Show Gregorian month with Hijri indicator
-      const gregorian = currentDate.format('MMMM YYYY');
-      return `${gregorian} AH`;
+      try {
+        const hijri = toHijri(currentDate.year(), currentDate.month() + 1, 1);
+        return `${arabicMonths[hijri.hm - 1]} ${hijri.hy} هـ`;
+      } catch (error) {
+        console.error('Error converting month to Hijri:', error);
+        const gregorian = currentDate.format('MMMM YYYY');
+        return `${gregorian} AH`;
+      }
     } else {
       return currentDate.format('MMMM YYYY');
     }
@@ -88,7 +99,7 @@ const HijriCalendar: React.FC<HijriCalendarProps> = ({
     );
   };
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md dark:bg-slate-900/80">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -134,17 +145,20 @@ const HijriCalendar: React.FC<HijriCalendarProps> = ({
             let displayDay = day;
             let hijriInfo = '';
 
-            if (day && calendarType === 'hijri') {
-              try {
-                const gregorianDate = currentDate.date(day);
-                const hijriFormatted = formatDate(gregorianDate.toDate(), 'hijri');
-                // For now, just show the Gregorian day with Hijri info in tooltip
-                // The formatDate function handles the conversion
-                displayDay = day; // Keep Gregorian day for functionality
-                hijriInfo = hijriFormatted;
-              } catch (error) {
-                // Keep Gregorian day if Hijri conversion fails
-                displayDay = day;
+            if (day) {
+              const gregorianDate = currentDate.date(day);
+              if (calendarType === 'hijri') {
+                try {
+                  const hijri = toHijri(gregorianDate.year(), gregorianDate.month() + 1, gregorianDate.date());
+                  displayDay = hijri.hd;
+                  hijriInfo = `${hijri.hd}/${hijri.hm}/${hijri.hy} AH`;
+                } catch (error) {
+                  console.error('Error converting to Hijri:', error);
+                  displayDay = day;
+                  hijriInfo = formatDate(gregorianDate.toDate(), 'hijri');
+                }
+              } else {
+                hijriInfo = formatDate(gregorianDate.toDate(), 'hijri');
               }
             }
 
@@ -163,19 +177,13 @@ const HijriCalendar: React.FC<HijriCalendarProps> = ({
                 }`}
                 onClick={() => day && handleDateClick(day)}
                 disabled={!day}
-                title={day && calendarType === 'hijri' && hijriInfo ? `Gregorian: ${day}, Hijri: ${hijriInfo}` : undefined}
+                title={day ? (calendarType === 'hijri' ? `Gregorian: ${day}, Hijri: ${hijriInfo}` : `Gregorian: ${day}, Hijri: ${hijriInfo}`) : undefined}
               >
                 {displayDay || day}
               </Button>
             );
           })}
         </div>
-        {calendarType === 'hijri' && (
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-            <p className="font-medium">Hijri Calendar Mode</p>
-            <p>Hijri date conversion will be available soon. Dates show AH indicator for now.</p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

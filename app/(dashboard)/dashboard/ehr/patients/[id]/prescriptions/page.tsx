@@ -39,8 +39,24 @@ const HistoricalPrescriptionsPage = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "cancelled">("all");
   const [isAdminDetailsModalOpen, setIsAdminDetailsModalOpen] = useState(false);
   const [selectedAdminPrescription, setSelectedAdminPrescription] = useState<Prescription | null>(null);
+  const [users, setUsers] = useState<Record<string, any>>({});
   const params = useParams();
   const patientId = params?.id as string;
+
+  const fetchUser = useCallback(async (userId: string) => {
+    if (users[userId]) return users[userId]; // Return cached user
+    try {
+      const res = await fetch(`/api/users/${userId}`);
+      if (res.ok) {
+        const userData = await res.json();
+        setUsers(prev => ({ ...prev, [userId]: userData }));
+        return userData;
+      }
+    } catch (error) {
+      console.error("Failed to fetch user:", error);
+    }
+    return null;
+  }, [users]);
 
   const fetchPrescriptions = useCallback(async () => {
     if (!patientId) return;
@@ -49,6 +65,14 @@ const HistoricalPrescriptionsPage = () => {
       const res = await fetch(`/api/patients/${patientId}/prescriptions`);
       if (res.ok) {
         const data: Prescription[] = await res.json();
+
+        // Fetch user data for prescribedBy field
+        const userPromises = data
+          .filter(p => p.prescribedBy)
+          .map(p => fetchUser(p.prescribedBy as string));
+
+        await Promise.all(userPromises);
+
         setPrescriptions(data);
         setFilteredPrescriptions(data);
       } else {
@@ -60,7 +84,7 @@ const HistoricalPrescriptionsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [patientId]);
+  }, [patientId, fetchUser]);
 
   useEffect(() => {
     fetchPrescriptions();
@@ -160,21 +184,30 @@ const HistoricalPrescriptionsPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
+          className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-6 sm:mb-8"
         >
-          <div className="flex items-center space-x-4">
-            <Link href={`/dashboard/ehr/patients/${patientId}`}>
-              <Button variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800">
+          <div className="flex flex-col space-y-3 sm:items-center sm:space-y-0 sm:space-x-4">
+            <div className="w-full flex justify-start">
+            <Link href={`/dashboard/ehr/patients/${patientId}`} className="lg:mb-3">
+              <Button variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800 w-full sm:w-auto justify-center sm:justify-start cursor-pointer">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Patient
+                <span className="hidden sm:inline">Back to Patient</span>
+                <span className="sm:hidden">Back</span>
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-                Prescription History
+            </div>
+            <div className="text-center sm:text-left lg:relative lg:left-9">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                <span className="hidden sm:inline">Prescription History</span>
+                <span className="sm:hidden">Prescriptions</span>
               </h1>
-              <p className="text-muted-foreground mt-1">
-                {getActivePrescriptionsCount()} active prescriptions • {prescriptions.length} total
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                <span className="hidden sm:inline">
+                  {getActivePrescriptionsCount()} active prescriptions • {prescriptions.length} total
+                </span>
+                <span className="sm:hidden">
+                  {getActivePrescriptionsCount()} active • {prescriptions.length} total
+                </span>
               </p>
             </div>
           </div>
@@ -245,12 +278,23 @@ const HistoricalPrescriptionsPage = () => {
                 {filteredPrescriptions.map((prescription) => (
                   <TableRow key={prescription._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/50">
                     <TableCell className="font-medium">
-                      <div className="flex items-center space-x-2">
-                        <Pill className="h-4 w-4 text-blue-600" />
-                        <div>
-                          {(prescription.medications || (prescription.medication ? [prescription.medication] : [])).map((med, idx) => (
-                            <div key={idx} className="text-sm">{med}</div>
-                          ))}
+                      <div className="flex items-start space-x-2">
+                        <Pill className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm text-gray-900 dark:text-white">
+                            Medications
+                          </div>
+                          <div className="space-y-1 mt-1">
+                            {prescription.medication ? (
+                              <div className="text-xs text-gray-600 dark:text-gray-300 break-words">
+                                {prescription.medication}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                No medication specified
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -273,7 +317,9 @@ const HistoricalPrescriptionsPage = () => {
                     <TableCell className="text-sm">
                       <div>{new Date(prescription.createdAt).toLocaleDateString()}</div>
                       {prescription.prescribedBy && (
-                        <div className="text-muted-foreground">by {prescription.prescribedBy}</div>
+                        <div className="text-muted-foreground">
+                          by {users[prescription.prescribedBy as string]?.fullName || prescription.prescribedBy}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>

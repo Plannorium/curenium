@@ -39,11 +39,11 @@ const UnauthorizedPage = () => {
             Access Denied
           </div>
 
-          {/* Action buttons */}
-          <div className="space-y-3">
+          {/* Action buttons */}z
+          <div className="">
             <Link href="/dashboard" className="block">
               <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 size="lg"
               >
                 <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -51,10 +51,10 @@ const UnauthorizedPage = () => {
               </Button>
             </Link>
             
-            <Link href="/" className="block">
+            <Link href="/" className="block mt-5">
               <Button 
                 variant="outline" 
-                className="w-full backdrop-blur-sm bg-background/50 border-border/50 hover:bg-accent/50 transition-all duration-300"
+                className="w-full backdrop-blur-sm bg-background/50 border-border/50 hover:bg-accent/50 transition-all duration-300 cursor-pointer"
                 size="lg"
               >
                 Return Home

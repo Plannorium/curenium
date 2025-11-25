@@ -33,19 +33,24 @@ export const DispensePrescriptionModal = ({
 
     setIsDispensing(true);
     try {
-      const response = await fetch(`/api/prescriptions/${prescription._id}`, {
+      const response = await fetch(`/api/prescriptions`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({
+          id: prescription._id,
+          dispensed: true,
+          dispensedNotes: notes,
+          dispensedAt: new Date().toISOString()
+        }),
       });
 
       if (!response.ok) {
         throw new Error("Failed to dispense prescription");
       }
 
-      toast.success("Prescription marked as dispensed");
+      toast.success("Prescription marked as dispensed successfully!");
       onDispensed();
       onClose();
     } catch (error: any) {
