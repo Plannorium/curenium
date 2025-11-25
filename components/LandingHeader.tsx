@@ -7,11 +7,13 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import Image from "next/image";
 import { useTheme } from "@/components/ThemeProvider";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 export function LandingHeader() {
   const { data: session } = useSession();
   const { theme } = useTheme();
   const [isHydrated, setIsHydrated] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsHydrated(true);
@@ -57,21 +59,33 @@ export function LandingHeader() {
         <nav className="hidden md:flex items-center gap-2">
           <Link
             href="/features"
-            className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
+            className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+              pathname === '/features'
+                ? 'text-primary bg-primary/10 border border-primary/20'
+                : 'text-muted-foreground hover:text-primary hover:bg-accent/50 focus:bg-accent/50'
+            }`}
             prefetch={false}
           >
             Features
           </Link>
           <Link
             href="/pricing"
-            className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
+            className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+              pathname === '/pricing'
+                ? 'text-primary bg-primary/10 border border-primary/20'
+                : 'text-muted-foreground hover:text-primary hover:bg-accent/50 focus:bg-accent/50'
+            }`}
             prefetch={false}
           >
             Pricing
           </Link>
           <Link
             href="/contact"
-            className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
+            className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+              pathname === '/contact'
+                ? 'text-primary bg-primary/10 border border-primary/20'
+                : 'text-muted-foreground hover:text-primary hover:bg-accent/50 focus:bg-accent/50'
+            }`}
             prefetch={false}
           >
             Contact

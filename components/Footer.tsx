@@ -27,24 +27,44 @@ function Footer() {
       <div className="relative max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
-            {isHydrated ? (
-              <Image
-                src={
-                  theme === "dark"
-                    ? "/curenium-logo-d.png"
-                    : "/curenium-logo.png"
-                }
-                alt="Curenium Logo"
-                width={128}
-                height={32}
-                className="h-8 w-auto"
-              />
-            ) : (
-              <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
-            )}
-            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
-              Healthcare Communication Platform • Real-time Collaboration • Patient Management
-            </p>
+            <div className="flex items-center gap-3 group">
+              {isHydrated ? (
+                <Image
+                  src={
+                    theme === "dark"
+                      ? "/curenium-logo-d.png"
+                      : "/curenium-logo.png"
+                  }
+                  alt="Curenium Logo"
+                  width={128}
+                  height={32}
+                  className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
+              )}
+              <div className="flex items-center">
+                <span className="font-bold text-lg text-foreground tracking-tight group-hover:text-primary transition-colors duration-300">
+                  Curenium
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Transforming healthcare through intelligent communication
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  Real-time
+                </span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full bg-accent/10 text-accent border border-accent/20">
+                  Secure
+                </span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-500/10 text-green-600 border border-green-500/20">
+                  Compliant
+                </span>
+              </div>
+            </div>
           </div>
 
           <div>

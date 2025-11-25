@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LandingHeader } from "@/components/LandingHeader";
@@ -18,25 +19,46 @@ function PrivacyPage() {
       <LandingHeader />
 
       {/* Hero Section */}
-      <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
+      <motion.section
+        className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
         <div className="text-center space-y-8">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+          <motion.h1
+            className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <span className="bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               Privacy Policy
             </span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+          </motion.h1>
+          <motion.p
+            className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
             Your privacy is our priority. Learn how Curenium protects your data and ensures secure communication in healthcare.
-          </p>
+          </motion.p>
         </div>
-      </section>
+      </motion.section>
 
       {/* Content Sections */}
       <section className="relative py-16 md:py-24 px-6 md:px-12 backdrop-blur-sm bg-muted/20 border-y border-border/30">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-accent/5 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-linear-to-b from-transparent via-primary/5 to-accent/5 pointer-events-none"></div>
         <div className="relative max-w-4xl mx-auto space-y-12">
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
+          <motion.div
+            className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             <h2 className="text-2xl font-bold text-foreground mb-4">Information We Collect</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               We collect information you provide directly to us, such as when you create an account, use our services, or contact us for support. This includes:
@@ -47,9 +69,15 @@ function PrivacyPage() {
               <li>Communication data (messages, files, alerts)</li>
               <li>Usage data and device information</li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
+          <motion.div
+            className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
             <h2 className="text-2xl font-bold text-foreground mb-4">How We Use Your Information</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               We use the information we collect to:
@@ -61,16 +89,28 @@ function PrivacyPage() {
               <li>Send technical notices, updates, and support messages</li>
               <li>Respond to your comments and questions</li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
+          <motion.div
+            className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             <h2 className="text-2xl font-bold text-foreground mb-4">Data Security</h2>
             <p className="text-muted-foreground leading-relaxed">
               We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. Our platform uses end-to-end encryption for all communications and complies with healthcare data protection standards.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
+          <motion.div
+            className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
             <h2 className="text-2xl font-bold text-foreground mb-4">Data Sharing</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy. We may share information in the following circumstances:
@@ -81,9 +121,15 @@ function PrivacyPage() {
               <li>To protect our rights and prevent fraud</li>
               <li>With service providers who assist our operations</li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
+          <motion.div
+            className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
             <h2 className="text-2xl font-bold text-foreground mb-4">Your Rights</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               You have the right to:
@@ -94,9 +140,15 @@ function PrivacyPage() {
               <li>Opt out of certain data processing</li>
               <li>Request data portability</li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
+          <motion.div
+            className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
             <h2 className="text-2xl font-bold text-foreground mb-4">Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               If you have any questions about this Privacy Policy, please contact us at:
@@ -105,7 +157,7 @@ function PrivacyPage() {
               Email: privacy@curenium.com<br />
               Address: [Your Address Here]
             </p>
-          </div>
+          </motion.div>
 
         </div>
       </section>
