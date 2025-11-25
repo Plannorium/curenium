@@ -73,7 +73,7 @@ function TermsPage() {
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
             <h2 className="text-2xl font-bold text-foreground mb-4">Healthcare Compliance</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Curenium is designed for healthcare professionals. Users must comply with all applicable healthcare laws, regulations, and standards including HIPAA, GDPR, and local healthcare regulations. The platform is not a substitute for professional medical advice or emergency services.
+              Curenium is designed for healthcare professionals. Users must comply with all applicable healthcare laws, regulations, and standards including GDPR, and local healthcare regulations. The platform is not a substitute for professional medical advice or emergency services.
             </p>
           </div>
 
