@@ -42,7 +42,6 @@ function CompliancePage() {
               Curenium complies with major healthcare regulations and standards:
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>HIPAA (Health Insurance Portability and Accountability Act)</li>
               <li>GDPR (General Data Protection Regulation)</li>
               <li>HITECH (Health Information Technology for Economic and Clinical Health)</li>
               <li>Local healthcare regulations in the Gulf region</li>
@@ -98,7 +97,6 @@ function CompliancePage() {
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
               <li>SOC 2 Type II compliance</li>
               <li>ISO 27001 certification</li>
-              <li>HIPAA compliance attestation</li>
               <li>Regular third-party security assessments</li>
             </ul>
           </div>
