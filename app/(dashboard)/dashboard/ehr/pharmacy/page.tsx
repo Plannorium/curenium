@@ -75,10 +75,9 @@ const PharmacyDashboard = () => {
   }, [prescriptions, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const active = prescriptions.filter(p => p.status === 'active').length;
-    const completed = prescriptions.filter(p => p.status === 'completed').length;
-    const cancelled = prescriptions.filter(p => p.status === 'cancelled').length;
-    return { active, completed, cancelled, total: prescriptions.length };
+    const pending = prescriptions.filter(p => !p.dispensed && !p.dispensedBy && !p.dispensedAt).length;
+    const dispensed = prescriptions.filter(p => p.dispensed || p.dispensedBy || p.dispensedAt).length;
+    return { pending, dispensed, total: prescriptions.length };
   }, [prescriptions]);
 
   const getStatusBadge = (status: string) => {
@@ -144,22 +143,16 @@ const PharmacyDashboard = () => {
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Active Prescriptions"
-          value={stats.active}
-          icon={Pill}
-          color="bg-blue-500"
+          title="Pending Dispensing"
+          value={stats.pending}
+          icon={Clock}
+          color="bg-orange-500"
         />
         <StatCard
-          title="Completed"
-          value={stats.completed}
+          title="Dispensed"
+          value={stats.dispensed}
           icon={CheckCircle}
           color="bg-green-500"
-        />
-        <StatCard
-          title="Cancelled"
-          value={stats.cancelled}
-          icon={XCircle}
-          color="bg-red-500"
         />
         <StatCard
           title="Total Prescriptions"
@@ -196,43 +189,31 @@ const PharmacyDashboard = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="active" className="flex items-center gap-2">
+          <Tabs defaultValue="pending" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="pending" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Active ({prescriptions.filter(p => p.status === 'active').length})
+                Pending Dispensing ({prescriptions.filter(p => !p.dispensed && !p.dispensedBy && !p.dispensedAt).length})
               </TabsTrigger>
-              <TabsTrigger value="completed" className="flex items-center gap-2">
+              <TabsTrigger value="dispensed" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
-                Completed ({prescriptions.filter(p => p.status === 'completed').length})
-              </TabsTrigger>
-              <TabsTrigger value="cancelled" className="flex items-center gap-2">
-                <XCircle className="h-4 w-4" />
-                Cancelled ({prescriptions.filter(p => p.status === 'cancelled').length})
+                Dispensed ({prescriptions.filter(p => p.dispensed || p.dispensedBy || p.dispensedAt).length})
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="active" className="space-y-4">
+            <TabsContent value="pending" className="space-y-4">
               <PrescriptionTable
-                prescriptions={filteredPrescriptions.filter(p => p.status === 'active')}
+                prescriptions={filteredPrescriptions.filter(p => !p.dispensed && !p.dispensedBy && !p.dispensedAt)}
                 onViewDetails={handleOpenModal}
-                emptyMessage="No active prescriptions found"
+                emptyMessage="No prescriptions pending dispensing"
               />
             </TabsContent>
 
-            <TabsContent value="completed" className="space-y-4">
+            <TabsContent value="dispensed" className="space-y-4">
               <PrescriptionTable
-                prescriptions={filteredPrescriptions.filter(p => p.status === 'completed')}
+                prescriptions={filteredPrescriptions.filter(p => p.dispensed || p.dispensedBy || p.dispensedAt)}
                 onViewDetails={handleOpenModal}
-                emptyMessage="No completed prescriptions found"
-              />
-            </TabsContent>
-
-            <TabsContent value="cancelled" className="space-y-4">
-              <PrescriptionTable
-                prescriptions={filteredPrescriptions.filter(p => p.status === 'cancelled')}
-                onViewDetails={handleOpenModal}
-                emptyMessage="No cancelled prescriptions found"
+                emptyMessage="No dispensed prescriptions found"
               />
             </TabsContent>
           </Tabs>
@@ -243,8 +224,8 @@ const PharmacyDashboard = () => {
         prescription={selectedPrescription}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onDispensed={() => {
-          fetchPrescriptions();
+        onDispensed={async () => {
+          await fetchPrescriptions();
           handleCloseModal();
         }}
       />
@@ -301,15 +282,22 @@ const PrescriptionTable = ({
                 {getStatusBadge(p.status)}
               </TableCell>
               <TableCell>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onViewDetails(p)}
-                  className="hover:bg-primary/10 hover:border-primary/50"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Details
-                </Button>
+                {p.dispensed || p.dispensedBy || p.dispensedAt? (
+                  <div className="flex items-center text-green-600 dark:text-green-400">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Dispensed</span>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewDetails(p)}
+                    className="hover:bg-primary/10 hover:border-primary/50"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Mark as Dispensed
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}

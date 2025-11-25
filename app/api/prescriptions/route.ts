@@ -5,6 +5,9 @@ import Prescription from "@/models/Prescription";
 import AuditLog from "@/models/AuditLog";
 import { Prescription as PrescriptionType } from "@/types/prescription";
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,6 +27,52 @@ export async function GET(req: NextRequest) {
     .sort({ createdAt: -1 });
 
   return NextResponse.json(prescriptions);
+}
+
+export async function PUT(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    await connectDB();
+    const body: any = await req.json();
+    const { id, ...updateData } = body;
+
+    // If dispensing, automatically set dispensedBy to current user
+    if (updateData.dispensed === true && !updateData.dispensedBy) {
+      updateData.dispensedBy = token!.id;
+    }
+
+    // Convert dispensedAt to Date if it's a string
+    if (updateData.dispensedAt && typeof updateData.dispensedAt === 'string') {
+      updateData.dispensedAt = new Date(updateData.dispensedAt);
+    }
+
+    const prescription = await Prescription.findOne({
+      _id: id,
+      orgId: token!.organizationId
+    });
+
+    if (!prescription) {
+      return NextResponse.json({ error: "Prescription not found" }, { status: 404 });
+    }
+
+    // Update the prescription with new data
+    Object.assign(prescription, updateData);
+    const savedPrescription = await prescription.save();
+
+    await AuditLog.create({
+      orgId: token!.organizationId,
+      userId: token!.id,
+      action: "update_prescription",
+      details: `Prescription updated for patient ${savedPrescription.patientId}`,
+    });
+
+    return NextResponse.json(savedPrescription);
+  } catch (error) {
+    console.error("Failed to update prescription:", error);
+    return NextResponse.json({ error: "Failed to update prescription" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

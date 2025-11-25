@@ -63,7 +63,7 @@ const AppointmentsPage = () => {
         </Card>
       </div>
       <div className="col-span-1 lg:col-span-4">
-        <Card>
+        <Card className="dark:bg-slate-900/80">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
               {date

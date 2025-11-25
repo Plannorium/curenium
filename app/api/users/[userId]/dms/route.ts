@@ -4,8 +4,11 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import DMRoom from "@/models/DMRoom";
 import User from "@/models/User";
 import Message from "@/models/Message";
-import "@/models/Message"; 
+import "@/models/Message";
 import connectToDb from "@/lib/dbConnect";
+
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
 
 interface PostRequestBody {
   receiverId: string;

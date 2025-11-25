@@ -10,27 +10,60 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Brain, AlertCircle, Calendar, FileText, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import HijriCalendar from '@/components/ui/hijri-calendar';
+import { useCalendar } from '@/components/ui/calendar-context';
+import { Brain, AlertCircle, Calendar, FileText, CheckCircle2, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CreateDiagnosisProps {
-  patientId: string;
+  patientId?: string;
   onDiagnosisCreated?: () => void;
+  children: React.ReactNode;
 }
 
-const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreated }) => {
+const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreated, children }) => {
+  const { calendarType, setCalendarType } = useCalendar();
+  const [isOpen, setIsOpen] = useState(false);
   const [icd10Code, setIcd10Code] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState('');
-  const [onsetDate, setOnsetDate] = useState('');
+  const [onsetDate, setOnsetDate] = useState<Date | undefined>();
   const [note, setNote] = useState('');
   const [isPrimary, setIsPrimary] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Form validation
+  const isFormValid = icd10Code.trim() && description.trim() && severity;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!icd10Code.trim() || !description.trim()) {
-      toast.error("Please fill in the required fields");
+
+    // Validation with specific error messages
+    if (!icd10Code.trim()) {
+      toast.error("ICD-10 Code is required");
+      return;
+    }
+
+    if (!description.trim()) {
+      toast.error("Diagnosis description is required");
+      return;
+    }
+
+    if (!severity) {
+      toast.error("Please select a severity level");
+      return;
+    }
+
+    // Validate onsetDate if provided
+    if (onsetDate && isNaN(onsetDate.getTime())) {
+      toast.error("Please select a valid onset date");
       return;
     }
 
@@ -45,7 +78,7 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
           icd10Code: icd10Code.trim(),
           description: description.trim(),
           severity,
-          onsetDate,
+          ...(onsetDate && { onsetDate: onsetDate.toISOString().split('T')[0] }),
           note: note.trim(),
           isPrimary
         }),
@@ -57,9 +90,10 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
         setIcd10Code('');
         setDescription('');
         setSeverity('');
-        setOnsetDate('');
+        setOnsetDate(undefined);
         setNote('');
         setIsPrimary(false);
+        setIsOpen(false);
         onDiagnosisCreated?.();
       } else {
         const errorData: { message?: string } = await response.json();
@@ -80,22 +114,28 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <Card className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg border-gray-200/50 dark:border-gray-800/50 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center text-2xl">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg mr-3">
-              <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl">
+        <DialogHeader className="pb-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg shadow-lg">
+              <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
-            Create Diagnosis
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+            <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+              Create Diagnosis
+            </DialogTitle>
+          </div>
+        </DialogHeader>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-6"
+        >
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* ICD-10 Code */}
@@ -176,17 +216,18 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
                 transition={{ delay: 0.4 }}
                 className="space-y-2"
               >
-                <Label htmlFor="onsetDate" className="text-sm font-semibold flex items-center">
+                <Label className="text-sm font-semibold flex items-center">
                   <Calendar className="h-4 w-4 mr-2 text-primary" />
                   Onset Date
                 </Label>
-                <Input
-                  id="onsetDate"
-                  type="date"
-                  value={onsetDate}
-                  onChange={(e) => setOnsetDate(e.target.value)}
-                  className="h-11 border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-purple-500/50 rounded-lg"
-                />
+                <div className="space-y-2'[PLo[p">
+                  <HijriCalendar
+                    selectedDate={onsetDate}
+                    onDateSelect={setOnsetDate}
+                    calendarType={calendarType}
+                    onCalendarTypeChange={setCalendarType}
+                  />
+                </div>
               </motion.div>
 
               {/* Primary Diagnosis Checkbox */}
@@ -237,7 +278,7 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
             >
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isFormValid}
                 className="px-8 py-3 bg-linear-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isSubmitting ? (
@@ -254,9 +295,9 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
               </Button>
             </motion.div>
           </form>
-        </CardContent>
-      </Card>
-    </motion.div>
+        </motion.div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

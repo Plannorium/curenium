@@ -4,6 +4,9 @@ import Channel from '@/models/Channel';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
