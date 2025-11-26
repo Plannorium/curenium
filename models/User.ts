@@ -7,7 +7,7 @@ export interface IUser extends Document {
   online?: boolean;
   password?: string; // For migration purposes
   passwordHash?: string;
-  role: "admin" | "doctor" | "patient" | "user" | "nurse" | "manager" | "staff" | "labtech" | "reception";
+  role: "admin" | "doctor" | "patient" | "user" | "nurse" | "manager" | "staff" | "labtech" | "reception" | "matron_nurse";
   organizationId: mongoose.Schema.Types.ObjectId;
   username?: string;
   bio?: string;
@@ -67,7 +67,7 @@ const UserSchema = new mongoose.Schema(
     emailVerificationTokenExpires: { type: Date },
     role: {
       type: String,
-      enum: ["admin", "doctor", "nurse", "manager", "staff", "labtech", "reception"],
+      enum: ["admin", "doctor", "nurse", "manager", "staff", "labtech", "reception", "matron_nurse"],
       default: "staff",
     },
     organizationId: {

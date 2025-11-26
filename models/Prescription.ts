@@ -34,8 +34,10 @@ export interface IPrescription extends Document {
   status: 'active' | 'completed' | 'cancelled';
   statusReason?: string;
   notes?: string;
+  dispensed: boolean;
   dispensedBy?: mongoose.Schema.Types.ObjectId;
   dispensedNotes?: string;
+  dispensedAt?: Date;
   administrations?: IAdministrationRecord[];
 }
 
@@ -57,8 +59,10 @@ const PrescriptionSchema: Schema = new Schema({
   status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active' },
   statusReason: { type: String },
   notes: { type: String },
+  dispensed: { type: Boolean, default: false },
   dispensedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   dispensedNotes: { type: String },
+  dispensedAt: { type: Date },
   administrations: { type: [AdministrationRecordSchema], default: [] },
 }, { timestamps: true });
 

@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
+import HijriCalendar from '@/components/ui/hijri-calendar';
 import { CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -17,6 +17,7 @@ import { Patient } from '@/types/patient';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { IUser as User } from '@/models/User';
+import { useCalendar } from '@/components/ui/calendar-context';
 import {
   Select,
   SelectContent,
@@ -52,6 +53,7 @@ interface BookAppointmentModalProps {
 
 const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, onAppointmentBooked, children }) => {
   const { data: session } = useSession();
+  const { calendarType, setCalendarType } = useCalendar();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reason, setReason] = useState('');
@@ -342,20 +344,12 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md border"
-                  disabled={(day) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    if (day < today || !selectedPersonnel) {
-                      return day < today;
-                    }
-                    const availableSlots = generateTimeSlots(day, bookedAppointments);
-                    return availableSlots.length === 0;
-                  }}
+                <HijriCalendar
+                  selectedDate={date}
+                  onDateSelect={setDate}
+                  calendarType={calendarType}
+                  onCalendarTypeChange={setCalendarType}
+                  highlightedDays={[]} // Could add logic to highlight available dates
                 />
               </div>
 

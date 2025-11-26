@@ -8,7 +8,16 @@ import { getSession } from "next-auth/react";
 import { sendWebSocketMessage } from "@/lib/websockets";
 import Alert from "@/models/Alert";
 
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
+  const token = await getToken({ req });
+
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   await dbConnect();
 
   const room = req.nextUrl.searchParams.get('room');
@@ -18,6 +27,31 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Check if user has access to this room (channel or DM)
+    // For channels: check membership
+    const channel = await mongoose.models.Channel?.findOne({
+      _id: room,
+      organizationId: token.organizationId,
+      $or: [
+        { members: token.sub },
+        { createdBy: token.sub },
+        { type: 'public' }
+      ]
+    });
+
+    // For DMs: check if user is a participant
+    const dmRoom = await mongoose.models.DMRoom?.findOne({
+      $or: [
+        { room: room, participants: token.sub },
+        { _id: room, participants: token.sub }
+      ],
+      organizationId: token.organizationId
+    });
+
+    if (!channel && !dmRoom) {
+      return NextResponse.json({ error: 'Access denied: Not a member of this room' }, { status: 403 });
+    }
+
     const messages = await Message.find({ room: room }).sort({ createdAt: 1 }).lean();
     return NextResponse.json(messages);
   } catch (error) {
@@ -49,6 +83,29 @@ export async function DELETE(req: NextRequest) {
 
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    }
+
+    // Check if user has access to the room this message belongs to
+    const channel = await mongoose.models.Channel?.findOne({
+      _id: message.room,
+      organizationId: token.organizationId,
+      $or: [
+        { members: token.sub },
+        { createdBy: token.sub },
+        { type: 'public' }
+      ]
+    });
+
+    const dmRoom = await mongoose.models.DMRoom?.findOne({
+      $or: [
+        { room: message.room, participants: token.sub },
+        { _id: message.room, participants: token.sub }
+      ],
+      organizationId: token.organizationId
+    });
+
+    if (!channel && !dmRoom) {
+      return NextResponse.json({ error: 'Access denied: Not a member of this room' }, { status: 403 });
     }
 
     const isAdmin = token.role === 'admin';
@@ -97,6 +154,29 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });
     }
 
+    // Check if user has access to the room this message belongs to
+    const channel = await mongoose.models.Channel?.findOne({
+      _id: message.room,
+      organizationId: token.organizationId,
+      $or: [
+        { members: token.sub },
+        { createdBy: token.sub },
+        { type: 'public' }
+      ]
+    });
+
+    const dmRoom = await mongoose.models.DMRoom?.findOne({
+      $or: [
+        { room: message.room, participants: token.sub },
+        { _id: message.room, participants: token.sub }
+      ],
+      organizationId: token.organizationId
+    });
+
+    if (!channel && !dmRoom) {
+      return NextResponse.json({ error: 'Access denied: Not a member of this room' }, { status: 403 });
+    }
+
     const isOwner = message.userId.toString() === token.sub;
 
     if (!isOwner) {
@@ -132,6 +212,35 @@ export async function POST(req: NextRequest) {
   try {
     await dbConnect();
     const body: unknown = await req.json();
+
+    // For regular messages, check room access
+    if (!(body as any).type || (body as any).type !== "alert") {
+      const { room } = body as { room?: string };
+      if (room) {
+        // Check if user has access to this room (channel or DM)
+        const channel = await mongoose.models.Channel?.findOne({
+          _id: room,
+          organizationId: token.organizationId,
+          $or: [
+            { members: token.sub },
+            { createdBy: token.sub },
+            { type: 'public' }
+          ]
+        });
+
+        const dmRoom = await mongoose.models.DMRoom?.findOne({
+          $or: [
+            { room: room, participants: token.sub },
+            { _id: room, participants: token.sub }
+          ],
+          organizationId: token.organizationId
+        });
+
+        if (!channel && !dmRoom) {
+          return NextResponse.json({ error: 'Access denied: Not a member of this room' }, { status: 403 });
+        }
+      }
+    }
 
     if ((body as AlertMessage).type === "alert") {
       const { content, level, recipients } = body as AlertMessage;

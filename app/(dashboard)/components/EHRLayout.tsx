@@ -37,9 +37,23 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
     menuItems.push({ href: "/dashboard/ehr/lab", label: "Lab" });
   }
 
+  // Hospital Management Routes
+  if (role === 'doctor' || role === 'matron_nurse' || role === 'admin') {
+    menuItems.push({ href: "/dashboard/ehr/admissions", label: "Admissions" });
+  }
+
+  if (role === 'matron_nurse' || role === 'admin') {
+    menuItems.push({ href: "/dashboard/ehr/discharges", label: "Discharges" });
+    menuItems.push({ href: "/dashboard/ehr/shift-tracking", label: "Shift Tracking" });
+  }
+
+  if (role === 'admin') {
+    menuItems.push({ href: "/dashboard/ehr/hospital-management", label: "Hospital Mgmt" });
+  }
+
   // if (role === 'admin' || role === 'sales-representative') {
   //   menuItems.push({ href: "/dashboard/ehr/billing", label: "Billing" });
-  // } 
+  // }
 
   const renderSidebarContent = () => (
     <>

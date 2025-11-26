@@ -28,9 +28,12 @@ export interface Prescription {
   status: 'active' | 'completed' | 'cancelled';
   statusReason?: string;
   notes?: string;
+  dispensed: boolean;
   dispensedBy?: string;
   dispensedNotes?: string;
+  dispensedAt?: Date;
   administrations?: AdministrationRecord[];
   createdAt: Date;
+  datePrescribed: Date;
   updatedAt: Date;
 }

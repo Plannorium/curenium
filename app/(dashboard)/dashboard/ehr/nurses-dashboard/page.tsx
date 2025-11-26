@@ -512,40 +512,48 @@ const NursesDashboard = () => {
       className="space-y-8"
     >
       {/* Header with Patient Info */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2 lg:space-x-3">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="flex items-center justify-between lg:justify-start">
           <Button
             variant="ghost"
             onClick={handleBack}
-            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:block">
               Back to Overview
             </span>
           </Button>
-          <div className="h-8 w-px bg-gray-300 dark:bg-gray-700"></div>
+          <div className="lg:hidden">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <Heart className="h-3 w-3 mr-1" />
+              Under Care
+            </Badge>
+          </div>
+        </div>
+        <div className="flex items-center justify-center lg:justify-start space-x-2 mb-5">
+          <div className="hidden lg:block h-8 w-px bg-gray-300 dark:bg-gray-700"></div>
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {selectedPatient?.firstName[0]}{selectedPatient?.lastName[0]}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="min-w-0 flex-1 lg:flex-initial">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white truncate">
                 {selectedPatient?.firstName} {selectedPatient?.lastName}
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {selectedPatient?.mrn && `MRN: ${selectedPatient.mrn}`}
               </p>
             </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-            <Heart className="h-3 w-3 mr-1" />
-            Under Care
-          </Badge>
+          <div className="hidden lg:flex items-center space-x-2 mb-10">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <Heart className="h-3 w-3 mr-1" />
+              Under Care
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -613,14 +621,72 @@ const NursesDashboard = () => {
                 Review patient history and current status
               </p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <VitalsDisplay patientId={selectedPatient._id} />
-              <PrescriptionsDisplay patientId={selectedPatient._id} />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ClinicalNotesDisplay patientId={selectedPatient._id} />
-              <LabOrdersDisplay patientId={selectedPatient._id} />
-            </div>
+                  <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Full Name</p>
+                      <p className="text-lg font-medium text-gray-900 dark:text-white">
+                        {selectedPatient.firstName} {selectedPatient.lastName}
+                      </p>
+                    </div>
+                    {selectedPatient.mrn && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">MRN</p>
+                        <p className="text-gray-900 dark:text-white font-mono">{selectedPatient.mrn}</p>
+                      </div>
+                    )}
+                    {selectedPatient.dob && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Date of Birth</p>
+                        <p className="text-gray-900 dark:text-white">
+                          {new Date(selectedPatient.dob).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                          <span className="text-muted-foreground ml-2">
+                            ({new Date().getFullYear() - new Date(selectedPatient.dob).getFullYear()} years old)
+                          </span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedPatient.contact?.email && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Email</p>
+                        <p className="text-gray-900 dark:text-white">{selectedPatient.contact.email}</p>
+                      </div>
+                    )}
+                    {selectedPatient.contact?.phone && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Phone</p>
+                        <p className="text-gray-900 dark:text-white">{selectedPatient.contact.phone}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Admission Info */}
+                    {selectedPatient.admissionType && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Admission Type</p>
+                        <Badge variant="outline" className="capitalize">
+                          {selectedPatient.admissionType}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedPatient.department && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Department</p>
+                        <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.department}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
           </div>
         );
 

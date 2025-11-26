@@ -1,60 +1,66 @@
-import dayjs from 'dayjs';
-import hijri from 'dayjs-hijri';
+import { format } from 'date-fns';
+import { toHijri, toGregorian } from 'hijri-converter';
 
-// Extend dayjs with Hijri plugin
-dayjs.extend(hijri);
+export const formatDate = (date: Date | string, formatType: 'gregorian' | 'hijri' | 'both' = 'gregorian') => {
+  const d = new Date(date);
 
-export const formatDate = (date: Date | string, format: 'gregorian' | 'hijri' | 'both' = 'gregorian') => {
-  const d = dayjs(date);
-
-  switch (format) {
+  switch (formatType) {
     case 'gregorian':
-      return d.format('DD/MM/YYYY');
+      return format(d, 'dd/MM/yyyy');
     case 'hijri':
-      // For now, show Gregorian date with AH indicator
-      // TODO: Implement proper Hijri conversion when dayjs-hijri is working
-      return d.format('DD/MM/YYYY') + ' AH';
+      try {
+        const hijri = toHijri(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        return `${hijri.hd}/${hijri.hm}/${hijri.hy} AH`;
+      } catch (error) {
+        console.error('Error converting to Hijri:', error);
+        return format(d, 'dd/MM/yyyy') + ' AH';
+      }
     case 'both':
-      const gregorian = d.format('DD/MM/YYYY');
-      // TODO: Add proper Hijri date when conversion is working
-      return `${gregorian} (Hijri: Coming Soon)`;
+      const gregorian = format(d, 'dd/MM/yyyy');
+      try {
+        const hijri = toHijri(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        return `${gregorian} (${hijri.hd}/${hijri.hm}/${hijri.hy} AH)`;
+      } catch (error) {
+        return `${gregorian} (Hijri: Error)`;
+      }
     default:
-      return d.format('DD/MM/YYYY');
+      return format(d, 'dd/MM/yyyy');
   }
 };
 
-export const formatDateTime = (date: Date | string, format: 'gregorian' | 'hijri' | 'both' = 'gregorian') => {
-  const d = dayjs(date);
+export const formatDateTime = (date: Date | string, formatType: 'gregorian' | 'hijri' | 'both' = 'gregorian') => {
+  const d = new Date(date);
 
-  switch (format) {
+  switch (formatType) {
     case 'gregorian':
-      return d.format('DD/MM/YYYY HH:mm');
+      return format(d, 'dd/MM/yyyy HH:mm');
     case 'hijri':
-      // For now, show Gregorian datetime with AH indicator
-      return d.format('DD/MM/YYYY HH:mm') + ' AH';
+      try {
+        const hijri = toHijri(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        return `${hijri.hd}/${hijri.hm}/${hijri.hy} AH ${format(d, 'HH:mm')}`;
+      } catch (error) {
+        return format(d, 'dd/MM/yyyy HH:mm') + ' AH';
+      }
     case 'both':
-      const gregorian = d.format('DD/MM/YYYY HH:mm');
-      return `${gregorian} (Hijri: Coming Soon)`;
+      const gregorian = format(d, 'dd/MM/yyyy HH:mm');
+      try {
+        const hijri = toHijri(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        return `${gregorian} (${hijri.hd}/${hijri.hm}/${hijri.hy} AH)`;
+      } catch (error) {
+        return `${gregorian} (Hijri: Error)`;
+      }
     default:
-      return d.format('DD/MM/YYYY HH:mm');
+      return format(d, 'dd/MM/yyyy HH:mm');
   }
 };
 
-export const toHijri = (date: Date | string) => {
-  return dayjs(date);
+export const convertToHijri = (date: Date | string) => {
+  const d = new Date(date);
+  return toHijri(d.getFullYear(), d.getMonth() + 1, d.getDate());
 };
 
-export const fromHijri = (hijriDate: string) => {
-  // Parse Hijri date string and convert to Gregorian
-  // This is a simplified implementation - in production you'd want more robust parsing
-  try {
-    // For now, just return the original date since proper Hijri parsing is complex
-    // In a full implementation, you'd use proper Hijri date parsing
-    return new Date(hijriDate);
-  } catch (error) {
-    console.error('Error parsing Hijri date:', error);
-    return new Date(hijriDate);
-  }
+export const convertFromHijri = (hy: number, hm: number, hd: number) => {
+  return toGregorian(hy, hm, hd);
 };
 
 import { useCalendar } from '@/components/ui/calendar-context';

@@ -11,7 +11,7 @@ export interface IDiagnosis extends Document {
   diagnosisCode: string;
   description: string;
   severity: string;
-  onsetDate: Date;
+  onsetDate?: Date;
   resolvedDate?: Date;
   documentedBy: IUser['_id'];
   documentedAt: Date;
@@ -23,7 +23,7 @@ const DiagnosisSchema = new Schema<IDiagnosis>({
   diagnosisCode: { type: String, required: true },
   description: { type: String, required: true },
   severity: { type: String, required: true },
-  onsetDate: { type: Date, required: true },
+  onsetDate: { type: Date },
   resolvedDate: { type: Date },
   documentedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   documentedAt: { type: Date, default: Date.now },

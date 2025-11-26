@@ -25,7 +25,7 @@ const AppointmentCard = ({ appointment }: AppointmentCardProps) => {
   };
 
   return (
-    <Card key={appointment._id} className="transition-all duration-300 hover:shadow-lg dark:hover:shadow-white/10">
+    <Card key={appointment._id} className="transition-all duration-300 hover:shadow-lg dark:bg-slate-900/80 dark:hover:shadow-white/10">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm md:text-base font-medium">
           {appointment.patientId.firstName} {appointment.patientId.lastName}
