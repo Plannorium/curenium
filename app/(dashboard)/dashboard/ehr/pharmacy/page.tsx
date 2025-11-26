@@ -75,8 +75,8 @@ const PharmacyDashboard = () => {
   }, [prescriptions, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const pending = prescriptions.filter(p => !p.dispensed && !p.dispensedBy && !p.dispensedAt).length;
-    const dispensed = prescriptions.filter(p => p.dispensed || p.dispensedBy || p.dispensedAt).length;
+    const pending = prescriptions.filter(p => !p.dispensed).length;
+    const dispensed = prescriptions.filter(p => p.dispensed).length;
     return { pending, dispensed, total: prescriptions.length };
   }, [prescriptions]);
 
@@ -193,17 +193,17 @@ const PharmacyDashboard = () => {
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="pending" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Pending Dispensing ({prescriptions.filter(p => !p.dispensed && !p.dispensedBy && !p.dispensedAt).length})
+                Pending Dispensing ({prescriptions.filter(p => !p.dispensed).length})
               </TabsTrigger>
               <TabsTrigger value="dispensed" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
-                Dispensed ({prescriptions.filter(p => p.dispensed || p.dispensedBy || p.dispensedAt).length})
+                Dispensed ({prescriptions.filter(p => p.dispensed).length})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="pending" className="space-y-4">
               <PrescriptionTable
-                prescriptions={filteredPrescriptions.filter(p => !p.dispensed && !p.dispensedBy && !p.dispensedAt)}
+                prescriptions={filteredPrescriptions.filter(p => !p.dispensed)}
                 onViewDetails={handleOpenModal}
                 emptyMessage="No prescriptions pending dispensing"
               />
@@ -211,7 +211,7 @@ const PharmacyDashboard = () => {
 
             <TabsContent value="dispensed" className="space-y-4">
               <PrescriptionTable
-                prescriptions={filteredPrescriptions.filter(p => p.dispensed || p.dispensedBy || p.dispensedAt)}
+                prescriptions={filteredPrescriptions.filter(p => p.dispensed)}
                 onViewDetails={handleOpenModal}
                 emptyMessage="No dispensed prescriptions found"
               />
@@ -225,8 +225,13 @@ const PharmacyDashboard = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onDispensed={async () => {
-          await fetchPrescriptions();
-          handleCloseModal();
+          try {
+            await fetchPrescriptions();
+          } catch (error) {
+            toast.error("Failed to refresh prescriptions");
+          } finally {
+            handleCloseModal();
+          }
         }}
       />
     </div>
@@ -282,7 +287,7 @@ const PrescriptionTable = ({
                 {getStatusBadge(p.status)}
               </TableCell>
               <TableCell>
-                {p.dispensed || p.dispensedBy || p.dispensedAt? (
+                {p.dispensed ? (
                   <div className="flex items-center text-green-600 dark:text-green-400">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     <span className="text-sm font-medium">Dispensed</span>

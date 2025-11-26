@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/dist/style.css';
+import HijriCalendar from '@/components/ui/hijri-calendar';
+import { useCalendar } from '@/components/ui/calendar-context';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Calendar as CalendarIcon, Stethoscope, UserCheck, Clock, Shield, Heart, StickyNote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Calendar as CalendarIcon, Stethoscope, UserCheck, Clock, Shield, Heart, StickyNote, Play, Pause, Square, Coffee } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import AddShiftModal from './AddShiftModal';
 import NotesModal from './NotesModal'; // Import NotesModal
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 interface Shift {
   _id: string;
@@ -28,6 +30,16 @@ interface Shift {
   endTime: string | null;
   initials: string;
   status: 'on-shift' | 'on-call' | 'upcoming';
+  department?: {
+    _id: string;
+    name: string;
+  };
+  ward?: {
+    _id: string;
+    name: string;
+    wardNumber: string;
+  };
+  shiftNotes?: string;
   _malformed?: boolean;
 }
 
@@ -36,52 +48,106 @@ interface ShiftViewProps {
 }
 
 const ShiftView = ({ limit }: ShiftViewProps) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [displayMonth, setDisplayMonth] = useState<Date>(selectedDate || new Date());
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+   const { data: session } = useSession();
+   const { calendarType, setCalendarType } = useCalendar();
+   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+   const [displayMonth, setDisplayMonth] = useState<Date>(selectedDate || new Date());
+   const [shifts, setShifts] = useState<Shift[]>([]);
+   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+   const [currentTime, setCurrentTime] = useState(new Date());
 
   const fetchShifts = async () => {
     try {
-      const res = await fetch('/api/shifts');
-      if (res.ok) {
-        const data = await res.json();
-        const arr = Array.isArray(data) ? data : [];
+      // Fetch from both APIs simultaneously
+      const [shiftTrackingRes, basicShiftsRes] = await Promise.all([
+        fetch('/api/shift-tracking'),
+        fetch('/api/shifts')
+      ]);
 
-        // Normalize and validate shifts
-        const normalized: Shift[] = arr.map((s) => {
-          const out: Partial<Shift> = { ...s };
-          // Parse times and convert to ISO if possible
-          const start = s.startTime ? new Date(s.startTime) : null;
-          const end = s.endTime ? new Date(s.endTime) : null;
-          out.startTime = start && !isNaN(start.getTime()) ? start.toISOString() : null;
-          out.endTime = end && !isNaN(end.getTime()) ? end.toISOString() : null;
+      const allShifts: any[] = [];
 
-          // Ensure user object
-          out.user = s.user || { _id: '', fullName: 'Unknown' };
-          // Ensure role
-          out.role = s.role || 'Staff';
-          // Ensure status
-          out.status = s.status || 'upcoming';
-          // initials fallback
-          out.initials = s.initials || (out.user && out.user.fullName ? out.user.fullName.split(' ').map((n: string) => n[0]).slice(0,2).join('') : '');
+      // Process shift-tracking data
+      if (shiftTrackingRes.ok) {
+        const shiftTrackingData = await shiftTrackingRes.json();
+        const trackingArr = Array.isArray(shiftTrackingData) ? shiftTrackingData : [];
+        allShifts.push(...trackingArr);
+      }
 
-          // flag malformed if required fields missing or times invalid
-          const validTimes = !!out.startTime && !!out.endTime;
-          const hasUser = !!out.user && !!out.user.fullName;
-          const hasRole = !!out.role;
-          out._malformed = !(validTimes && hasUser && hasRole);
-          return out as Shift; // Cast to Shift after ensuring all required properties
-        });
+      // Process basic shifts data
+      if (basicShiftsRes.ok) {
+        const basicShiftsData = await basicShiftsRes.json();
+        const basicArr = Array.isArray(basicShiftsData) ? basicShiftsData : [];
+        allShifts.push(...basicArr);
+      }
 
-        const malformed = normalized.filter((s) => s._malformed);
-        if (malformed.length > 0) {
-          console.warn('Malformed shift records detected:', malformed);
+      // Normalize and validate all shifts
+      const normalized: Shift[] = allShifts.map((s) => {
+        const out: Partial<Shift> = { ...s };
+
+        // Handle different time field names
+        let start: Date | null = null;
+        let end: Date | null = null;
+
+        if (s.scheduledStart) {
+          // From shift-tracking API
+          start = new Date(s.scheduledStart);
+          end = new Date(s.scheduledEnd);
+        } else if (s.startTime) {
+          // From basic shifts API
+          start = new Date(s.startTime);
+          end = new Date(s.endTime);
         }
 
-        setShifts(normalized);
+        out.startTime = start && !isNaN(start.getTime()) ? start.toISOString() : null;
+        out.endTime = end && !isNaN(end.getTime()) ? end.toISOString() : null;
+
+        // Ensure user object
+        out.user = s.user || { _id: '', fullName: 'Unknown' };
+        // Ensure role
+        out.role = s.role || 'Staff';
+
+        // Handle department and ward (populated from shift-tracking API)
+        out.department = s.department;
+        out.ward = s.ward;
+        out.shiftNotes = s.shiftNotes;
+
+        // Map status from shift-tracking to basic shift status
+        const statusMap: { [key: string]: string } = {
+          'scheduled': 'upcoming',
+          'active': 'on-shift',
+          'on_call': 'on-call',
+          'completed': 'upcoming',
+          'cancelled': 'upcoming'
+        };
+        out.status = statusMap[s.status] || s.status || 'upcoming';
+
+        // initials fallback
+        out.initials = s.initials || (out.user && out.user.fullName ? out.user.fullName.split(' ').map((n: string) => n[0]).slice(0,2).join('') : '');
+
+        // flag malformed if required fields missing or times invalid
+        const validTimes = !!out.startTime && !!out.endTime;
+        const hasUser = !!out.user && !!out.user.fullName;
+        const hasRole = !!out.role;
+        out._malformed = !(validTimes && hasUser && hasRole);
+
+        return out as Shift; // Cast to Shift after ensuring all required properties
+      });
+
+      // Remove duplicates based on _id
+      const uniqueShifts = normalized.filter((shift, index, self) =>
+        index === self.findIndex(s => s._id === shift._id)
+      );
+
+      const malformed = uniqueShifts.filter((s) => s._malformed);
+      if (malformed.length > 0) {
+        console.warn('Malformed shift records detected:', malformed);
       }
-    } catch (error) { console.error("Failed to fetch shifts:", error); }
+
+      setShifts(uniqueShifts);
+    } catch (error) {
+      console.error("Failed to fetch shifts:", error);
+      setShifts([]);
+    }
   };
 
   useEffect(() => {
@@ -94,7 +160,18 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
     }
   }, [selectedDate]);
 
+  // Update current time every minute for real-time status
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const filteredShifts = useMemo(() => {
+    if (!selectedDate) {
+      // If no date is selected, show all shifts
+      return shifts?.filter(shift => !!shift.startTime && !!shift.endTime) || [];
+    }
+
     return shifts?.filter(shift => {
       // include shifts that span the selected date
       if (!shift.startTime || !shift.endTime) return false;
@@ -102,18 +179,45 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
       const end = new Date(shift.endTime);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
 
-      const targetDate = selectedDate ? new Date(selectedDate) : new Date();
+      const targetDate = new Date(selectedDate);
       const dayStart = new Date(targetDate);
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(targetDate);
       dayEnd.setHours(23, 59, 59, 999);
 
       return (start <= dayEnd && end >= dayStart);
-    });
+    }) || [];
   }, [shifts, selectedDate]);
 
   const onCallShifts = useMemo(() => {
     return shifts?.filter(shift => shift.status === 'on-call');
+  }, [shifts]);
+
+  // Calculate days with shifts for highlighting
+  const daysWithShifts = useMemo(() => {
+    const shiftDays = new Set<Date>();
+    shifts?.forEach(shift => {
+      if (shift.startTime) {
+        const startDate = new Date(shift.startTime);
+        // Add the start date
+        const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        shiftDays.add(startDay);
+
+        // If shift spans multiple days, add those days too
+        if (shift.endTime) {
+          const endDate = new Date(shift.endTime);
+          const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+          // Add all days between start and end
+          const currentDay = new Date(startDay);
+          while (currentDay <= endDay) {
+            shiftDays.add(new Date(currentDay));
+            currentDay.setDate(currentDay.getDate() + 1);
+          }
+        }
+      }
+    });
+    return Array.from(shiftDays);
   }, [shifts]);
 
   const getRoleIcon = (role?: string) => {
@@ -152,6 +256,53 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
     setSelectedDate(newDate);
+  };
+
+  // Shift action handlers for real-time status updates
+  const handleShiftAction = async (shiftId: string, action: string, data?: any) => {
+    try {
+      const response = await fetch(`/api/shifts/${shiftId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, ...data }),
+      });
+
+      if (response.ok) {
+        toast.success(`Shift ${action.replace('_', ' ')} successfully`);
+        fetchShifts(); // Refresh shifts to show updated status
+      } else {
+        const error = await response.json() as { message?: string };
+        toast.error(error.message || `Failed to ${action} shift`);
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} shift:`, error);
+      toast.error(`An error occurred while ${action}ing shift`);
+    }
+  };
+
+  // Check if user can perform actions on their shift
+  const canClockIn = (shift: Shift) => {
+    return session?.user?.id === shift.user._id &&
+           shift.status === 'upcoming' &&
+           shift.startTime &&
+           new Date(shift.startTime) <= currentTime;
+  };
+
+  const canClockOut = (shift: Shift) => {
+    return session?.user?.id === shift.user._id &&
+           (shift.status === 'on-shift' || shift.status === 'on-call');
+  };
+
+  const canGoOnCall = (shift: Shift) => {
+    return session?.user?.id === shift.user._id &&
+           shift.status === 'on-shift';
+  };
+
+  const canGoOffCall = (shift: Shift) => {
+    return session?.user?.id === shift.user._id &&
+           shift.status === 'on-call';
   };
 
   return (
@@ -214,58 +365,15 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
       
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Calendar Section */}
-        <div className="w-full md:w-1/3 lg:w-2/5 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-b md:border-b-0 md:border-r p-0 overflow-y-auto pt-2.5 flex justify-center">
-          <div className="shift-calendar">
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              month={displayMonth}
-              onMonthChange={setDisplayMonth}
-              className="w-full"
-              showOutsideDays
-              classNames={{
-                months: "flex md:space-y-2 space-x-1.5",
-                month: "space-y-2",
-                caption: "flex justify-center pt-1 relative items-center",
-                caption_label: "text-xs font-medium text-foreground",
-                nav: "hidden",
-                nav_button: "h-4 w-4 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/50 rounded-md transition-colors",
-                nav_button_previous: "absolute left-1",
-                nav_button_next: "absolute right-1",
-                table: "w-full border-collapse space-y-1",
-                head_row: "flex",
-                head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.6rem] justify-center",
-                row: "flex w-full mt-1",
-                cell: "relative p-0 text-center text-[0.7rem] focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary-50 dark:[&:has([aria-selected])]:bg-primary-900/50 [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
-                day: "h-2 w-2 p-0 font-normal aria-selected:opacity-100 hover:bg-primary-50 dark:hover:bg-primary-900/50 rounded-md transition-colors",
-                day_range_end: "day-range-end",
-                day_selected: "bg-primary-600 text-primary-foreground hover:bg-primary-600 hover:text-primary-foreground focus:bg-primary-600 focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground font-semibold",
-                day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-                day_disabled: "text-muted-foreground opacity-50",
-                day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                day_hidden: "invisible",
-              }}
+        <div className="w-full md:w-1/3 lg:w-2/5 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-b md:border-b-0 md:border-r p-4 overflow-y-auto flex justify-center">
+          <div className="w-full max-w-md">
+            <HijriCalendar
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              calendarType={calendarType}
+              onCalendarTypeChange={setCalendarType}
+              highlightedDays={daysWithShifts}
             />
-            <div className="w-full flex items-center justify-center gap-2 mt-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1))}
-                    className="w-fit h-7 px-2"
-                >
-                    <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1))}
-                    className="w-fit h-7 px-2"
-                >
-                    <ChevronRight className="h-3 w-3" />
-                </Button>
-            </div>
           </div>
         </div>
 
@@ -301,14 +409,35 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                             {shift._malformed && (
                               <Badge variant="destructive" className="ml-2 text-xs flex-shrink-0">!</Badge>
                             )}
+                            {(shift.department || shift.ward) && (
+                              <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                Advanced
+                              </Badge>
+                            )}
                           </div>
-                          <div className="text-sm text-muted-foreground mt-1">
+                          <div className="text-sm text-muted-foreground mt-1 space-y-1">
                             <span className="flex items-center gap-1.5">
                               <Clock className="w-4 h-4" />
                               <span>
                                 {(shift.startTime ? new Date(shift.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')} - {(shift.endTime ? new Date(shift.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—')}
                               </span>
                             </span>
+                            {(shift.department || shift.ward) && (
+                              <div className="flex items-center gap-3 text-xs">
+                                {shift.department && (
+                                  <span className="flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                    {shift.department.name}
+                                  </span>
+                                )}
+                                {shift.ward && (
+                                  <span className="flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                    {shift.ward.name} ({shift.ward.wardNumber})
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -344,6 +473,47 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                               <StickyNote className="mr-2 h-4 w-4" />
                               View Notes
                             </DropdownMenuItem>
+
+                            {/* Shift Action Buttons */}
+                            {canClockIn(shift) && (
+                              <DropdownMenuItem
+                                onClick={() => handleShiftAction(shift._id, 'clock_in')}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <Play className="mr-2 h-4 w-4" />
+                                Clock In
+                              </DropdownMenuItem>
+                            )}
+
+                            {canClockOut(shift) && (
+                              <DropdownMenuItem
+                                onClick={() => handleShiftAction(shift._id, 'clock_out')}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Square className="mr-2 h-4 w-4" />
+                                Clock Out
+                              </DropdownMenuItem>
+                            )}
+
+                            {canGoOnCall(shift) && (
+                              <DropdownMenuItem
+                                onClick={() => handleShiftAction(shift._id, 'go_on_call')}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Go On Call
+                              </DropdownMenuItem>
+                            )}
+
+                            {canGoOffCall(shift) && (
+                              <DropdownMenuItem
+                                onClick={() => handleShiftAction(shift._id, 'go_off_call')}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Go Off Call
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
