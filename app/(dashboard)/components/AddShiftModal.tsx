@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Calendar, Clock, User, Briefcase, Loader2 } from "lucide-react";
+import { Plus, Calendar, Clock, User, Briefcase, Loader2, FileText } from "lucide-react";
 import HijriCalendar from "@/components/ui/hijri-calendar";
 import { useCalendar } from "@/components/ui/calendar-context";
 
@@ -28,6 +28,18 @@ interface User {
   _id: string;
   fullName: string;
   image?: string;
+  role?: string;
+}
+
+interface Department {
+  _id: string;
+  name: string;
+}
+
+interface Ward {
+  _id: string;
+  name: string;
+  wardNumber: string;
 }
 
 
@@ -49,57 +61,132 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
   ({ onShiftAdded, children }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [wards, setWards] = useState<Ward[]>([]);
     const [selectedUser, setSelectedUser] = useState("");
+    const [selectedUserImage, setSelectedUserImage] = useState("");
+    const [selectedDepartment, setSelectedDepartment] = useState("");
+    const [selectedWard, setSelectedWard] = useState("");
     const [role, setRole] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
-    const [status, setStatus] = useState("on-shift");
+    const [shiftNotes, setShiftNotes] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { calendarType, setCalendarType } = useCalendar();
 
     useEffect(() => {
-      const fetchUsers = async () => {
+      const fetchData = async () => {
         setIsLoading(true);
         try {
-          const res = await fetch("/api/users");
-          const data: User[] = await res.json();
-          setUsers(data || []);
+          // Fetch users
+          const usersRes = await fetch("/api/users");
+          if (usersRes.ok) {
+            const usersData: User[] = await usersRes.json();
+            setUsers(usersData || []);
+          } else {
+            console.error("Failed to fetch users:", usersRes.status, usersRes.statusText);
+            setUsers([]);
+          }
+
+          // Fetch departments
+          const deptsRes = await fetch("/api/departments");
+          if (deptsRes.ok) {
+            const deptsData: Department[] = await deptsRes.json();
+            setDepartments(deptsData || []);
+          } else {
+            console.error("Failed to fetch departments:", deptsRes.status, deptsRes.statusText);
+            setDepartments([]);
+          }
         } catch (error) {
-          console.error("Failed to fetch users:", error);
+          console.error("Failed to fetch data:", error);
+          setUsers([]);
+          setDepartments([]);
         } finally {
           setIsLoading(false);
         }
       };
       if (isOpen) {
-        fetchUsers();
+        fetchData();
       }
     }, [isOpen]);
 
+    // Fetch wards when department changes
+    useEffect(() => {
+      const fetchWards = async () => {
+        if (selectedDepartment) {
+          try {
+            const res = await fetch(`/api/wards?department=${selectedDepartment}`);
+            if (res.ok) {
+              const data: Ward[] = await res.json();
+              setWards(data || []);
+            } else {
+              console.error("Failed to fetch wards:", res.status, res.statusText);
+              setWards([]);
+            }
+          } catch (error) {
+            console.error("Failed to fetch wards:", error);
+            setWards([]);
+          }
+        } else {
+          setWards([]);
+        }
+      };
+      fetchWards();
+    }, [selectedDepartment]);
+
+    // Auto-populate role and image when user is selected
+    useEffect(() => {
+      if (selectedUser) {
+        const user = users.find(u => u._id === selectedUser);
+        if (user) {
+          setRole(user.role || '');
+          setSelectedUserImage(user.image || '');
+        }
+      } else {
+        setRole('');
+        setSelectedUserImage('');
+      }
+    }, [selectedUser, users]);
+
     const handleSubmit = async () => {
-      if (!selectedUser || !role || !startTime || !endTime) return;
+      if (!selectedUser || !role || !startDate || !endDate || !startTime || !endTime) return;
 
       setIsSubmitting(true);
       try {
-        const res = await fetch("/api/shifts", {
+        const res = await fetch("/api/shift-tracking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user: selectedUser,
+            userId: selectedUser,
+            userImage: selectedUserImage || undefined,
+            shiftDate: startDate,
+            startTime: startTime,
+            endDate: endDate,
+            endTime: endTime,
+            department: selectedDepartment || undefined,
+            ward: selectedWard || undefined,
             role,
-            startTime: new Date(startTime).toISOString(),
-            endTime: new Date(endTime).toISOString(),
-            status,
+            shiftNotes: shiftNotes.trim() || undefined,
           }),
         });
 
         if (res.ok) {
           onShiftAdded();
           setIsOpen(false);
+          // Reset form
           setSelectedUser("");
+          setSelectedUserImage("");
+          setSelectedDepartment("");
+          setSelectedWard("");
           setRole("");
+          setStartDate("");
+          setEndDate("");
           setStartTime("");
           setEndTime("");
+          setShiftNotes("");
         }
       } catch (error) {
         console.error("Failed to add shift:", error);
@@ -108,22 +195,22 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
       }
     };
 
-    const isFormValid = selectedUser && role && startTime && endTime;
+    const isFormValid = selectedUser && role && startDate && endDate && startTime && endTime && new Date(startDate) <= new Date(endDate);
 
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>{children}</DialogTrigger>
-        <DialogContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg sm:max-w-lg p-0">
-          <DialogHeader className="p-6 pb-4">
-            <DialogTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-3">
-                <Calendar className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+        <DialogContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg max-w-md sm:max-w-lg lg:mx-4 p-0 max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="p-4 md:p-6 pb-3 md:pb-4">
+            <DialogTitle className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
+              <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
+                <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Add New Shift
+              <span className="text-sm md:text-base">Schedule Advanced Shift</span>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-6 pb-6 space-y-5">
+          <div className="px-4 md:px-6 pb-4 md:pb-6 space-y-4 md:space-y-5">
             <div className="space-y-2">
               <Label
                 htmlFor="user"
@@ -169,14 +256,55 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 <Briefcase className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
                 Role
               </Label>
-              <Select onValueChange={setRole}>
+              <Input
+                id="role"
+                type="text"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="Role will auto-populate when user is selected"
+                className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                readOnly
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="department"
+                className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
+              >
+                <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                Department
+              </Label>
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder="Select department (optional)" />
                 </SelectTrigger>
-                <SelectContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
-                  {Object.entries(roles).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
+                <SelectContent className="bg-white dark:bg-gray-950">
+                  {departments.map((dept) => (
+                    <SelectItem key={dept._id} value={dept._id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="ward"
+                className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
+              >
+                <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                Ward
+              </Label>
+              <Select value={selectedWard} onValueChange={setSelectedWard} disabled={!selectedDepartment}>
+                <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
+                  <SelectValue placeholder={selectedDepartment ? "Select ward (optional)" : "Select department first"} />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-950">
+                  {wards.map((ward) => (
+                    <SelectItem key={ward._id} value={ward._id}>
+                      {ward.name} ({ward.wardNumber})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -184,22 +312,44 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-center space-x-4">
-                <Button
-                  variant={calendarType === 'gregorian' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCalendarType('gregorian')}
-                >
-                  Gregorian (AD)
-                </Button>
-                <Button
-                  variant={calendarType === 'hijri' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCalendarType('hijri')}
-                >
-                  Hijri (AH)
-                </Button>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                    Start Date
+                  </Label>
+                  <HijriCalendar
+                    selectedDate={startDate ? new Date(startDate) : undefined}
+                    onDateSelect={(date) => setStartDate(date.toISOString().split('T')[0])}
+                    calendarType={calendarType}
+                    onCalendarTypeChange={setCalendarType}
+                    highlightedDays={[]}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                    End Date
+                  </Label>
+                  <HijriCalendar
+                    selectedDate={endDate ? new Date(endDate) : undefined}
+                    onDateSelect={(date) => setEndDate(date.toISOString().split('T')[0])}
+                    calendarType={calendarType}
+                    onCalendarTypeChange={setCalendarType}
+                    highlightedDays={[]}
+                  />
+                </div>
               </div>
+
+              {startDate && endDate && new Date(startDate).getTime() !== new Date(endDate).getTime() && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    📅 Multi-day shift: {Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -208,7 +358,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                     Start Time
                   </Label>
                   <Input
-                    type="datetime-local"
+                    type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
@@ -221,57 +371,57 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                     End Time
                   </Label>
                   <Input
-                    type="datetime-local"
+                    type="time"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
                     className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="shiftNotes"
+                  className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
+                >
+                  <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+                  Shift Notes (Optional)
+                </Label>
+                <Input
+                  id="shiftNotes"
+                  type="text"
+                  value={shiftNotes}
+                  onChange={(e) => setShiftNotes(e.target.value)}
+                  placeholder="Any special notes for this shift"
+                  className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="status"
-                className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
-              >
-                <Briefcase className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Status
-              </Label>
-              <Select onValueChange={setStatus} value={status}>
-                <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
-                  <SelectItem value="on-shift">On-shift</SelectItem>
-                  <SelectItem value="on-call">On-call</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
+          <DialogFooter className="px-4 md:px-6 py-3 md:py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60 flex flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               variant="ghost"
               onClick={() => setIsOpen(false)}
               disabled={isSubmitting}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={!isFormValid || isSubmitting}
-              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 w-full sm:w-auto order-1 sm:order-2"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 lg:mr-2 animate-spin" /> Adding...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 lg:mr-2" />
-                  <span className="hidden md:block">Add Shift</span>{" "}
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span>Add Shift</span>
                 </>
               )}
             </Button>

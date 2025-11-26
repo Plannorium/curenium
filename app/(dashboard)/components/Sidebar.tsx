@@ -197,6 +197,63 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Audit Logs
             </span>
           </Link>
+          {/* Hospital Management Routes */}
+          {(role === "doctor" || role === "matron_nurse" || role === "admin") && (
+            <Link
+              href="/dashboard/ehr/admissions"
+              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+                pathname === "/dashboard/ehr/admissions"
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+              } ${isCollapsed ? "lg:justify-center" : ""}`}
+            >
+              <span className="truncate whitespace-nowrap transition-colors duration-200">
+                Admissions
+              </span>
+            </Link>
+          )}
+          {(role === "matron_nurse" || role === "admin") && (
+            <Link
+              href="/dashboard/ehr/discharges"
+              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+                pathname === "/dashboard/ehr/discharges"
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+              } ${isCollapsed ? "lg:justify-center" : ""}`}
+            >
+              <span className="truncate whitespace-nowrap transition-colors duration-200">
+                Discharges
+              </span>
+            </Link>
+          )}
+          {(role === "matron_nurse" || role === "admin") && (
+            <Link
+              href="/dashboard/ehr/shift-tracking"
+              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+                pathname === "/dashboard/ehr/shift-tracking"
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+              } ${isCollapsed ? "lg:justify-center" : ""}`}
+            >
+              <span className="truncate whitespace-nowrap transition-colors duration-200">
+                Shift Tracking
+              </span>
+            </Link>
+          )}
+          {role === "admin" && (
+            <Link
+              href="/dashboard/ehr/hospital-management"
+              className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 ${
+                pathname === "/dashboard/admin/hospital-management"
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+              } ${isCollapsed ? "lg:justify-center" : ""}`}
+            >
+              <span className="truncate whitespace-nowrap transition-colors duration-200">
+                Hospital Mgmt
+              </span>
+            </Link>
+          )}
           {/* Role-based navigation items */}
           {role === "doctor" ||
             (role === "admin" && (

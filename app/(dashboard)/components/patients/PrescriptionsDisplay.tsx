@@ -25,6 +25,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   const [isAdministerModalOpen, setIsAdministerModalOpen] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [expandedTimelines, setExpandedTimelines] = useState<Set<string>>(new Set());
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
   const { data: session } = useSession();
 
   const fetchPrescriptions = async () => {
@@ -44,6 +45,18 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
 
   const toggleTimeline = (prescriptionId: string) => {
     setExpandedTimelines(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(prescriptionId)) {
+        newSet.delete(prescriptionId);
+      } else {
+        newSet.add(prescriptionId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleDetails = (prescriptionId: string) => {
+    setExpandedDetails(prev => {
       const newSet = new Set(prev);
       if (newSet.has(prescriptionId)) {
         newSet.delete(prescriptionId);
@@ -178,7 +191,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 flex-shrink-0">
-                      {session?.user?.role === 'nurse' && (
+                      {(session?.user?.role === 'nurse') && !prescription.dispensed && (
                         <Button
                           size="sm"
                           onClick={() => {
@@ -194,62 +207,89 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                     </div>
                   </div>
 
-                  {/* Professional Details Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
-                    {prescription.dose && prescription.dose !== 'Not specified' && prescription.dose !== 'N/A' && (
-                      <InfoItem icon={Package} label="Strength/Dose" value={prescription.dose} />
-                    )}
-                    <InfoItem icon={Repeat} label="Frequency" value={prescription.frequency} />
-                    {prescription.route && prescription.route !== 'As applicable' && (
-                      <InfoItem icon={ArrowRight} label="Route" value={prescription.route} />
-                    )}
-                    {prescription.durationDays && (
-                      <InfoItem icon={Clock} label="Duration" value={`${prescription.durationDays} days`} />
-                    )}
-                    {prescription.refills && (
-                      <InfoItem icon={Repeat} label="Refills" value={prescription.refills.toString()} />
-                    )}
-                    <InfoItem icon={Calendar} label="Prescribed" value={new Date(prescription.createdAt).toLocaleDateString()} />
-                    {prescription.startDate && (
-                      <InfoItem icon={Calendar} label="Start Date" value={new Date(prescription.startDate).toLocaleDateString()} />
-                    )}
-                    {prescription.endDate && (
-                      <InfoItem icon={Calendar} label="End Date" value={new Date(prescription.endDate).toLocaleDateString()} />
-                    )}
+                  {/* Details Toggle Button */}
+                  <div className="mb-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleDetails(prescription._id)}
+                      className="w-full flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors p-2 rounded-lg"
+                    >
+                      {expandedDetails.has(prescription._id) ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-2" />
+                          <span className="text-sm">Hide Details</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-2" />
+                          <span className="text-sm">Show Details</span>
+                        </>
+                      )}
+                    </Button>
                   </div>
 
-                  {/* Instructions and Reason */}
-                  <div className="space-y-3">
-                    {prescription.instructions && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
-                        <h4 className="font-semibold flex items-center text-blue-800 dark:text-blue-300 mb-2 text-sm sm:text-base">
-                          <FileText className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          Instructions
-                        </h4>
-                        <p className="text-blue-700 dark:text-blue-200 text-xs sm:text-sm leading-relaxed">{prescription.instructions}</p>
+                  {/* Collapsible Details */}
+                  {expandedDetails.has(prescription._id) && (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                      {/* Professional Details Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                        {prescription.dose && prescription.dose !== 'Not specified' && prescription.dose !== 'N/A' && (
+                          <InfoItem icon={Package} label="Strength/Dose" value={prescription.dose} />
+                        )}
+                        <InfoItem icon={Repeat} label="Frequency" value={prescription.frequency} />
+                        {prescription.route && prescription.route !== 'As applicable' && (
+                          <InfoItem icon={ArrowRight} label="Route" value={prescription.route} />
+                        )}
+                        {prescription.durationDays && (
+                          <InfoItem icon={Clock} label="Duration" value={`${prescription.durationDays} days`} />
+                        )}
+                        {prescription.refills && (
+                          <InfoItem icon={Repeat} label="Refills" value={prescription.refills.toString()} />
+                        )}
+                        <InfoItem icon={Calendar} label="Prescribed" value={new Date(prescription.createdAt).toLocaleDateString()} />
+                        {prescription.startDate && (
+                          <InfoItem icon={Calendar} label="Start Date" value={new Date(prescription.startDate).toLocaleDateString()} />
+                        )}
+                        {prescription.endDate && (
+                          <InfoItem icon={Calendar} label="End Date" value={new Date(prescription.endDate).toLocaleDateString()} />
+                        )}
                       </div>
-                    )}
 
-                    {prescription.reasonForPrescription && (
-                      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4">
-                        <h4 className="font-semibold flex items-center text-amber-800 dark:text-amber-300 mb-2 text-sm sm:text-base">
-                          <AlertCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          Reason for Prescription
-                        </h4>
-                        <p className="text-amber-700 dark:text-amber-200 text-xs sm:text-sm leading-relaxed">{prescription.reasonForPrescription}</p>
-                      </div>
-                    )}
+                      {/* Instructions and Reason */}
+                      <div className="space-y-3">
+                        {prescription.instructions && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+                            <h4 className="font-semibold flex items-center text-blue-800 dark:text-blue-300 mb-2 text-sm sm:text-base">
+                              <FileText className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              Instructions
+                            </h4>
+                            <p className="text-blue-700 dark:text-blue-200 text-xs sm:text-sm leading-relaxed">{prescription.instructions}</p>
+                          </div>
+                        )}
 
-                    {prescription.notes && (
-                      <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
-                        <h4 className="font-semibold flex items-center text-gray-800 dark:text-gray-300 mb-2 text-sm sm:text-base">
-                          <Info className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          Additional Notes
-                        </h4>
-                        <p className="text-gray-700 dark:text-gray-200 text-xs sm:text-sm leading-relaxed">{prescription.notes}</p>
+                        {prescription.reasonForPrescription && (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4">
+                            <h4 className="font-semibold flex items-center text-amber-800 dark:text-amber-300 mb-2 text-sm sm:text-base">
+                              <AlertCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              Reason for Prescription
+                            </h4>
+                            <p className="text-amber-700 dark:text-amber-200 text-xs sm:text-sm leading-relaxed">{prescription.reasonForPrescription}</p>
+                          </div>
+                        )}
+
+                        {prescription.notes && (
+                          <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
+                            <h4 className="font-semibold flex items-center text-gray-800 dark:text-gray-300 mb-2 text-sm sm:text-base">
+                              <Info className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              Additional Notes
+                            </h4>
+                            <p className="text-gray-700 dark:text-gray-200 text-xs sm:text-sm leading-relaxed">{prescription.notes}</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Administration Timeline */}
                   {prescription.administrations && prescription.administrations.length > 0 && (

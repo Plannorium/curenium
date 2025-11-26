@@ -21,10 +21,21 @@ const AppointmentsPage = () => {
 
   const fetchAppointments = async () => {
     setLoading(true);
-    const res = await fetch("/api/appointments");
-    const data = await res.json();
-    setAppointments(data as PopulatedAppointment[]);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/appointments");
+      if (res.ok) {
+        const data = await res.json();
+        setAppointments(data as PopulatedAppointment[]);
+      } else {
+        console.error("Failed to fetch appointments:", res.status, res.statusText);
+        setAppointments([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch appointments:", error);
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
