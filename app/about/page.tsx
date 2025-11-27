@@ -16,13 +16,11 @@ import {
   Linkedin,
   Facebook,
   Sparkles,
-  ShieldCheck,
 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import Image from "next/image";
 import { useTheme } from "@/components/ThemeProvider";
 import Footer from "@/components/Footer";
-import { LandingHeader } from "@/components/LandingHeader";
 
 function AboutPage() {
   const { theme } = useTheme();
@@ -87,43 +85,107 @@ function AboutPage() {
       </div>
 
       {/* Header */}
-      <LandingHeader/>
-      {/* Hero Section */}
-      <section className="relative py-16 md:py-24 px-4 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h1 className="text-center lg:text-left text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                About Curenium
-              </span>
-            </h1>
-            <p className="text-left text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
-              Curenium is revolutionizing healthcare communication by bridging critical gaps that have long plagued medical teams.
-              Born from real-world healthcare challenges and powered by cutting-edge technology, we're building a comprehensive platform
-              that transforms fragmented communication into seamless collaboration.
-            </p>
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/95 border-b border-border/50 shadow-lg supports-[backdrop-filter]:bg-background/80">
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
+
+        <div className="relative container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+          {/* Logo and Brand */}
+          <div className="flex items-center">
+            <Link
+              href="/"
+              className="flex items-center gap-3 group"
+              prefetch={false}
+            >
+              {isHydrated ? (
+                <Image
+                  src={
+                    theme === "dark"
+                      ? "/curenium-logo-d.png"
+                      : "/curenium-logo.png"
+                  }
+                  alt="Curenium Logo"
+                  width={128}
+                  height={32}
+                  className="h-8 w-auto transition-transform duration-200 group-hover:scale-105"
+                />
+              ) : (
+                <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
+              )}
+              <div className="flex items-center">
+                <span className="font-bold text-xl text-foreground tracking-tight group-hover:text-primary transition-colors duration-200">
+                  Curenium
+                </span>
+              </div>
+            </Link>
           </div>
-          <div className="space-y-6">
-            <div className="grid sm:grid-cols-3 gap-6">
-              <div className="backdrop-blur-sm bg-primary/5 border border-primary/10 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-primary mb-1">10+</div>
-                <div className="text-sm text-muted-foreground">Expert team members</div>
-              </div>
-              <div className="backdrop-blur-sm bg-accent/5 border border-accent/10 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold dark:text-accent mb-1">6</div>
-                <div className="text-sm text-muted-foreground">Beta healthcare partners</div>
-              </div>
-              <div className="backdrop-blur-sm bg-green-500/5 border border-green-500/10 rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-500 mb-1">20</div>
-                <div className="text-sm text-muted-foreground">Healthcare workflows mapped</div>
-              </div>
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-2">
+            <Link
+              href="/features"
+              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
+              prefetch={false}
+            >
+              Features
+            </Link>
+            <Link
+              href="/pricing"
+              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
+              prefetch={false}
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/contact"
+              className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary rounded-xl transition-all duration-200 hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-accent/50"
+              prefetch={false}
+            >
+              Contact
+            </Link>
+          </nav>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            <Link href="/login" prefetch={false}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+              >
+                Login
+              </Button>
+            </Link>
+            <Link href="/signup" prefetch={false}>
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
+              >
+                Sign Up
+              </Button>
+            </Link>
+            <div className="ml-2 ">
+              <ThemeSwitcher />
             </div>
-            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed text-left">
-              Currently in beta testing with select healthcare partners, Curenium is designed to ensure that every critical update,
-              emergency alert, and care coordination happens instantly and securely. Our platform is built to save lives by
-              eliminating communication barriers that can delay critical care, with healthcare professionals at the heart of every decision.
-            </p>
           </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              About
+            </span>
+            <span className="block text-primary font-extrabold mt-2">
+              Curenium
+            </span>
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Curenium is a revolutionary healthcare communication platform designed to transform how healthcare
+            professionals collaborate, manage patient care, and deliver exceptional outcomes.
+          </p>
         </div>
       </section>
 
@@ -138,9 +200,8 @@ function AboutPage() {
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 Founded in 2025, Curenium emerged from a vision to bridge the communication gaps in healthcare.
-                Plannorium brings together talented professionals from around the globe, from the Middle East and Africa
-                to Europe, Asia, and the Americas. Our diverse team represents the future of healthcare technology,
-                where global perspectives meet compassionate care and innovation.
+                Born from the combined expertise of Saudi Arabia and Nigeria, Curenium represents the future
+                of healthcare technology - where innovation meets compassionate care.
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 Curenium is built for healthcare professionals who demand excellence. Our platform combines
@@ -203,7 +264,7 @@ function AboutPage() {
       </section>
 
       {/* Mission & Vision */}
-      <section className="relative py-16 md:py-24 px-4 md:px-12 max-w-7xl mx-auto">
+      <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-12">
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-primary/5 rounded-2xl pointer-events-none"></div>
@@ -257,7 +318,7 @@ function AboutPage() {
                     <value.icon className="text-primary h-6 w-6" />
                   </div>
                   <h3 className="text-lg font-bold text-foreground mb-3">{value.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed text-left">{value.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">{value.description}</p>
                 </div>
               </div>
             ))}
@@ -265,218 +326,47 @@ function AboutPage() {
         </div>
       </section>
 
-      {/* Global Presence */}
-      <section className="relative py-16 md:py-24 px-4 md:px-12 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Global Presence, Local Impact
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Our team spans continents, bringing diverse perspectives and expertise to healthcare innovation.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
-            <div className="relative">
-              <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Globe className="text-green-600 dark:text-green-500 h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">Universal</h3>
-              <p className="text-muted-foreground leading-relaxed text-left">
-                With a strong presence in the MiddleEast & Africa, we deliver localized solutions by understanding regional needs.
-              </p>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 rounded-2xl pointer-events-none"></div>
-            <div className="relative">
-              <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Globe className="text-purple-600 dark:text-purple-500 h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">Global Network</h3>
-              <p className="text-muted-foreground leading-relaxed text-left">
-                Extended reach with collaborators and partners across Europe, Asia, and the Americas, ensuring worldwide healthcare impact.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Team Diversity */}
-      <section className="relative py-16 md:py-24 px-6 md:px-12 backdrop-blur-sm bg-muted/30 border-y border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
-        <div className="relative max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Diverse Perspectives, United Mission
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Our global team brings together healthcare experts, engineers, designers, and innovators from diverse backgrounds.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5 rounded-2xl pointer-events-none"></div>
-              <div className="relative">
-                <div className="backdrop-blur-sm bg-red-500/10 border border-red-500/20 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Users className="text-red-600 dark:text-red-500 h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">Healthcare Experts</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed text-left">
-                  Doctors, nurses, and healthcare administrators bringing clinical expertise and real-world insights.
-                </p>
-              </div>
-            </div>
-
-            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 rounded-2xl pointer-events-none"></div>
-              <div className="relative">
-                <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Code className="text-blue-600 dark:text-blue-500 h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">Software Engineers</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed text-left">
-                  Full-stack developers and architects from top tech companies, specializing in healthcare systems.
-                </p>
-              </div>
-            </div>
-
-            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 rounded-2xl pointer-events-none"></div>
-              <div className="relative">
-                <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/20 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Palette className="text-purple-600 dark:text-purple-500 h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">UX Designers</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed text-left">
-                  Creative designers focused on intuitive, accessible healthcare interfaces that save lives.
-                </p>
-              </div>
-            </div>
-
-            <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-teal-500/5 rounded-2xl pointer-events-none"></div>
-              <div className="relative">
-                <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Rocket className="text-green-600 dark:text-green-500 h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">Product Innovators</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed text-left">
-                  Strategic thinkers and product managers driving healthcare innovation and user experience.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The Curenium Advantage */}
-      <section className="relative py-16 md:py-24 px-4 md:px-12 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            The Curenium Advantage
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            We are building a platform that sets new standards in healthcare technology, focusing on security, performance, and usability.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none"></div>
-            <div className="relative">
-              <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <ShieldCheck className="text-primary h-8 w-8" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-3">Enterprise-Grade Security</h3>
-              <p className="text-muted-foreground leading-relaxed text-left">
-                Protecting patient data with state-of-the-art encryption and compliance with global privacy standards.
-              </p>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-blue-500/5 rounded-2xl pointer-events-none"></div>
-            <div className="relative">
-              <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Rocket className="text-green-600 dark:text-green-500 h-8 w-8" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-3">Modern Technology Stack</h3>
-              <p className="text-muted-foreground leading-relaxed text-left">
-                Built on a scalable, cloud-native architecture to ensure reliability, performance, and future-readiness.
-              </p>
-            </div>
-          </div>
-
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl text-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 rounded-2xl pointer-events-none"></div>
-            <div className="relative">
-              <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Users className="text-purple-600 dark:text-purple-500 h-8 w-8" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-3">Clinician-Centric Design</h3>
-              <p className="text-muted-foreground leading-relaxed text-left">
-                Developed in close collaboration with healthcare professionals to create intuitive and efficient workflows.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Join Our Mission */}
-      <section className="relative py-16 md:py-24 px-6 md:px-12 backdrop-blur-sm bg-muted/30 border-y border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
-        <div className="relative max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Join Our Mission
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
-            We're not actively hiring right now, but we're always looking for passionate individuals to join our mission. Feel free to send us your resume!
-          </p>
-          <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Link href="mailto:careers@curenium.com">
-              Send Your Resume
-            </Link>
-          </Button>
-        </div>
-      </section>
 
       {/* CTA Section */}
-      <section className="relative py-16 md:py-24 px-4 md:px-12 max-w-7xl mx-auto">
-        <div className="backdrop-blur-xl bg-card/80 border border-border/50 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 pointer-events-none"></div>
-          <div className="relative p-8 md:p-12">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div className="space-y-4 text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                  Ready to Transform Healthcare?
-                </h2>
-                <p className="text-lg text-muted-foreground">
-                  Join us on our mission to improve healthcare communication and save lives.
-                </p>
-              </div>
-              <div className="flex justify-center md:justify-end space-x-4">
-                <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Link href="/contact">
-                    Contact Us
-                  </Link>
+      <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
+        <div className="relative backdrop-blur-xl bg-gradient-to-r from-primary/90 to-primary border border-primary/20 rounded-3xl p-8 md:p-12 text-primary-foreground shadow-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none"></div>
+          <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+
+          <div className="relative max-w-4xl mx-auto text-center space-y-8">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+              Transform Healthcare Communication
+            </h2>
+            <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl mx-auto">
+              Join the healthcare professionals already using Curenium to improve patient outcomes,
+              streamline workflows, and enhance team collaboration.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+              <Link href="/contact" prefetch={false}>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                >
+                  Get In Touch
                 </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link href="/request-demo">
-                    Request a Demo
-                  </Link>
+              </Link>
+              <Link href="/careers" prefetch={false}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-white/10 border-white/30 text-white dark:text-black/80 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Join Our Team
                 </Button>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
