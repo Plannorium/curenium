@@ -17,8 +17,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Shift {
   _id: string;
-  startTime: string;
-  endTime: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  status: string;
   user: {
     fullName: string;
   };
@@ -37,7 +38,7 @@ interface Appointment {
 
 interface User {
   _id: string;
-  online: boolean;
+  online?: boolean;
 }
 
 const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
@@ -64,24 +65,24 @@ const DashboardContent: React.FC = () => {
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: shifts, error: shiftsError } = useSWR<Shift[]>(
-    (status === 'authenticated' && orgId) ? ['/api/shifts', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/shift-tracking', orgId] : null,
     ([url]) => fetcher(url),
-    { revalidateOnMount: true, dedupingInterval: 0 }
+    { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const { data: alerts, error: alertsError } = useSWR<Alert[]>(
-    (status === 'authenticated' && orgId) ? ['/api/alerts', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/alerts', orgId] : null,
     ([url]) => fetcher(url),
-    { revalidateOnMount: true, dedupingInterval: 0 }
+    { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(
-    (status === 'authenticated' && orgId) ? ['/api/appointments', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/appointments', orgId] : null,
     ([url]) => fetcher(url),
-    { revalidateOnMount: true, dedupingInterval: 0 }
+    { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const { data: users, error: usersError } = useSWR<User[]>(
-    (status === 'authenticated' && orgId) ? ['/api/users', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/users', orgId] : null,
     ([url]) => fetcher(url),
-    { revalidateOnMount: true, dedupingInterval: 0 }
+    { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
 
   useEffect(() => {
@@ -104,20 +105,41 @@ const DashboardContent: React.FC = () => {
   // Filter shifts based on user role
   const userShifts = isAdmin ? shifts : shifts?.filter(shift => shift.user?.fullName === session?.user?.name);
 
-  const currentShift = userShifts?.find(shift => new Date(shift.startTime) <= new Date() && new Date(shift.endTime) >= new Date());
-  const upcomingShift = userShifts?.find(shift => new Date(shift.startTime) > new Date());
+  const currentShift = userShifts?.find(shift =>
+    new Date(shift.scheduledStart) <= new Date() &&
+    new Date(shift.scheduledEnd) >= new Date() &&
+    shift.status === 'active'
+  );
+  const upcomingShift = userShifts?.find(shift =>
+    new Date(shift.scheduledStart) > new Date() &&
+    shift.status === 'scheduled'
+  );
 
   // Get all current shifts for display (for admin)
-  const allCurrentShifts = shifts?.filter(shift => new Date(shift.startTime) <= new Date() && new Date(shift.endTime) >= new Date()) || [];
-  const allUpcomingShifts = shifts?.filter(shift => new Date(shift.startTime) > new Date()) || [];
+  const allCurrentShifts = shifts?.filter(shift =>
+    new Date(shift.scheduledStart) <= new Date() &&
+    new Date(shift.scheduledEnd) >= new Date() &&
+    shift.status === 'active'
+  ) || [];
+  const allUpcomingShifts = shifts?.filter(shift =>
+    new Date(shift.scheduledStart) > new Date() &&
+    shift.status === 'scheduled'
+  ) || [];
 
   const criticalAlerts = alerts?.filter(alert => alert.level === 'critical').length || 0;
   const urgentAlerts = alerts?.filter(alert => alert.level === 'urgent').length || 0;
 
-  const pendingAppointments = appointments?.filter(appointment => appointment.status === 'upcoming').length || 0;
-  const overdueAppointments = appointments?.filter(appointment => new Date(appointment.date) < new Date() && appointment.status !== 'completed').length || 0;
+  const pendingAppointments = appointments?.filter(appointment =>
+    new Date(appointment.date) > new Date() &&
+    appointment.status === 'scheduled'
+  ).length || 0;
+  const overdueAppointments = appointments?.filter(appointment =>
+    new Date(appointment.date) < new Date() &&
+    appointment.status !== 'completed' &&
+    appointment.status !== 'cancelled'
+  ).length || 0;
 
-  const activeStaff = users?.filter(user => user.online).length || 0;
+  const activeStaff = users?.filter(user => user.online === true).length || 0;
   const totalStaff = users?.length || 0;
 
   // Show loading state while session is loading
@@ -183,10 +205,10 @@ const DashboardContent: React.FC = () => {
                 {currentShift ? (
                   <>
                     <div className="text-2xl md:text-3xl font-bold text-white dark:text-primary-foreground mb-1">
-                      {format(new Date(currentShift.startTime), 'HH:mm')} - {format(new Date(currentShift.endTime), 'HH:mm')}
+                      {format(new Date(currentShift.scheduledStart), 'HH:mm')} - {format(new Date(currentShift.scheduledEnd), 'HH:mm')}
                     </div>
                     <p className="text-sm text-gray-300 dark:text-primary-foreground/80 font-medium">
-                      {formatDistanceToNow(new Date(currentShift.endTime))} {dashboardT.dashboard.remaining}
+                      {formatDistanceToNow(new Date(currentShift.scheduledEnd))} {dashboardT.dashboard.remaining}
                     </p>
                     {isAdmin && allCurrentShifts.length > 1 && (
                       <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
@@ -197,10 +219,10 @@ const DashboardContent: React.FC = () => {
                 ) : upcomingShift ? (
                   <>
                     <div className="text-2xl md:text-3xl font-bold text-white dark:text-primary-foreground mb-1">
-                      {format(new Date(upcomingShift.startTime), 'HH:mm')} - {format(new Date(upcomingShift.endTime), 'HH:mm')}
+                      {format(new Date(upcomingShift.scheduledStart), 'HH:mm')} - {format(new Date(upcomingShift.scheduledEnd), 'HH:mm')}
                     </div>
                     <p className="text-sm text-gray-300 dark:text-primary-foreground/80 font-medium">
-                      {dashboardT.dashboard.startsIn} {formatDistanceToNow(new Date(upcomingShift.startTime))}
+                      {dashboardT.dashboard.startsIn} {formatDistanceToNow(new Date(upcomingShift.scheduledStart))}
                     </p>
                     {isAdmin && allUpcomingShifts.length > 1 && (
                       <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
