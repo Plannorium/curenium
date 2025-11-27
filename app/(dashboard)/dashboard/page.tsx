@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,7 @@ const DashboardContent: React.FC = () => {
 
   // First fetch user profile to get organizationId
   const { data: userProfile, error: profileError } = useSWR(
-    session?.user?.id ? ['/api/profile', pathname] : null,
+    (status === 'authenticated' && session?.user?.id) ? ['/api/profile', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
@@ -63,27 +63,27 @@ const DashboardContent: React.FC = () => {
   const orgId = userProfile?.organizationId;
 
   const { data: organization, error: orgError } = useSWR<Organization>(
-    orgId ? [`/api/organization?id=${orgId}`, pathname] : null,
+    (status === 'authenticated' && orgId) ? [`/api/organization?id=${orgId}`, pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: shifts, error: shiftsError } = useSWR<Shift[]>(
-    orgId ? ['/api/shifts', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/shifts', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: alerts, error: alertsError } = useSWR<Alert[]>(
-    orgId ? ['/api/alerts', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/alerts', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(
-    orgId ? ['/api/appointments', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/appointments', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: users, error: usersError } = useSWR<User[]>(
-    orgId ? ['/api/users', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/users', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
