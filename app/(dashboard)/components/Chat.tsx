@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "./ImageLightbox";
 import { Input } from "@/components/ui/input";
@@ -1004,8 +1010,8 @@ export default function Chat() {
       const optimisticMessage: Message = {
         id: tempId,
         text: content,
-        userId: session.user._id || '',
-        fullName: session.user.name || 'You',
+        userId: session.user._id || "",
+        fullName: session.user.name || "You",
         userImage: session.user.image,
         threadId: threadId,
         createdAt: new Date().toISOString(),
@@ -1084,7 +1090,7 @@ export default function Chat() {
     const latestMessage = messages[messages.length - 1];
     if (
       latestMessage &&
-      latestMessage.type === 'call_invitation' &&
+      latestMessage.type === "call_invitation" &&
       latestMessage.userId !== session?.user?._id &&
       !incomingCall
     ) {
@@ -1201,7 +1207,7 @@ export default function Chat() {
     const activeCallId = (callRef.current as any).id;
     const callMessage = messages.find((m) => m.id === activeCallId);
     if (callMessage && callMessage.callEnded) {
-      playSound('callEnd');
+      playSound("callEnd");
 
       // End the underlying call object if present
       try {
@@ -1209,7 +1215,7 @@ export default function Chat() {
           (callRef.current as any).endCall();
         }
       } catch (err) {
-        console.warn('Error ending call object during remote call_end:', err);
+        console.warn("Error ending call object during remote call_end:", err);
       }
 
       // Stop local media and screen share
@@ -1471,7 +1477,7 @@ export default function Chat() {
       try {
         activeCall.endCall();
       } catch (err) {
-        console.warn('Error while ending call object:', err);
+        console.warn("Error while ending call object:", err);
       }
       // do not null out callRef.current yet — we still need the id below
     }
@@ -1495,7 +1501,11 @@ export default function Chat() {
       }
 
       setMessages((prev) =>
-        prev.map((m) => (m.id === callIdToNotify ? { ...m, callEnded: true, duration: durationString } : m))
+        prev.map((m) =>
+          m.id === callIdToNotify
+            ? { ...m, callEnded: true, duration: durationString }
+            : m
+        )
       );
     }
 
@@ -1604,7 +1614,9 @@ export default function Chat() {
 
     // Only scroll if the user hasn't scrolled up, and no modals are open.
     if (!hasUserScrolledUp && !isDocModalOpen && lightbox === null) {
-      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 5; // 5px threshold
+      const isAtBottom =
+        container.scrollHeight - container.scrollTop <=
+        container.clientHeight + 5; // 5px threshold
       // Avoid forcing a scroll if we are already at the bottom.
       if (!isAtBottom) {
         container.scrollTop = container.scrollHeight;
@@ -2215,14 +2227,14 @@ export default function Chat() {
             // Add call invitation message optimistically
             const callMessage: Message = {
               id: realCallId,
-              type: 'call_invitation',
+              type: "call_invitation",
               text: `${session?.user?.name || "Someone"} started a call.`,
-              userId: session?.user?._id || 'system',
+              userId: session?.user?._id || "system",
               fullName: session?.user?.name || "Someone",
               createdAt: new Date().toISOString(),
               callId: realCallId,
               sender: {
-                _id: session?.user?._id || 'system',
+                _id: session?.user?._id || "system",
                 fullName: session?.user?.name || "Someone",
                 image: session?.user?.image || null,
               },
@@ -2239,7 +2251,7 @@ export default function Chat() {
             if (isDmRoom && otherUser) {
               const notification = {
                 _id: realCallId,
-                title: 'Incoming Call',
+                title: "Incoming Call",
                 message: `${session?.user?.name} is calling you`,
                 createdBy: {
                   _id: session.user._id,
@@ -2247,19 +2259,21 @@ export default function Chat() {
                   image: session.user.image,
                 },
                 createdAt: new Date().toISOString(),
-                type: 'call_invitation',
+                type: "call_invitation",
                 relatedId: realCallId,
                 room: activeRoom, // Include room for navigation
               };
 
-              fetch('/api/broadcast-alert', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+              fetch("/api/broadcast-alert", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   notification,
                   recipients: [otherUser._id],
                 }),
-              }).catch((err) => console.error('Failed to send call notification:', err));
+              }).catch((err) =>
+                console.error("Failed to send call notification:", err)
+              );
             }
 
             // Keep call inline (Slack-like huddle) instead of navigating to the call page.
@@ -2268,7 +2282,11 @@ export default function Chat() {
             setCallStartTime(Date.now());
             // Set a minimal callRef so UI can reference the call id; the real call
             // object will be stored on `callRef` after startMeshCall resolves below.
-            callRef.current = { id: realCallId, endCall: () => {}, replaceTrack: () => {} } as any;
+            callRef.current = {
+              id: realCallId,
+              endCall: () => {},
+              replaceTrack: () => {},
+            } as any;
           },
         });
         if (call) {
@@ -3089,7 +3107,6 @@ export default function Chat() {
                         isCallActive={isCallActive}
                         users={users}
                         onMentionClick={setSelectedUser}
-                        
                       />
                     </div>
                   );
@@ -3581,7 +3598,7 @@ export default function Chat() {
           isOpen={isMembersModalOpen}
           onClose={() => setMembersModalOpen(false)}
           users={channelUsers}
-          onlineUserIds={users.filter(u => u.online).map(u => u._id)}
+          onlineUserIds={users.filter((u) => u.online).map((u) => u._id)}
           onViewProfile={(user) => setSelectedUser(user)}
         />
 
