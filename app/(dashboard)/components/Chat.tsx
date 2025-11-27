@@ -2942,7 +2942,7 @@ export default function Chat() {
                       </Avatar>
                     ) : (
                       <>
-                        {channelUsers.slice(0, 4).map((user) => (
+                        {channelUsers.slice(0, 2).map((user) => (
                           <Avatar
                             key={user.id || user._id}
                             className="h-7 w-7 lg:h-8 lg:w-8 border-2 border-background group-hover:z-10 transition-all duration-200"
@@ -2957,10 +2957,10 @@ export default function Chat() {
                             </AvatarFallback>
                           </Avatar>
                         ))}
-                        {channelUsers.length > 4 && (
+                        {channelUsers.length > 2 && (
                           <Avatar className="h-8 w-8 border-2 border-background cursor-pointer">
                             <AvatarFallback className="text-xs font-semibold bg-muted group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                              +{channelUsers.length - 4}
+                              +{channelUsers.length - 2}
                             </AvatarFallback>
                           </Avatar>
                         )}

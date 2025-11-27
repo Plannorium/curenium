@@ -69,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
     if (session) {
       fetchUserData();
     }
-  }, [session]);
+  }, [session, pathname]); // Add pathname to dependencies to refetch when navigating
 
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 py-3 px-6 flex items-center justify-between shadow-sm">

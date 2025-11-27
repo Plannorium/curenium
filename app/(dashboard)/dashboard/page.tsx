@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,18 +48,43 @@ const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json()
 
 const DashboardContent: React.FC = () => {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [currentDate, setCurrentDate] = useState('');
 
   // First fetch user profile to get organizationId
-  const { data: userProfile, error: profileError } = useSWR(session?.user?.id ? '/api/profile' : null, fetcher);
+  const { data: userProfile, error: profileError } = useSWR(
+    session?.user?.id ? ['/api/profile', pathname] : null,
+    ([url]) => fetcher(url),
+    { revalidateOnMount: true, dedupingInterval: 0 }
+  );
 
   const orgId = userProfile?.organizationId;
 
-  const { data: organization, error: orgError } = useSWR<Organization>(orgId ? `/api/organization?id=${orgId}` : null, fetcher);
-  const { data: shifts, error: shiftsError } = useSWR<Shift[]>(orgId ? '/api/shifts' : null, fetcher);
-  const { data: alerts, error: alertsError } = useSWR<Alert[]>(orgId ? '/api/alerts' : null, fetcher);
-  const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(orgId ? '/api/appointments' : null, fetcher);
-  const { data: users, error: usersError } = useSWR<User[]>(orgId ? '/api/users' : null, fetcher);
+  const { data: organization, error: orgError } = useSWR<Organization>(
+    orgId ? [`/api/organization?id=${orgId}`, pathname] : null,
+    ([url]) => fetcher(url),
+    { revalidateOnMount: true, dedupingInterval: 0 }
+  );
+  const { data: shifts, error: shiftsError } = useSWR<Shift[]>(
+    orgId ? ['/api/shifts', pathname] : null,
+    ([url]) => fetcher(url),
+    { revalidateOnMount: true, dedupingInterval: 0 }
+  );
+  const { data: alerts, error: alertsError } = useSWR<Alert[]>(
+    orgId ? ['/api/alerts', pathname] : null,
+    ([url]) => fetcher(url),
+    { revalidateOnMount: true, dedupingInterval: 0 }
+  );
+  const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(
+    orgId ? ['/api/appointments', pathname] : null,
+    ([url]) => fetcher(url),
+    { revalidateOnMount: true, dedupingInterval: 0 }
+  );
+  const { data: users, error: usersError } = useSWR<User[]>(
+    orgId ? ['/api/users', pathname] : null,
+    ([url]) => fetcher(url),
+    { revalidateOnMount: true, dedupingInterval: 0 }
+  );
 
   useEffect(() => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));
@@ -88,7 +114,7 @@ const DashboardContent: React.FC = () => {
   const totalStaff = users?.length || 0;
 
   return (
-    <div className={`relative bg-background h-full overflow-auto`}>
+    <div className={`relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto`}>
       {/* Background blur effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none dark:hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
@@ -228,7 +254,7 @@ const DashboardContent: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               <ShiftView limit={5} />
             </div>
-            <div className="space-y-6">
+            <div className="pb-6 lg:pb-4">
               {/* <Card className="backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 dark:from-primary/10 via-transparent to-accent/5 dark:to-accent/10 rounded-xl pointer-events-none"></div>
                 <CardHeader className="relative">
