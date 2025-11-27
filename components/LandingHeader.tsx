@@ -58,6 +58,17 @@ export function LandingHeader() {
         {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-2">
           <Link
+            href="/about"
+            className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+              pathname === '/about'
+                ? 'text-primary bg-primary/10 border border-primary/20'
+                : 'text-muted-foreground hover:text-primary hover:bg-accent/50 focus:bg-accent/50'
+            }`}
+            prefetch={false}
+          >
+            About
+          </Link>
+          <Link
             href="/features"
             className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 ${
               pathname === '/features'

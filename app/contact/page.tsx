@@ -64,7 +64,7 @@ function ContactPage() {
     {
       icon: Mail,
       title: "Email Us",
-      details: ["info@plannorium.com", "sales@plannorium.com"],
+      details: ["info@plannorium.com", "support@plannorium.com"],
       description: "Send us an email and we'll respond within 24 hours."
     },
     {

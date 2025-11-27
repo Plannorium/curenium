@@ -89,7 +89,7 @@ function AboutPage() {
       {/* Header */}
       <LandingHeader/>
       {/* Hero Section */}
-      <section className="relative py-16 md:py-24 px-4 max-w-7xl mx-auto">
+      <section className="relative py-16 md:py-24 px-6 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h1 className="text-center lg:text-left text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
@@ -97,10 +97,12 @@ function AboutPage() {
                 About Curenium
               </span>
             </h1>
-            <p className="text-left text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-left text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed lg:max-w-xl">
               Curenium is revolutionizing healthcare communication by bridging critical gaps that have long plagued medical teams.
               Born from real-world healthcare challenges and powered by cutting-edge technology, we're building a comprehensive platform
-              that transforms fragmented communication into seamless collaboration.
+              that transforms fragmented communication into seamless collaboration. Our mission is to empower healthcare professionals
+              with intelligent tools that enhance patient care, streamline workflows, and ultimately save lives through better coordination
+              and faster decision-making in high-stakes environments.
             </p>
           </div>
           <div className="space-y-6">
@@ -118,10 +120,9 @@ function AboutPage() {
                 <div className="text-sm text-muted-foreground">Healthcare workflows mapped</div>
               </div>
             </div>
-            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed text-left">
-              Currently in beta testing with select healthcare partners, Curenium is designed to ensure that every critical update,
-              emergency alert, and care coordination happens instantly and securely. Our platform is built to save lives by
-              eliminating communication barriers that can delay critical care, with healthcare professionals at the heart of every decision.
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed text-left lg:max-w-xl">
+              In beta testing with healthcare partners, Curenium delivers instant, secure communication for critical updates and emergency alerts.
+              Our platform saves lives by eliminating communication barriers, with clinicians at the heart of every decision.
             </p>
           </div>
         </div>
@@ -136,28 +137,17 @@ function AboutPage() {
               <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                 Revolutionizing Healthcare Communication
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-relaxed lg:max-w-xl">
                 Founded in 2025, Curenium emerged from a vision to bridge the communication gaps in healthcare.
                 Plannorium brings together talented professionals from around the globe, from the Middle East and Africa
                 to Europe, Asia, and the Americas. Our diverse team represents the future of healthcare technology,
-                where global perspectives meet compassionate care and innovation.
-              </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Curenium is built for healthcare professionals who demand excellence. Our platform combines
+                where global perspectives meet compassionate care and innovation. Curenium is built for healthcare professionals who demand excellence. Our platform combines
                 real-time collaboration, intelligent patient management, and seamless communication tools
                 to empower medical teams and improve patient outcomes.
               </p>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
-                  <span className="text-primary font-semibold">Real-time Collaboration</span>
-                </div>
-                <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
-                  <span className="text-primary font-semibold">Patient-Centric Design</span>
-                </div>
-                <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-4 py-2">
-                  <span className="text-primary font-semibold">Enterprise Security</span>
-                </div>
-              </div>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                
+              </p>
             </div>
 
             <div className="relative">
@@ -195,6 +185,17 @@ function AboutPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 pt-6 border-t border-border/30 lg:justify-center">
+                <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
+                  <span className="text-primary font-semibold text-sm">Secure Messaging</span>
+                </div>
+                <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
+                  <span className="text-primary font-semibold text-sm">Patient-Centric Design</span>
+                </div>
+                <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
+                  <span className="text-primary font-semibold text-sm">Enterprise Security</span>
                 </div>
               </div>
             </div>
@@ -466,9 +467,9 @@ function AboutPage() {
                   </Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/request-demo">
+                  <a href="https://calendly.com/almussanplanner12/curenium-demo">
                     Request a Demo
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </div>
