@@ -13,7 +13,6 @@ import { InviteList } from '@/components/invites/InviteList';
 import useSWR from 'swr';
 import { translations } from '@/lib/translations';
 import { Loader } from '@/components/ui/Loader';
-import { useRouter } from 'next/navigation';
 
 interface Organization {
   name: string;
