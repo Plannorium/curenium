@@ -15,44 +15,70 @@ import {
 } from "lucide-react";
 import { LandingHeader } from "@/components/LandingHeader";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function SecurityPage() {
+  const { t } = useLanguage();
   const securityFeatures = [
     {
       icon: Lock,
-      title: "End-to-End Encryption",
-      description: "All data is encrypted in transit and at rest using industry-standard AES-256 encryption.",
-      details: ["TLS 1.3 for data in transit", "AES-256 encryption at rest", "Zero-knowledge architecture"]
+      title: t('security.features.endToEndEncryption.title'),
+      description: t('security.features.endToEndEncryption.description'),
+      details: [
+        t('security.features.endToEndEncryption.details')[0],
+        t('security.features.endToEndEncryption.details')[1],
+        t('security.features.endToEndEncryption.details')[2]
+      ]
     },
     {
       icon: Shield,
-      title: "Secure Infrastructure",
-      description: "Built on enterprise-grade cloud infrastructure with multiple layers of security.",
-      details: ["SOC 2 Type II compliant", "ISO 27001 certified", "Regular security audits"]
+      title: t('security.features.secureInfrastructure.title'),
+      description: t('security.features.secureInfrastructure.description'),
+      details: [
+        t('security.features.secureInfrastructure.details')[0],
+        t('security.features.secureInfrastructure.details')[1],
+        t('security.features.secureInfrastructure.details')[2]
+      ]
     },
     {
       icon: Key,
-      title: "Access Control",
-      description: "Role-based access control ensures users only see data they need to access.",
-      details: ["Multi-factor authentication", "Role-based permissions", "Audit logging"]
+      title: t('security.features.accessControl.title'),
+      description: t('security.features.accessControl.description'),
+      details: [
+        t('security.features.accessControl.details')[0],
+        t('security.features.accessControl.details')[1],
+        t('security.features.accessControl.details')[2]
+      ]
     },
     {
       icon: Server,
-      title: "Data Protection",
-      description: "Comprehensive data protection measures safeguard patient information.",
-      details: ["Regular backups", "Data anonymization", "Secure data disposal"]
+      title: t('security.features.dataProtection.title'),
+      description: t('security.features.dataProtection.description'),
+      details: [
+        t('security.features.dataProtection.details')[0],
+        t('security.features.dataProtection.details')[1],
+        t('security.features.dataProtection.details')[2]
+      ]
     },
     {
       icon: Eye,
-      title: "Privacy by Design",
-      description: "Privacy considerations are built into every feature and process.",
-      details: ["Minimal data collection", "User consent management", "Data portability"]
+      title: t('security.features.privacyByDesign.title'),
+      description: t('security.features.privacyByDesign.description'),
+      details: [
+        t('security.features.privacyByDesign.details')[0],
+        t('security.features.privacyByDesign.details')[1],
+        t('security.features.privacyByDesign.details')[2]
+      ]
     },
     {
       icon: AlertTriangle,
-      title: "Threat Detection",
-      description: "Advanced monitoring and threat detection systems protect against security incidents.",
-      details: ["Real-time monitoring", "Automated alerts", "Incident response plan"]
+      title: t('security.features.threatDetection.title'),
+      description: t('security.features.threatDetection.description'),
+      details: [
+        t('security.features.threatDetection.details')[0],
+        t('security.features.threatDetection.details')[1],
+        t('security.features.threatDetection.details')[2]
+      ]
     }
   ];
 
@@ -73,15 +99,14 @@ function SecurityPage() {
         <div className="text-center mb-16 space-y-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              Security &
+              {t('security.hero.title')}
             </span>
             <span className="block text-primary font-extrabold mt-2">
-              Trust Built-In
+              {t('security.hero.subtitle')}
             </span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Your data security is our top priority. Curenium employs enterprise-grade security measures
-            to protect sensitive healthcare information and ensure compliance with industry standards.
+            {t('security.hero.description')}
           </p>
         </div>
       </section>
@@ -123,47 +148,46 @@ function SecurityPage() {
       <section className="relative py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Security Standards & Compliance
+            {t('security.standards.title')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            We adhere to the highest security standards and regularly undergo independent audits
-            to ensure your data remains protected.
+            {t('security.standards.subtitle')}
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-            <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Shield className="text-blue-500 h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">SOC 2 Type II</h3>
-            <p className="text-sm text-muted-foreground">Trust services criteria for security, availability, and confidentiality</p>
-          </div>
+         <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
+           <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+             <Shield className="text-blue-500 h-8 w-8" />
+           </div>
+           <h3 className="text-lg font-bold text-foreground mb-2">{t('security.standards.certifications.soc2.title')}</h3>
+           <p className="text-sm text-muted-foreground">{t('security.standards.certifications.soc2.description')}</p>
+         </div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-            <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Lock className="text-green-500 h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">ISO 27001</h3>
-            <p className="text-sm text-muted-foreground">International standard for information security management</p>
-          </div>
+         <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
+           <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+             <Lock className="text-green-500 h-8 w-8" />
+           </div>
+           <h3 className="text-lg font-bold text-foreground mb-2">{t('security.standards.certifications.iso27001.title')}</h3>
+           <p className="text-sm text-muted-foreground">{t('security.standards.certifications.iso27001.description')}</p>
+         </div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-            <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Server className="text-purple-500 h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">GDPR</h3>
-            <p className="text-sm text-muted-foreground">General Data Protection Regulation compliance</p>
-          </div>
+         <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
+           <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+             <Server className="text-purple-500 h-8 w-8" />
+           </div>
+           <h3 className="text-lg font-bold text-foreground mb-2">{t('security.standards.certifications.gdpr.title')}</h3>
+           <p className="text-sm text-muted-foreground">{t('security.standards.certifications.gdpr.description')}</p>
+         </div>
 
-          <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
-            <div className="backdrop-blur-sm bg-orange-500/10 border border-orange-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Key className="text-orange-500 h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">AES-256</h3>
-            <p className="text-sm text-muted-foreground">Advanced encryption standard for data protection</p>
-          </div>
-        </div>
+         <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
+           <div className="backdrop-blur-sm bg-orange-500/10 border border-orange-500/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+             <Key className="text-orange-500 h-8 w-8" />
+           </div>
+           <h3 className="text-lg font-bold text-foreground mb-2">{t('security.standards.certifications.aes256.title')}</h3>
+           <p className="text-sm text-muted-foreground">{t('security.standards.certifications.aes256.description')}</p>
+         </div>
+       </div>
       </section>
 
       {/* CTA Section */}
@@ -175,11 +199,10 @@ function SecurityPage() {
 
           <div className="relative max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-              Security You Can Trust
+              {t('security.cta.title')}
             </h2>
             <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl mx-auto">
-              Join thousands of healthcare professionals who trust Curenium with their most sensitive data.
-              Experience enterprise-grade security without the complexity.
+              {t('security.cta.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Link href="/signup" prefetch={false}>
@@ -189,7 +212,7 @@ function SecurityPage() {
                   className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Get Started Securely
+                  {t('security.cta.getStarted')}
                 </Button>
               </Link>
               <Link href="/contact" prefetch={false}>
@@ -199,7 +222,7 @@ function SecurityPage() {
                   className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer dark:text-black/50"
                 >
                   <Shield className="mr-2 h-5 w-5" />
-                  Security Inquiry
+                  {t('security.cta.securityInquiry')}
                 </Button>
               </Link>
             </div>

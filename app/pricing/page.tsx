@@ -12,8 +12,10 @@ import {
 } from "lucide-react";
 import { LandingHeader } from "@/components/LandingHeader";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function PricingPage() {
+  const { t } = useLanguage();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -23,70 +25,70 @@ function PricingPage() {
 
   const plans = [
     {
-      name: "Basic",
-      description: "Essential communication and EHR access for price-sensitive hospitals",
+      name: t('pricing.plans.basic.name'),
+      description: t('pricing.plans.basic.description'),
       perUserMonthly: 5,
       perUserYearly: 4.17, // $50/year
       per100UsersMonthly: 500,
       flatBundleUpTo100: null,
       features: [
-        "Secure messaging & alerts",
-        "Basic EHR view & patient records",
-        "Appointment scheduling",
-        "Basic reporting",
-        "Email support",
-        "Mobile app access",
+        t('pricing.plans.basic.features')[0],
+        t('pricing.plans.basic.features')[1],
+        t('pricing.plans.basic.features')[2],
+        t('pricing.plans.basic.features')[3],
+        t('pricing.plans.basic.features')[4],
+        t('pricing.plans.basic.features')[5],
       ],
       limitations: [
-        "No advanced EHR features",
-        "Limited integrations",
-        "Basic analytics only",
-        "Standard support hours",
+        t('pricing.plans.basic.limitations')[0],
+        t('pricing.plans.basic.limitations')[1],
+        t('pricing.plans.basic.limitations')[2],
+        t('pricing.plans.basic.limitations')[3],
       ],
       popular: false,
       color: "blue",
     },
     {
-      name: "Pro",
-      description: "Complete solution for most hospitals - recommended for optimal care",
+      name: t('pricing.plans.pro.name'),
+      description: t('pricing.plans.pro.description'),
       perUserMonthly: 8,
       perUserYearly: 6.67, // $80/year
       per100UsersMonthly: 800,
       flatBundleUpTo100: 750, // Special flat rate
       features: [
-        "All Basic features",
-        "Complete EHR system",
-        "Advanced messaging & alerts",
-        "Lab integration",
-        "Advanced analytics",
-        "Priority support",
-        "Custom integrations",
-        "API access",
+        t('pricing.plans.pro.features')[0],
+        t('pricing.plans.pro.features')[1],
+        t('pricing.plans.pro.features')[2],
+        t('pricing.plans.pro.features')[3],
+        t('pricing.plans.pro.features')[4],
+        t('pricing.plans.pro.features')[5],
+        t('pricing.plans.pro.features')[6],
+        t('pricing.plans.pro.features')[7],
       ],
       limitations: [
-        "No white-label options",
-        "No dedicated support",
+        t('pricing.plans.pro.limitations')[0],
+        t('pricing.plans.pro.limitations')[1],
       ],
       popular: true,
       color: "primary",
     },
     {
-      name: "Enterprise",
-      description: "Full-featured solution for large hospitals and healthcare networks",
+      name: t('pricing.plans.enterprise.name'),
+      description: t('pricing.plans.enterprise.description'),
       perUserMonthly: 13,
       perUserYearly: 10.83, // $130/year
       per100UsersMonthly: 1300,
       flatBundleUpTo100: null,
       features: [
-        "All Pro features",
-        "Unlimited users",
-        "AI-powered insights",
-        "White-label solution",
-        "Dedicated 24/7 support",
-        "Custom development",
-        "Advanced security",
-        "Compliance automation",
-        "Priority SLA",
+        t('pricing.plans.enterprise.features')[0],
+        t('pricing.plans.enterprise.features')[1],
+        t('pricing.plans.enterprise.features')[2],
+        t('pricing.plans.enterprise.features')[3],
+        t('pricing.plans.enterprise.features')[4],
+        t('pricing.plans.enterprise.features')[5],
+        t('pricing.plans.enterprise.features')[6],
+        t('pricing.plans.enterprise.features')[7],
+        t('pricing.plans.enterprise.features')[8],
       ],
       limitations: [],
       popular: false,
@@ -111,14 +113,14 @@ function PricingPage() {
         <div className="text-center mb-16 space-y-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             <span className="bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              Simple, Transparent
+              {t('pricing.hero.title')}
             </span>
             <span className="block text-primary font-extrabold mt-2">
-              Pricing
+              {t('pricing.hero.subtitle')}
             </span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Flexible per-user pricing designed for hospitals of all sizes. Start with our Basic plan at $5/user/month, or choose flat bundles for predictable costs.
+            {t('pricing.hero.description')}
           </p>
 
           {/* Billing Toggle */}
@@ -132,7 +134,7 @@ function PricingPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Monthly
+                {t('pricing.billing.monthly')}
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
@@ -142,9 +144,9 @@ function PricingPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Yearly
+                {t('pricing.billing.yearly')}
                 <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                  Save 12%
+                  {t('pricing.billing.save12')}
                 </span>
               </button>
             </div>
@@ -169,7 +171,7 @@ function PricingPage() {
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <div className="backdrop-blur-sm bg-linear-to-r from-primary to-primary/80 text-primary-foreground px-6 py-2 rounded-full text-sm font-bold shadow-lg">
                     <Sparkles className="inline-block mr-2 h-4 w-4" />
-                    Most Popular
+                    {t('pricing.ui.mostPopular')}
                   </div>
                 </div>
               )}
@@ -190,20 +192,20 @@ function PricingPage() {
                     <span className="text-4xl font-bold text-foreground">
                       ${billingCycle === 'monthly' ? plan.perUserMonthly : plan.perUserYearly.toFixed(2)}
                     </span>
-                    <span className="text-muted-foreground ml-2">/user/month</span>
+                    <span className="text-muted-foreground ml-2">{t('pricing.ui.perUserMonth')}</span>
                   </div>
                   {billingCycle === 'yearly' && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      Billed annually at ${(plan.perUserYearly * 12).toFixed(0)}/user/year
+                      {t('pricing.ui.billedAnnually')} ${(plan.perUserYearly * 12).toFixed(0)}{t('pricing.ui.perUserYear')}
                     </p>
                   )}
                   <div className="mt-3 space-y-1">
                     <p className="text-sm text-muted-foreground">
-                      ${plan.per100UsersMonthly}/month for 100 users
+                      ${plan.per100UsersMonthly}/month {t('pricing.ui.for100Users')}
                     </p>
                     {plan.flatBundleUpTo100 && (
                       <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                        Or ${plan.flatBundleUpTo100}/month flat (up to 100 users)
+                        {t('pricing.ui.orFlat')} ${plan.flatBundleUpTo100}/month {t('pricing.ui.flatUpTo100')}
                       </p>
                     )}
                   </div>
@@ -222,17 +224,17 @@ function PricingPage() {
                     {plan.popular ? (
                       <>
                         <Zap className="mr-2 h-5 w-5" />
-                        Start Free Trial
+                        {t('pricing.ui.startFreeTrial')}
                       </>
                     ) : (
-                      'Get Started'
+                      t('pricing.ui.getStarted')
                     )}
                   </Button>
                 </div>
 
                 {/* Features */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider">What's Included</h4>
+                  <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider">{t('pricing.ui.whatsIncluded')}</h4>
                   {plan.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start">
                       <Check className="text-green-500 mr-3 h-5 w-5 flex-shrink-0 mt-0.5" />
@@ -242,7 +244,7 @@ function PricingPage() {
 
                   {plan.limitations.length > 0 && (
                     <>
-                      <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider mt-6">Limitations</h4>
+                      <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider mt-6">{t('pricing.ui.limitations')}</h4>
                       {plan.limitations.map((limitation, idx) => (
                         <div key={idx} className="flex items-start">
                           <X className="text-red-500 mr-3 h-5 w-5 flex-shrink-0 mt-0.5" />
@@ -264,10 +266,10 @@ function PricingPage() {
         <div className="relative max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Additional Services & Add-ons
+              {t('pricing.addons.title')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Extend your Curenium experience with specialized services and advanced features.
+              {t('pricing.addons.subtitle')}
             </p>
           </div>
 
@@ -275,14 +277,14 @@ function PricingPage() {
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
               <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-primary/5 rounded-2xl pointer-events-none"></div>
               <div className="relative">
-                <h3 className="text-xl font-bold text-foreground mb-4">Broadcast Messaging</h3>
+                <h3 className="text-xl font-bold text-foreground mb-4">{t('pricing.addons.broadcastMessaging.title')}</h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  Patient reminders, appointment campaigns, and mass notifications.
+                  {t('pricing.addons.broadcastMessaging.description')}
                 </p>
                 <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">10k messages included free</div>
-                  <div className="text-sm text-muted-foreground">10k–49k: $299–$399/month</div>
-                  <div className="text-sm text-muted-foreground">50k+: Custom pricing</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.broadcastMessaging.pricing')[0]}</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.broadcastMessaging.pricing')[1]}</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.broadcastMessaging.pricing')[2]}</div>
                 </div>
               </div>
             </div>
@@ -290,14 +292,14 @@ function PricingPage() {
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
               <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-blue-500/5 rounded-2xl pointer-events-none"></div>
               <div className="relative">
-                <h3 className="text-xl font-bold text-foreground mb-4">Priority Support & SLA</h3>
+                <h3 className="text-xl font-bold text-foreground mb-4">{t('pricing.addons.prioritySupport.title')}</h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  24/7 dedicated support with guaranteed response times.
+                  {t('pricing.addons.prioritySupport.description')}
                 </p>
                 <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">$2–5/user/month</div>
-                  <div className="text-sm text-muted-foreground">Or flat fee options</div>
-                  <div className="text-sm text-muted-foreground">99.9% uptime SLA</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.prioritySupport.pricing')[0]}</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.prioritySupport.pricing')[1]}</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.prioritySupport.pricing')[2]}</div>
                 </div>
               </div>
             </div>
@@ -305,14 +307,14 @@ function PricingPage() {
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
               <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-pink-500/5 rounded-2xl pointer-events-none"></div>
               <div className="relative">
-                <h3 className="text-xl font-bold text-foreground mb-4">Implementation & Training</h3>
+                <h3 className="text-xl font-bold text-foreground mb-4">{t('pricing.addons.implementation.title')}</h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  Professional setup, EHR integration, and team training.
+                  {t('pricing.addons.implementation.description')}
                 </p>
                 <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">EHR Integration: $1K–$4K</div>
-                  <div className="text-sm text-muted-foreground">Training: $500–$1.2K/day</div>
-                  <div className="text-sm text-muted-foreground">Success tracking included</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.implementation.pricing')[0]}</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.implementation.pricing')[1]}</div>
+                  <div className="text-sm text-muted-foreground">{t('pricing.addons.implementation.pricing')[2]}</div>
                 </div>
               </div>
             </div>
@@ -320,16 +322,16 @@ function PricingPage() {
 
           <div className="mt-12 text-center">
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 max-w-4xl mx-auto">
-              <h3 className="text-xl font-bold text-foreground mb-4">Pilot Program Special</h3>
+              <h3 className="text-xl font-bold text-foreground mb-4">{t('pricing.addons.pilotProgram.title')}</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Try Curenium risk-free with our 3-month pilot program. Get Pro-level features for up to 100 users at a reduced rate of $1,200 total (plus minimal integration fee).
+                {t('pricing.addons.pilotProgram.description')}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Start Pilot Program
+                  {t('pricing.cta.startPilot')}
                 </Button>
                 <Button variant="outline" className="border-border/50">
-                  Learn More
+                  {t('pricing.addons.pilotProgram.learnMore')}
                 </Button>
               </div>
             </div>
@@ -343,65 +345,65 @@ function PricingPage() {
         <div className="relative max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Frequently Asked Questions
+              {t('pricing.faq.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              Everything you need to know about Curenium pricing and features.
+              {t('pricing.faq.subtitle')}
             </p>
           </div>
 
           <div className="space-y-8">
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                How does per-user pricing work?
+                {t('pricing.faq.questions.perUserPricing.question')}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                You pay based on the number of active users in your organization. For example, 100 users on Pro plan would be $800/month. Users can be added or removed at any time, and billing adjusts automatically.
+                {t('pricing.faq.questions.perUserPricing.answer')}
               </p>
             </div>
 
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                What's the difference between per-user and flat bundle pricing?
+                {t('pricing.faq.questions.flatBundle.question')}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Per-user pricing scales with your team size. Flat bundles offer predictable costs for organizations up to 100 users - pay one fixed price regardless of how many users you have up to the limit.
+                {t('pricing.faq.questions.flatBundle.answer')}
               </p>
             </div>
 
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                Can I change plans at any time?
+                {t('pricing.faq.questions.planChanges.question')}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any charges. For flat bundles, you can switch to per-user pricing if your needs change.
+                {t('pricing.faq.questions.planChanges.answer')}
               </p>
             </div>
 
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                Is there a free trial?
+                {t('pricing.faq.questions.freeTrial.question')}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Yes! We offer a 14-day free trial for all plans. No credit card required to get started. Contact sales for pilot programs with extended trial periods.
+                {t('pricing.faq.questions.freeTrial.answer')}
               </p>
             </div>
 
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                What about implementation and training costs?
+                {t('pricing.faq.questions.implementationCosts.question')}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                EHR integration starts at $1,000–$4,000 depending on complexity. Training packages range from $500–$1,200 per day. We also offer success-based implementation with ROI tracking and ongoing support.
+                {t('pricing.faq.questions.implementationCosts.answer')}
               </p>
             </div>
 
             <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-foreground mb-3">
-                Do you offer annual discounts?
+                {t('pricing.faq.questions.annualDiscounts.question')}
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Yes! Annual billing includes a 12% discount. We also offer 18-20% discounts for 2-year commitments, making long-term planning more cost-effective.
+                {t('pricing.faq.questions.annualDiscounts.answer')}
               </p>
             </div>
           </div>
@@ -417,10 +419,10 @@ function PricingPage() {
 
           <div className="relative max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-              Ready to transform your healthcare workflow?
+              {t('pricing.cta.title')}
             </h2>
             <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl mx-auto">
-              Start with Basic at just $5/user/month, or try our risk-free 1-month pilot program. Transform your healthcare communication today.
+              {t('pricing.cta.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Link href="/contact" prefetch={false}>
@@ -430,7 +432,7 @@ function PricingPage() {
                   className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Start Pilot Program
+                  {t('pricing.cta.startPilot')}
                 </Button>
               </Link>
               <Link href="/signup" prefetch={false}>
@@ -440,7 +442,7 @@ function PricingPage() {
                   className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   <Headphones className="mr-2 h-5 w-5" />
-                  View Pricing Calculator
+                  {t('pricing.cta.viewCalculator')}
                 </Button>
               </Link>
             </div>

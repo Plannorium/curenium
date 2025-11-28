@@ -5,6 +5,7 @@ import { SessionProvider } from 'next-auth/react';
 import { RoleProvider } from '@/components/auth/RoleProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/ui/calendar-context';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ReactNode } from 'react';
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -12,7 +13,9 @@ export function Providers({ children }: { children: ReactNode }) {
     <SessionProvider>
       <RoleProvider>
         <ThemeProvider>
-          <CalendarProvider>{children}</CalendarProvider>
+          <LanguageProvider>
+            <CalendarProvider>{children}</CalendarProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </RoleProvider>
     </SessionProvider>
