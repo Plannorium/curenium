@@ -1,10 +1,14 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LandingHeader } from "@/components/LandingHeader";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function CompliancePage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Background blur effects */}
@@ -22,11 +26,11 @@ function CompliancePage() {
         <div className="text-center space-y-8">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              Compliance & Security
+              {t('compliance.hero.title')}
             </span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-            Curenium is committed to maintaining the highest standards of security and compliance in healthcare communications.
+            {t('compliance.hero.description')}
           </p>
         </div>
       </section>
@@ -37,74 +41,74 @@ function CompliancePage() {
         <div className="relative max-w-4xl mx-auto space-y-12">
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Regulatory Compliance</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.regulatoryCompliance.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Curenium complies with major healthcare regulations and standards:
+              {t('compliance.sections.regulatoryCompliance.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>GDPR (General Data Protection Regulation)</li>
-              <li>HITECH (Health Information Technology for Economic and Clinical Health)</li>
-              <li>Local healthcare regulations in the Gulf region</li>
+              <li>{t('compliance.sections.regulatoryCompliance.items')[0]}</li>
+              <li>{t('compliance.sections.regulatoryCompliance.items')[1]}</li>
+              <li>{t('compliance.sections.regulatoryCompliance.items')[2]}</li>
             </ul>
           </div>
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Security Measures</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.securityMeasures.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Our platform implements comprehensive security measures:
+              {t('compliance.sections.securityMeasures.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>End-to-end encryption for all communications</li>
-              <li>Multi-factor authentication</li>
-              <li>Regular security audits and penetration testing</li>
-              <li>Data encryption at rest and in transit</li>
-              <li>Access controls and role-based permissions</li>
+              <li>{t('compliance.sections.securityMeasures.items')[0]}</li>
+              <li>{t('compliance.sections.securityMeasures.items')[1]}</li>
+              <li>{t('compliance.sections.securityMeasures.items')[2]}</li>
+              <li>{t('compliance.sections.securityMeasures.items')[3]}</li>
+              <li>{t('compliance.sections.securityMeasures.items')[4]}</li>
             </ul>
           </div>
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Data Protection</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.dataProtection.title')}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We protect patient data with industry-leading security practices. All data is encrypted, access is logged and monitored, and we maintain strict controls over who can access sensitive information. Regular backups ensure data availability while disaster recovery plans protect against data loss.
+              {t('compliance.sections.dataProtection.description')}
             </p>
           </div>
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Audit & Monitoring</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.auditMonitoring.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Curenium maintains comprehensive audit logs for all activities:
+              {t('compliance.sections.auditMonitoring.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>User access and authentication events</li>
-              <li>Data access and modification logs</li>
-              <li>System and security events</li>
-              <li>Regular compliance audits</li>
+              <li>{t('compliance.sections.auditMonitoring.items')[0]}</li>
+              <li>{t('compliance.sections.auditMonitoring.items')[1]}</li>
+              <li>{t('compliance.sections.auditMonitoring.items')[2]}</li>
+              <li>{t('compliance.sections.auditMonitoring.items')[3]}</li>
             </ul>
           </div>
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Incident Response</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.incidentResponse.title')}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We have established incident response procedures to quickly address any security concerns. Our team is available 24/7 to respond to potential security incidents, and we notify affected users and authorities as required by law.
+              {t('compliance.sections.incidentResponse.description')}
             </p>
           </div>
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Certifications</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.certifications.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Curenium holds the following certifications:
+              {t('compliance.sections.certifications.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>SOC 2 Type II compliance</li>
-              <li>ISO 27001 certification</li>
-              <li>Regular third-party security assessments</li>
+              <li>{t('compliance.sections.certifications.items')[0]}</li>
+              <li>{t('compliance.sections.certifications.items')[1]}</li>
+              <li>{t('compliance.sections.certifications.items')[2]}</li>
             </ul>
           </div>
 
           <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Contact Our Security Team</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('compliance.sections.contactSecurity.title')}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              For security concerns or compliance questions, contact our security team at security@curenium.com or call our 24/7 security hotline.
+              {t('compliance.sections.contactSecurity.description')}
             </p>
           </div>
 

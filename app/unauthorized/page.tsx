@@ -1,9 +1,13 @@
+"use client"
+
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldXIcon, ArrowLeftIcon } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const UnauthorizedPage = () => {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       {/* Background blur effects */}
@@ -24,22 +28,27 @@ const UnauthorizedPage = () => {
           </div>
 
           <CardTitle className="text-3xl md:text-4xl font-bold text-red-500 dark:text-red-400 mb-2">
-            Unauthorized
+            {t('unauthorized.title')}
           </CardTitle>
         </CardHeader>
 
         <CardContent className="text-center pb-8 px-8">
           <p className="text-base md:text-lg text-muted-foreground mb-8 leading-relaxed">
-            You do not have permission to access this page. Please contact your administrator or return to the dashboard.
+            {t('unauthorized.description')}
           </p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <p className="text-sm text-red-700 dark:text-red-300">
+              <strong>{t('unauthorized.status')}:</strong> {t('unauthorized.helpText')}
+            </p>
+          </div>
 
           {/* Status indicator */}
           <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 mb-8">
             <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-            Access Denied
+            {t('unauthorized.accessDenied')}
           </div>
 
-          {/* Action buttons */}z
+          {/* Action buttons */}
           <div className="">
             <Link href="/dashboard" className="block">
               <Button 
@@ -47,7 +56,7 @@ const UnauthorizedPage = () => {
                 size="lg"
               >
                 <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                Go to Dashboard
+                {t('unauthorized.goToDashboard')}
               </Button>
             </Link>
             
@@ -57,7 +66,7 @@ const UnauthorizedPage = () => {
                 className="w-full backdrop-blur-sm bg-background/50 border-border/50 hover:bg-accent/50 transition-all duration-300 cursor-pointer"
                 size="lg"
               >
-                Return Home
+                {t('unauthorized.returnHome')}
               </Button>
             </Link>
           </div>
@@ -65,8 +74,8 @@ const UnauthorizedPage = () => {
           {/* Additional help text */}
           <div className="mt-8 pt-6 border-t border-border/30">
             <p className="text-xs text-muted-foreground">
-              Need help? Contact support at{" "}
-              <span className="text-primary font-medium">support@curenium.com</span>
+              {t('unauthorized.needHelp')} {" "}
+              <span className="text-primary font-medium">support@plannorium.com</span>
             </p>
           </div>
         </CardContent>

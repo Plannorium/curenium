@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,13 +47,14 @@ interface User {
 const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
 
 const DashboardContent: React.FC = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState('');
 
   // First fetch user profile to get organizationId
   const { data: userProfile, error: profileError } = useSWR(
-    session?.user?.id ? ['/api/profile', pathname] : null,
+    (status === 'authenticated' && session?.user?.id) ? ['/api/profile', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
@@ -61,27 +62,27 @@ const DashboardContent: React.FC = () => {
   const orgId = userProfile?.organizationId;
 
   const { data: organization, error: orgError } = useSWR<Organization>(
-    orgId ? [`/api/organization?id=${orgId}`, pathname] : null,
+    (status === 'authenticated' && orgId) ? [`/api/organization?id=${orgId}`, pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: shifts, error: shiftsError } = useSWR<Shift[]>(
-    orgId ? ['/api/shifts', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/shifts', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: alerts, error: alertsError } = useSWR<Alert[]>(
-    orgId ? ['/api/alerts', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/alerts', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(
-    orgId ? ['/api/appointments', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/appointments', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: users, error: usersError } = useSWR<User[]>(
-    orgId ? ['/api/users', pathname] : null,
+    (status === 'authenticated' && orgId) ? ['/api/users', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
@@ -89,6 +90,12 @@ const DashboardContent: React.FC = () => {
   useEffect(() => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));
   }, []);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
 
   const welcomeMessage = organization?.language ? translations[organization.language as keyof typeof translations]?.welcome || translations.en.welcome : translations.en.welcome;
 
@@ -112,6 +119,23 @@ const DashboardContent: React.FC = () => {
 
   const activeStaff = users?.filter(user => user.online).length || 0;
   const totalStaff = users?.length || 0;
+
+  // Show loading state while session is loading
+  if (status === 'loading') {
+    return (
+      <div className="relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none dark:hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/3 rounded-full blur-3xl"></div>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-black pointer-events-none hidden dark:block"></div>
+        <div className="relative h-screen p-4 sm:p-6 md:p-8 rounded-xs md:rounded-lg flex items-center justify-center">
+          <Loader variant="fullscreen" text="Loading your dashboard..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto`}>

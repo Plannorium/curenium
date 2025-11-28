@@ -4,19 +4,37 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import Image from "next/image";
 import { useTheme } from "@/components/ThemeProvider";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function LandingHeader() {
   const { data: session } = useSession();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [isHydrated, setIsHydrated] = useState(false);
   const pathname = usePathname();
+  const [currentBrand, setCurrentBrand] = useState("Curenium");
 
   useEffect(() => {
     setIsHydrated(true);
+  }, []);
+
+  // Animated brand name switching
+  useEffect(() => {
+    const brands = ["Curenium", "كيورينيوم"];
+    let currentIndex = 0;
+
+    const interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % brands.length;
+      setCurrentBrand(brands[currentIndex]);
+    }, 3000); // Switch every 3 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -48,9 +66,21 @@ export function LandingHeader() {
               <div className="h-8 w-32 bg-muted/20 rounded animate-pulse" />
             )}
             <div className="flex items-center">
-              <span className="font-bold text-xl text-foreground tracking-tight group-hover:text-primary transition-colors duration-200">
-                Curenium
-              </span>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={currentBrand}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{
+                    duration: 0.5,
+                    ease: "easeInOut"
+                  }}
+                  className="font-bold text-xl text-foreground tracking-tight group-hover:text-primary transition-colors duration-200 inline-block"
+                >
+                  {currentBrand}
+                </motion.span>
+              </AnimatePresence>
             </div>
           </Link>
         </div>
@@ -66,7 +96,7 @@ export function LandingHeader() {
             }`}
             prefetch={false}
           >
-            About
+            {t('nav.about')}
           </Link>
           <Link
             href="/features"
@@ -77,7 +107,7 @@ export function LandingHeader() {
             }`}
             prefetch={false}
           >
-            Features
+            {t('nav.features')}
           </Link>
           <Link
             href="/pricing"
@@ -88,7 +118,7 @@ export function LandingHeader() {
             }`}
             prefetch={false}
           >
-            Pricing
+            {t('nav.pricing')}
           </Link>
           <Link
             href="/contact"
@@ -99,19 +129,20 @@ export function LandingHeader() {
             }`}
             prefetch={false}
           >
-            Contact
+            {t('nav.contact')}
           </Link>
         </nav>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           {session ? (
             <Link href="/dashboard" prefetch={false}>
               <Button
                 size="sm"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20 cursor-pointer"
               >
-                Dashboard
+                {t('nav.dashboard')}
               </Button>
             </Link>
           ) : (
@@ -122,7 +153,7 @@ export function LandingHeader() {
                   size="sm"
                   className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 >
-                  Login
+                  {t('nav.login')}
                 </Button>
               </Link>
               <Link href="/signup" prefetch={false}>
@@ -130,7 +161,7 @@ export function LandingHeader() {
                   size="sm"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
                 >
-                  Sign Up
+                  {t('nav.signup')}
                 </Button>
               </Link>
             </>

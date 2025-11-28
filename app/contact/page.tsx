@@ -19,8 +19,10 @@ import {
 import { LandingHeader } from "@/components/LandingHeader";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function ContactPage() {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -63,21 +65,21 @@ function ContactPage() {
   const contactInfo = [
     {
       icon: Mail,
-      title: "Email Us",
-      details: ["info@plannorium.com", "support@plannorium.com"],
-      description: "Send us an email and we'll respond within 24 hours."
+      title: t('contact.contactInfo.email.title'),
+      details: [t('contact.contactInfo.email.details')[0], t('contact.contactInfo.email.details')[1]],
+      description: t('contact.contactInfo.email.description')
     },
     {
       icon: Phone,
-      title: "Call Us",
-      details: ["+234 806 892 6547"],
-      description: "Available for demo calls and support."
+      title: t('contact.contactInfo.phone.title'),
+      details: [t('contact.contactInfo.phone.details')[0]],
+      description: t('contact.contactInfo.phone.description')
     },
     {
       icon: MapPin,
-      title: "Visit Us",
-      details: ["Riyadh, Saudi Arabia"],
-      description: "Located in the heart of Riyadh, Saudi Arabia."
+      title: t('contact.contactInfo.location.title'),
+      details: [t('contact.contactInfo.location.details')[0]],
+      description: t('contact.contactInfo.location.description')
     },
   ];
 
@@ -98,15 +100,14 @@ function ContactPage() {
         <div className="text-center mb-16 space-y-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              Get in Touch
+              {t('contact.hero.title')}
             </span>
             <span className="block text-primary font-extrabold mt-2">
-              We're Here to Help
+              {t('contact.hero.subtitle')}
             </span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Have questions about Curenium? Need a demo? Want to discuss enterprise solutions?
-            Our team is ready to help you transform your healthcare communication.
+            {t('contact.hero.description')}
           </p>
         </div>
       </section>
@@ -124,11 +125,10 @@ function ContactPage() {
                 <CheckCircle className="text-white h-8 w-8" />
               </div>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-                Book a Free Demo Call
+                {t('contact.demo.title')}
               </h2>
               <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl mx-auto">
-                See Curenium in action! Schedule a personalized demo call with our healthcare experts.
-                We'll show you how Curenium can transform your healthcare communication workflow.
+                {t('contact.demo.subtitle')}
               </p>
             </div>
 
@@ -140,31 +140,31 @@ function ContactPage() {
                 className="inline-flex items-center justify-center px-8 py-4 bg-white dark:text-black text-primary hover:bg-white/90 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] text-lg"
               >
                 <MessageSquare className="mr-3 h-5 w-5" />
-                Schedule Demo Call
+                {t('contact.demo.scheduleDemo')}
               </a>
               <Link href="/features" prefetch={false}>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] px-8 py-4 text-lg"
+                  className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] px-8 py-4 text-lg cursor-pointer"
                 >
-                  View Features
+                  {t('contact.demo.viewFeatures')}
                 </Button>
               </Link>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 pt-8 border-t border-white/20">
               <div className="text-center">
-                <div className="text-2xl font-bold mb-2">30 min</div>
-                <div className="text-primary-foreground/80">Demo Duration</div>
+                <div className="text-2xl font-bold mb-2">{t('contact.demo.duration')}</div>
+                <div className="text-primary-foreground/80">{t('contact.demo.durationLabel')}</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold mb-2">Free</div>
-                <div className="text-primary-foreground/80">No Cost</div>
+                <div className="text-2xl font-bold mb-2">{t('contact.demo.cost')}</div>
+                <div className="text-primary-foreground/80">{t('contact.demo.costLabel')}</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold mb-2">Custom</div>
-                <div className="text-primary-foreground/80">Tailored to You</div>
+                <div className="text-2xl font-bold mb-2">{t('contact.demo.custom')}</div>
+                <div className="text-primary-foreground/80">{t('contact.demo.customLabel')}</div>
               </div>
             </div>
           </div>
@@ -201,17 +201,17 @@ function ContactPage() {
             <div className="space-y-8">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  Send us a Message
+                  {t('contact.form.title')}
                 </h2>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Fill out the form below and we'll get back to you as soon as possible.
+                  {t('contact.form.subtitle')}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name *</Label>
+                    <Label htmlFor="name">{t('contact.form.labels.name')}</Label>
                     <Input
                       id="name"
                       name="name"
@@ -222,7 +222,7 @@ function ContactPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address *</Label>
+                    <Label htmlFor="email">{t('contact.form.labels.email')}</Label>
                     <Input
                       id="email"
                       name="email"
@@ -237,7 +237,7 @@ function ContactPage() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="company">Company/Organization</Label>
+                    <Label htmlFor="company">{t('contact.form.labels.company')}</Label>
                     <Input
                       id="company"
                       name="company"
@@ -247,7 +247,7 @@ function ContactPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">{t('contact.form.labels.phone')}</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -260,7 +260,7 @@ function ContactPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="inquiryType">Inquiry Type</Label>
+                  <Label htmlFor="inquiryType">{t('contact.form.labels.inquiryType')}</Label>
                   <select
                     id="inquiryType"
                     name="inquiryType"
@@ -268,16 +268,16 @@ function ContactPage() {
                     onChange={handleInputChange}
                     className="w-full backdrop-blur-sm bg-background/50 border border-border/50 rounded-lg px-3 py-2 focus:border-primary/50 focus:outline-none"
                   >
-                    <option value="general">General Inquiry</option>
-                    <option value="demo">Request Demo</option>
-                    <option value="sales">Sales</option>
-                    <option value="support">Technical Support</option>
-                    <option value="partnership">Partnership</option>
+                    <option value="general">{t('contact.form.inquiryTypes.general')}</option>
+                    <option value="demo">{t('contact.form.inquiryTypes.demo')}</option>
+                    <option value="sales">{t('contact.form.inquiryTypes.sales')}</option>
+                    <option value="support">{t('contact.form.inquiryTypes.support')}</option>
+                    <option value="partnership">{t('contact.form.inquiryTypes.partnership')}</option>
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject *</Label>
+                  <Label htmlFor="subject">{t('contact.form.labels.subject')}</Label>
                   <Input
                     id="subject"
                     name="subject"
@@ -289,7 +289,7 @@ function ContactPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message *</Label>
+                  <Label htmlFor="message">{t('contact.form.labels.message')}</Label>
                   <Textarea
                     id="message"
                     name="message"
@@ -305,17 +305,17 @@ function ContactPage() {
                   type="submit"
                   size="lg"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
-                      Sending...
+                      {t('contact.form.submitting')}
                     </>
                   ) : (
                     <>
                       <Send className="mr-2 h-5 w-5" />
-                      Send Message
+                      {t('contact.form.submit')}
                     </>
                   )}
                 </Button>
@@ -326,10 +326,10 @@ function ContactPage() {
             <div className="space-y-8">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  Visit Our Office
+                  {t('contact.office.title')}
                 </h2>
                 <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-                  Located in the heart of the medical district, our office is designed for healthcare professionals.
+                  {t('contact.office.subtitle')}
                 </p>
               </div>
 
@@ -338,8 +338,8 @@ function ContactPage() {
                 <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl flex items-center justify-center">
                   <div className="text-center">
                     <MapPin className="mx-auto h-12 w-12 text-primary mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Our Location</h3>
-                    <p className="text-muted-foreground">Riyadh, Saudi Arabia</p>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{t('contact.office.locationTitle')}</h3>
+                    <p className="text-muted-foreground">{t('contact.office.location')}</p>
                   </div>
                 </div>
               </div>
@@ -353,8 +353,8 @@ function ContactPage() {
                 </div> */}
                 <div className="backdrop-blur-lg bg-card/80 border border-border/50 rounded-2xl p-6 shadow-xl text-center">
                   <Headphones className="mx-auto h-8 w-8 text-primary mb-2" />
-                  <div className="text-2xl font-bold text-foreground">24/7</div>
-                  <div className="text-sm text-muted-foreground">Support Available</div>
+                  <div className="text-2xl font-bold text-foreground">{t('contact.support.hours')}</div>
+                  <div className="text-sm text-muted-foreground">{t('contact.support.label')}</div>
                 </div>
               </div>
 
@@ -394,10 +394,10 @@ function ContactPage() {
 
           <div className="relative max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-              Ready to Transform Healthcare Communication?
+              {t('contact.cta.title')}
             </h2>
             <p className="text-lg md:text-xl text-primary-foreground/90 leading-relaxed max-w-3xl mx-auto">
-              Join hundreds of healthcare organizations already using Curenium to improve patient care and team collaboration.
+              {t('contact.cta.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Link href="/signup" prefetch={false}>
@@ -406,7 +406,7 @@ function ContactPage() {
                   variant="secondary"
                   className="bg-white text-primary dark:text-black hover:bg-white/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
-                  Start Free Trial
+                  {t('contact.cta.startTrial')}
                 </Button>
               </Link>
               <Link href="/pricing" prefetch={false}>
@@ -415,7 +415,7 @@ function ContactPage() {
                   variant="outline"
                   className="bg-white/10 border-white/30 text-white dark:text-black/50 hover:bg-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer"
                 >
-                  View Pricing
+                  {t('contact.cta.viewPricing')}
                 </Button>
               </Link>
             </div>

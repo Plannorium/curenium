@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LandingHeader } from "@/components/LandingHeader";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function PrivacyPage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Background blur effects */}
@@ -35,7 +37,7 @@ function PrivacyPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <span className="bg-linear-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              Privacy Policy
+              {t('privacy.hero.title')}
             </span>
           </motion.h1>
           <motion.p
@@ -44,7 +46,7 @@ function PrivacyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Your privacy is our priority. Learn how Curenium protects your data and ensures secure communication in healthcare.
+            {t('privacy.hero.description')}
           </motion.p>
         </div>
       </motion.section>
@@ -61,15 +63,15 @@ function PrivacyPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-4">Information We Collect</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('privacy.sections.informationWeCollect.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              We collect information you provide directly to us, such as when you create an account, use our services, or contact us for support. This includes:
+              {t('privacy.sections.informationWeCollect.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>Account information (name, email, organization)</li>
-              <li>Healthcare data you choose to share through our platform</li>
-              <li>Communication data (messages, files, alerts)</li>
-              <li>Usage data and device information</li>
+              <li>{t('privacy.sections.informationWeCollect.items')[0]}</li>
+              <li>{t('privacy.sections.informationWeCollect.items')[1]}</li>
+              <li>{t('privacy.sections.informationWeCollect.items')[2]}</li>
+              <li>{t('privacy.sections.informationWeCollect.items')[3]}</li>
             </ul>
           </motion.div>
 
@@ -80,16 +82,16 @@ function PrivacyPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-4">How We Use Your Information</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('privacy.sections.howWeUse.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              We use the information we collect to:
+              {t('privacy.sections.howWeUse.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>Provide, maintain, and improve our services</li>
-              <li>Ensure security and compliance in healthcare communications</li>
-              <li>Process transactions and send related information</li>
-              <li>Send technical notices, updates, and support messages</li>
-              <li>Respond to your comments and questions</li>
+              <li>{t('privacy.sections.howWeUse.items')[0]}</li>
+              <li>{t('privacy.sections.howWeUse.items')[1]}</li>
+              <li>{t('privacy.sections.howWeUse.items')[2]}</li>
+              <li>{t('privacy.sections.howWeUse.items')[3]}</li>
+              <li>{t('privacy.sections.howWeUse.items')[4]}</li>
             </ul>
           </motion.div>
 
@@ -100,9 +102,9 @@ function PrivacyPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-4">Data Security</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('privacy.sections.dataSecurity.title')}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. Our platform uses end-to-end encryption for all communications and complies with healthcare data protection standards.
+              {t('privacy.sections.dataSecurity.description')}
             </p>
           </motion.div>
 
@@ -113,15 +115,15 @@ function PrivacyPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-4">Data Sharing</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('privacy.sections.dataSharing.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy. We may share information in the following circumstances:
+              {t('privacy.sections.dataSharing.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>With your explicit consent</li>
-              <li>To comply with legal obligations</li>
-              <li>To protect our rights and prevent fraud</li>
-              <li>With service providers who assist our operations</li>
+              <li>{t('privacy.sections.dataSharing.items')[0]}</li>
+              <li>{t('privacy.sections.dataSharing.items')[1]}</li>
+              <li>{t('privacy.sections.dataSharing.items')[2]}</li>
+              <li>{t('privacy.sections.dataSharing.items')[3]}</li>
             </ul>
           </motion.div>
 
@@ -132,15 +134,15 @@ function PrivacyPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-4">Your Rights</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('privacy.sections.yourRights.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              You have the right to:
+              {t('privacy.sections.yourRights.description')}
             </p>
             <ul className="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
-              <li>Access and update your personal information</li>
-              <li>Request deletion of your data</li>
-              <li>Opt out of certain data processing</li>
-              <li>Request data portability</li>
+              <li>{t('privacy.sections.yourRights.items')[0]}</li>
+              <li>{t('privacy.sections.yourRights.items')[1]}</li>
+              <li>{t('privacy.sections.yourRights.items')[2]}</li>
+              <li>{t('privacy.sections.yourRights.items')[3]}</li>
             </ul>
           </motion.div>
 
@@ -151,13 +153,12 @@ function PrivacyPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            <h2 className="text-2xl font-bold text-foreground mb-4">Contact Us</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">{t('privacy.sections.contactUs.title')}</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              If you have any questions about this Privacy Policy, please contact us at:
+              {t('privacy.sections.contactUs.description')}
             </p>
-            <p className="text-muted-foreground leading-relaxed">
-              Email: privacy@curenium.com<br />
-              Address: [Your Address Here]
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+              {t('privacy.sections.contactUs.contactInfo')}
             </p>
           </motion.div>
 

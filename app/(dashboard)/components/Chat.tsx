@@ -3532,10 +3532,7 @@ export default function Chat() {
                     Conversation Summary
                   </h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Patient in Room 302 (Mohammed Al-Farsi, 58) experienced a
-                    cardiac event with dropping blood pressure and irregular
-                    heartbeat. Emergency response team stabilized the patient.
-                    Current plan is to transfer to ICU for monitoring.
+                    Coming Soon
                   </p>
                 </div>
               </div>
