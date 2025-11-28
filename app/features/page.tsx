@@ -331,9 +331,9 @@ function FeaturesPage() {
                       <div className="relative bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 text-white">
                         <h3 className="font-semibold flex items-center">
                           <UserCheck className="mr-2 h-4 w-4" />
-                          Reception Dashboard
+                          {t('features.dashboards.operational.reception.title')}
                           <div className="ml-auto bg-white/20 text-xs px-2 py-1 rounded-full font-medium">
-                            Patient Flow
+                            {t('features.dashboards.operational.reception.badge')}
                           </div>
                         </h3>
                       </div>
@@ -342,49 +342,39 @@ function FeaturesPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="backdrop-blur-sm bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
                             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">28</div>
-                            <div className="text-xs text-muted-foreground">Waiting</div>
+                            <div className="text-xs text-muted-foreground">{t('features.dashboards.operational.reception.metrics.waiting')}</div>
                           </div>
                           <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
                             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">12</div>
-                            <div className="text-xs text-muted-foreground">In Room</div>
+                            <div className="text-xs text-muted-foreground">{t('features.dashboards.operational.reception.metrics.inRoom')}</div>
                           </div>
                           <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
                             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">8</div>
-                            <div className="text-xs text-muted-foreground">Checked Out</div>
+                            <div className="text-xs text-muted-foreground">{t('features.dashboards.operational.reception.metrics.checkedOut')}</div>
                           </div>
                           <div className="backdrop-blur-sm bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
                             <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">4</div>
-                            <div className="text-xs text-muted-foreground">No Show</div>
+                            <div className="text-xs text-muted-foreground">{t('features.dashboards.operational.reception.metrics.noShow')}</div>
                           </div>
                         </div>
 
                         <div className="backdrop-blur-sm bg-muted/50 border border-border/30 rounded-lg p-4">
                           <div className="space-y-3">
                             <div className="flex justify-between items-center text-sm font-medium text-muted-foreground">
-                              <span>Patient</span>
-                              <span>Appointment</span>
-                              <span>Status</span>
-                              <span>Room</span>
+                              <span>{t('features.dashboards.operational.reception.table.patient')}</span>
+                              <span>{t('features.dashboards.operational.reception.table.appointment')}</span>
+                              <span>{t('features.dashboards.operational.reception.table.status')}</span>
+                              <span>{t('features.dashboards.operational.reception.table.room')}</span>
                             </div>
                             <div className="space-y-2">
-                              <div className="flex justify-between items-center py-2 border-b border-border/20">
-                                <span className="text-sm">Anna Martinez</span>
-                                <span className="text-sm font-medium">10:00 AM</span>
-                                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">In Room</Badge>
-                                <span className="text-sm">204</span>
-                              </div>
-                              <div className="flex justify-between items-center py-2 border-b border-border/20">
-                                <span className="text-sm">Robert Lee</span>
-                                <span className="text-sm font-medium">10:30 AM</span>
-                                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">Waiting</Badge>
-                                <span className="text-sm">-</span>
-                              </div>
-                              <div className="flex justify-between items-center py-2">
-                                <span className="text-sm">Maria Garcia</span>
-                                <span className="text-sm font-medium">11:00 AM</span>
-                                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400">Checked In</Badge>
-                                <span className="text-sm">-</span>
-                              </div>
+                              {(t('features.dashboards.operational.reception.data.patients') as unknown as any[]).map((patient, idx) => (
+                                <div key={idx} className={`flex justify-between items-center py-2 ${idx < 2 ? 'border-b border-border/20' : ''}`}>
+                                  <span className="text-sm">{patient.name}</span>
+                                  <span className="text-sm font-medium">{patient.appointment}</span>
+                                  <Badge className={`bg-${patient.status === 'In Room' ? 'blue' : patient.status === 'Waiting' ? 'yellow' : 'emerald'}-100 text-${patient.status === 'In Room' ? 'blue' : patient.status === 'Waiting' ? 'yellow' : 'emerald'}-800 dark:bg-${patient.status === 'In Room' ? 'blue' : patient.status === 'Waiting' ? 'yellow' : 'emerald'}-900/20 dark:text-${patient.status === 'In Room' ? 'blue' : patient.status === 'Waiting' ? 'yellow' : 'emerald'}-400`}>{patient.status}</Badge>
+                                  <span className="text-sm">{patient.room}</span>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>

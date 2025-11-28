@@ -8,7 +8,7 @@ type Language = 'en' | 'ar';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string) => any;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -53,7 +53,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     document.documentElement.lang = lang;
   };
 
-  const t = (key: string): string => {
+  const t = (key: string): any => {
     const keys = key.split('.');
     let value: any = translations[language];
 
@@ -64,14 +64,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     return value || key;
   };
 
-  // On the server, and on the initial client render, we'll use a "safe" t function
-  // that returns keys to avoid mismatches.
-  const safeT = (key: string) => {
-    return key;
-  };
-
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t: isHydrated ? t : safeT}}>
+    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );
