@@ -91,7 +91,7 @@ export const ManageChannelModal: React.FC<ManageChannelModalProps> = ({ isOpen, 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="backdrop-blur-xl bg-background/95 dark:bg-slate-900/80 border-border/50 shadow-2xl max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('manageChannelModal.title').replace('{channelName}', channel.name)}</DialogTitle>
+          <DialogTitle>{t('manageChannelModal.title').replace('#{channelName}', channel.name)}</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-6 max-h-[70vh] flex flex-col">
           {/* Add Members Section */}

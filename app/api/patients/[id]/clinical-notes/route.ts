@@ -9,16 +9,16 @@ interface ClinicalNoteData {
   visibility?: 'team' | 'private' | 'public';
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session || !session.user || session.user.role !== 'doctor') {
+  if (!session || !session.user || !['doctor', 'nurse', 'admin', 'matron_nurse'].includes(session.user.role as string)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     await dbConnect();
     const body: ClinicalNoteData = await req.json();
-    const { id } = await params;
+    const { id } = params;
 
     const clinicalNote = await ClinicalNote.create({
       patientId: id,
@@ -35,7 +35,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });

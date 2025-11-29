@@ -8,6 +8,8 @@ import { AddSOAPNoteModal } from "./AddSOAPNoteModal"; // Import the new modal
 import { ClinicalNote } from "@/types/clinical-note";
 import { ISOAPNote } from '@/models/SOAPNote';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface ClinicalNotesDisplayProps {
   patientId: string;
@@ -18,6 +20,16 @@ type SOAPNote = Omit<ISOAPNote, keyof Document | 'toObject' | 'toJSON'>;
 type CombinedNote = (ClinicalNote | SOAPNote) & { noteType: 'clinical' | 'soap' };
 
 export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplayProps) {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [combinedNotes, setCombinedNotes] = useState<CombinedNote[]>([]);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isSOAPModalOpen, setIsSOAPModalOpen] = useState(false);
@@ -36,7 +48,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
       setCombinedNotes(allNotes);
 
     } catch (error) {
-      toast.error('An error occurred while fetching notes');
+      toast.error(t('clinicalNotesDisplay.errorFetchingNotes'));
     }
   };
 
@@ -53,9 +65,9 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
           </div>
           <div>
             <h2 className="text-xl sm:text-2xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              Clinical Notes
+              {t('clinicalNotesDisplay.title')}
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">Document patient findings and observations</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t('clinicalNotesDisplay.subtitle')}</p>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
@@ -65,7 +77,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
             size="sm"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            <span className="text-sm">New Note</span>
+            <span className="text-sm">{t('clinicalNotesDisplay.newNote')}</span>
           </Button>
           <Button
             onClick={() => setIsSOAPModalOpen(true)}
@@ -74,7 +86,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
             size="sm"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            <span className="text-sm">SOAP Note</span>
+            <span className="text-sm">{t('clinicalNotesDisplay.soapNote')}</span>
           </Button>
         </div>
       </div>
@@ -105,7 +117,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                       <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">Clinical Note</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{t('clinicalNotesDisplay.clinicalNote')}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(note.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
@@ -132,7 +144,7 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                       <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">SOAP Note</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{t('clinicalNotesDisplay.soapNoteLabel')}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(soapNote.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
@@ -144,28 +156,28 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Subjective</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{t('clinicalNotesDisplay.subjective')}</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.subjective}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Objective</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{t('clinicalNotesDisplay.objective')}</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.objective}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Assessment</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{t('clinicalNotesDisplay.assessment')}</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.assessment}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Plan</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{t('clinicalNotesDisplay.plan')}</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed pl-4">{soapNote.plan}</p>
                   </div>
@@ -181,9 +193,9 @@ export default function ClinicalNotesDisplay({ patientId }: ClinicalNotesDisplay
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-800/50 rounded-full mb-4">
               <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 dark:text-gray-600" />
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">No clinical notes yet</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('clinicalNotesDisplay.noNotesYet')}</h3>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm sm:text-base px-4">
-              Start documenting patient findings and observations by creating your first clinical note.
+              {t('clinicalNotesDisplay.startDocumenting')}
             </p>
           </div>
         )}

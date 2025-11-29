@@ -18,11 +18,13 @@ import { SharePatientModal } from "./SharePatientModal";
   import { useSession } from "next-auth/react";
   import ClinicalNotesDisplay from "./ClinicalNotesDisplay";
   import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { IUser as User } from "@/models/User";
+  import { Input } from "@/components/ui/input";
+  import { Label } from "@/components/ui/label";
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+  import type { IUser as User } from "@/models/User";
+  import { useLanguage } from '@/contexts/LanguageContext';
+  import { dashboardTranslations } from '@/lib/dashboard-translations';
  
  interface PatientDetailProps  { 
    patient: Patient ; 
@@ -38,8 +40,18 @@ import type { IUser as User } from "@/models/User";
  }; 
  
  export default function PatientDetail({ patient }: PatientDetailProps ) {
-   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-   const [isEditingAssignment, setIsEditingAssignment] = useState(false);
+     const { language } = useLanguage();
+     const t = (key: string) => {
+       const keys = key.split('.');
+       let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+       for (const k of keys) {
+         value = value?.[k];
+       }
+       return value || key;
+     };
+ 
+     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+     const [isEditingAssignment, setIsEditingAssignment] = useState(false);
    const [assignmentData, setAssignmentData] = useState({
      assignedNurse: patient.assignedNurse ? patient.assignedNurse.toString() : 'unassigned',
      assignedDoctor: patient.assignedDoctor ? patient.assignedDoctor.toString() : 'unassigned',
@@ -203,39 +215,39 @@ import type { IUser as User } from "@/models/User";
          <TabsList className="grid grid-cols-6 lg:gap-x-2 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
            <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <ClipboardCheck className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Overview</span>
+             <span className="hidden sm:inline">{t('patientDetail.overview')}</span>
            </TabsTrigger>
            <TabsTrigger value="appointments" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <Calendar className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Appointments</span>
+             <span className="hidden sm:inline">{t('patientDetail.appointments')}</span>
            </TabsTrigger>
            <TabsTrigger value="insurance" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <ShieldCheck className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Insurance</span>
+             <span className="hidden sm:inline">{t('patientDetail.insurance')}</span>
            </TabsTrigger>
            <TabsTrigger value="audit-log" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <FileText className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Audit Log</span>
+             <span className="hidden sm:inline">{t('patientDetail.auditLog')}</span>
            </TabsTrigger>
            <TabsTrigger value="clinical_notes" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <FileText className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Clinical Notes</span>
+             <span className="hidden sm:inline">{t('patientDetail.clinicalNotes')}</span>
            </TabsTrigger>
            <TabsTrigger value="assignment" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <UserCheck className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Assignment</span>
+             <span className="hidden sm:inline">{t('patientDetail.assignment')}</span>
            </TabsTrigger>
            </TabsList>
 
            {/* Tab Contents */} 
            <TabsContent value="overview" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl" > 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-6 sm:gap-y-8 text-sm" > 
-               <DetailItem icon={Cake} label="Date of Birth" value={patient.dob ? `${new Date(patient.dob).toLocaleDateString()} (${calculateAge(patient.dob)} years old )` : 'N/A'} />
-               <DetailItem icon={VenetianMask} label="Gender" value={patient.gender || 'N/A'}  />
-               <DetailItem icon={Mail} label="Email" value={patient.contact?.email || 'N/A'}  />
-               <DetailItem icon={Phone} label="Phone" value={patient.contact?.phone || 'N/A'}  />
-                <DetailItem icon={Home} label="Address" value={patient.address ? `${patient.address.street}, ${patient.address.city}, ${patient.address.state} ${patient.address.zip}`: 'N/A'} />
-                <DetailItem icon={UserSquare} label="Emergency Contact" value={patient.emergencyContact ? `${patient.emergencyContact.name} - ${patient.emergencyContact.phone}`: 'N/A'} />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-6 sm:gap-y-8 text-sm" >
+               <DetailItem icon={Cake} label={t('patientDetail.dateOfBirth')} value={patient.dob ? `${new Date(patient.dob).toLocaleDateString()} (${calculateAge(patient.dob)} years old )` : 'N/A'} />
+               <DetailItem icon={VenetianMask} label={t('patientDetail.gender')} value={patient.gender || 'N/A'}  />
+               <DetailItem icon={Mail} label={t('patientDetail.email')} value={patient.contact?.email || 'N/A'}  />
+               <DetailItem icon={Phone} label={t('patientDetail.phone')} value={patient.contact?.phone || 'N/A'}  />
+                <DetailItem icon={Home} label={t('patientDetail.address')} value={patient.address ? `${patient.address.street}, ${patient.address.city}, ${patient.address.state} ${patient.address.zip}`: 'N/A'} />
+                <DetailItem icon={UserSquare} label={t('patientDetail.emergencyContact')} value={patient.emergencyContact ? `${patient.emergencyContact.name} - ${patient.emergencyContact.phone}`: 'N/A'} />
              </div >
            </TabsContent >
 
@@ -256,21 +268,21 @@ import type { IUser as User } from "@/models/User";
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Care Team Assignment</h3>
-                  <p className="text-muted-foreground mt-1">Assign healthcare providers and manage patient placement</p>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{t('patientDetail.careTeamAssignment')}</h3>
+                  <p className="text-muted-foreground mt-1">{t('patientDetail.careTeamAssignmentDesc')}</p>
                 </div>
                 {!isEditingAssignment ? (
                   <Button onClick={() => setIsEditingAssignment(true)} className="bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                     <UserCheck className="h-4 w-4 mr-2" />
-                    Edit Assignment
+                    {t('patientDetail.editAssignment')}
                   </Button>
                 ) : (
                   <div className="flex space-x-2">
                     <Button variant="outline" onClick={() => setIsEditingAssignment(false)}>
-                      Cancel
+                      {t('patientDetail.cancel')}
                     </Button>
                     <Button onClick={handleSaveAssignment} disabled={isSavingAssignment} className="bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-                      {isSavingAssignment ? 'Saving...' : 'Save Changes'}
+                      {isSavingAssignment ? t('patientDetail.saving') : t('patientDetail.saveChanges')}
                     </Button>
                   </div>
                 )}
@@ -282,19 +294,19 @@ import type { IUser as User } from "@/models/User";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <Users className="h-5 w-5 mr-2 text-blue-500" />
-                      Care Team
+                      {t('patientDetail.careTeam')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="assignedNurse" className="text-sm font-semibold">Assigned Nurse</Label>
+                      <Label htmlFor="assignedNurse" className="text-sm font-semibold">{t('patientDetail.assignedNurse')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.assignedNurse}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, assignedNurse: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a nurse" />
+                            <SelectValue placeholder={t('patientDetail.selectNurse')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -310,21 +322,21 @@ import type { IUser as User } from "@/models/User";
                           {assignmentData.assignedNurse && assignmentData.assignedNurse !== 'unassigned' ? (
                             nurses.find(n => n._id.toString() === assignmentData.assignedNurse)?.fullName || 'Loading...'
                           ) : (
-                            <span className="text-muted-foreground">Not assigned</span>
+                            <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                           )}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="assignedDoctor" className="text-sm font-semibold">Assigned Doctor</Label>
+                      <Label htmlFor="assignedDoctor" className="text-sm font-semibold">{t('patientDetail.assignedDoctor')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.assignedDoctor}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, assignedDoctor: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a doctor" />
+                            <SelectValue placeholder={t('patientDetail.selectDoctor')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -340,7 +352,7 @@ import type { IUser as User } from "@/models/User";
                           {assignmentData.assignedDoctor && assignmentData.assignedDoctor !== 'unassigned' ? (
                             doctors.find(d => d._id.toString() === assignmentData.assignedDoctor)?.fullName || 'Loading...'
                           ) : (
-                            <span className="text-muted-foreground">Not assigned</span>
+                            <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                           )}
                         </div>
                       )}

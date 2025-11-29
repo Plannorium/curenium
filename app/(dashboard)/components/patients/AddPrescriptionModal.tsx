@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import HijriCalendar from '@/components/ui/hijri-calendar';
 import { useCalendar } from '@/components/ui/calendar-context';
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 interface PrescriptionItem {
   id: string;
@@ -41,38 +43,8 @@ interface AddPrescriptionModalProps {
   onPrescriptionAdded: () => void;
 }
 
-const PRESCRIPTION_TYPES = [
-  { value: 'medication', label: 'Medication', icon: Pill },
-  { value: 'treatment', label: 'Treatment', icon: Activity },
-  { value: 'procedure', label: 'Procedure', icon: Stethoscope },
-  { value: 'therapy', label: 'Therapy', icon: Syringe },
-  { value: 'device', label: 'Medical Device', icon: Activity },
-  { value: 'other', label: 'Other', icon: Activity },
-];
-
-const DOSAGE_FORMS = [
-  'Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream', 'Ointment', 'Suppository',
-  'Inhaler', 'Nebulizer', 'Drops', 'Spray', 'Patch', 'Gel', 'Lotion'
-];
-
-const ROUTES = [
-  'Oral', 'Intravenous', 'Intramuscular', 'Subcutaneous', 'Topical', 'Inhaled',
-  'Rectal', 'Vaginal', 'Ophthalmic', 'Otic', 'Nasal', 'Sublingual', 'Buccal'
-];
-
-const FREQUENCIES = [
-  'Once daily', 'Twice daily', 'Three times daily', 'Four times daily',
-  'Every 4 hours', 'Every 6 hours', 'Every 8 hours', 'Every 12 hours',
-  'As needed', 'Before meals', 'After meals', 'At bedtime', 'Weekly', 'Monthly'
-];
-
-const DURATION_UNITS = [
-  { value: 'days', label: 'Days' },
-  { value: 'weeks', label: 'Weeks' },
-  { value: 'months', label: 'Months' }
-];
-
 export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptionAdded }: AddPrescriptionModalProps) {
+  const { language } = useLanguage();
   const { data: session } = useSession();
   const { calendarType, setCalendarType } = useCalendar();
   const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItem[]>([
@@ -83,6 +55,48 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
   const [reasonForPrescription, setReasonForPrescription] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const t = useMemo(() => {
+    return (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+  }, [language]);
+
+  const PRESCRIPTION_TYPES = useMemo(() => [
+    { value: 'medication', label: t('addPrescriptionModal.prescriptionTypes.medication'), icon: Pill },
+    { value: 'treatment', label: t('addPrescriptionModal.prescriptionTypes.treatment'), icon: Activity },
+    { value: 'procedure', label: t('addPrescriptionModal.prescriptionTypes.procedure'), icon: Stethoscope },
+    { value: 'therapy', label: t('addPrescriptionModal.prescriptionTypes.therapy'), icon: Syringe },
+    { value: 'device', label: t('addPrescriptionModal.prescriptionTypes.device'), icon: Activity },
+    { value: 'other', label: t('addPrescriptionModal.prescriptionTypes.other'), icon: Activity },
+  ], [t]);
+
+  const DOSAGE_FORMS = useMemo(() => [
+    t('addPrescriptionModal.dosageForms.tablet'), t('addPrescriptionModal.dosageForms.capsule'), t('addPrescriptionModal.dosageForms.syrup'), t('addPrescriptionModal.dosageForms.injection'), t('addPrescriptionModal.dosageForms.cream'), t('addPrescriptionModal.dosageForms.ointment'), t('addPrescriptionModal.dosageForms.suppository'),
+    t('addPrescriptionModal.dosageForms.inhaler'), t('addPrescriptionModal.dosageForms.nebulizer'), t('addPrescriptionModal.dosageForms.drops'), t('addPrescriptionModal.dosageForms.spray'), t('addPrescriptionModal.dosageForms.patch'), t('addPrescriptionModal.dosageForms.gel'), t('addPrescriptionModal.dosageForms.lotion')
+  ], [t]);
+
+  const ROUTES = useMemo(() => [
+    t('addPrescriptionModal.routes.oral'), t('addPrescriptionModal.routes.intravenous'), t('addPrescriptionModal.routes.intramuscular'), t('addPrescriptionModal.routes.subcutaneous'), t('addPrescriptionModal.routes.topical'), t('addPrescriptionModal.routes.inhaled'),
+    t('addPrescriptionModal.routes.rectal'), t('addPrescriptionModal.routes.vaginal'), t('addPrescriptionModal.routes.ophthalmic'), t('addPrescriptionModal.routes.otic'), t('addPrescriptionModal.routes.nasal'), t('addPrescriptionModal.routes.sublingual'), t('addPrescriptionModal.routes.buccal')
+  ], [t]);
+
+  const FREQUENCIES = useMemo(() => [
+    t('addPrescriptionModal.frequencies.onceDaily'), t('addPrescriptionModal.frequencies.twiceDaily'), t('addPrescriptionModal.frequencies.threeTimesDaily'), t('addPrescriptionModal.frequencies.fourTimesDaily'),
+    t('addPrescriptionModal.frequencies.every4Hours'), t('addPrescriptionModal.frequencies.every6Hours'), t('addPrescriptionModal.frequencies.every8Hours'), t('addPrescriptionModal.frequencies.every12Hours'),
+    t('addPrescriptionModal.frequencies.asNeeded'), t('addPrescriptionModal.frequencies.beforeMeals'), t('addPrescriptionModal.frequencies.afterMeals'), t('addPrescriptionModal.frequencies.atBedtime'), t('addPrescriptionModal.frequencies.weekly'), t('addPrescriptionModal.frequencies.monthly')
+  ], [t]);
+
+  const DURATION_UNITS = useMemo(() => [
+    { value: 'days', label: t('addPrescriptionModal.durationUnits.days') },
+    { value: 'weeks', label: t('addPrescriptionModal.durationUnits.weeks') },
+    { value: 'months', label: t('addPrescriptionModal.durationUnits.months') }
+  ], [t]);
 
   const addPrescriptionItem = () => {
     const newItem: PrescriptionItem = {
@@ -204,14 +218,14 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl">
-        <DialogHeader className="pb-4">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl outline-none">
+        <DialogHeader className="pb-4 p-5">
           <div className="flex items-center space-x-3 mb-2">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg shadow-lg">
               <Pill className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              Professional Prescription
+              {t('addPrescriptionModal.title')}
             </DialogTitle>
           </div>
         </DialogHeader>
@@ -220,7 +234,7 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
           {/* Prescription Items */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-lg font-semibold">Prescription Items</Label>
+              <Label className="text-lg font-semibold">{t('addPrescriptionModal.prescriptionItems')}</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -229,12 +243,12 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                 className="flex items-center space-x-2"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Item</span>
+                <span>{t('addPrescriptionModal.addItem')}</span>
               </Button>
             </div>
 
             {prescriptionItems.map((item, index) => (
-              <Card key={item.id} className="border border-gray-200/50 dark:border-gray-800/50">
+              <Card key={item.id} className="border border-gray-200/50 dark:border-gray-800/50 dark:bg-slate-900/80">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -277,7 +291,7 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                   <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Type</Label>
+                      <Label>{t('addPrescriptionModal.labels.type')}</Label>
                       <Select
                         value={item.type}
                         onValueChange={(value: any) => updatePrescriptionItem(item.id, { type: value })}
@@ -299,9 +313,9 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Name</Label>
+                      <Label>{t('addPrescriptionModal.labels.name')}</Label>
                       <Input
-                        placeholder={`Enter ${item.type} name`}
+                        placeholder={t('addPrescriptionModal.placeholders.enterName')}
                         value={item.name}
                         onChange={(e) => updatePrescriptionItem(item.id, { name: e.target.value })}
                         className="w-full"
@@ -312,9 +326,9 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                   {item.type === 'medication' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-red-500">Strength/Dose *</Label>
+                        <Label className="text-red-500">{t('addPrescriptionModal.labels.strengthDose')} *</Label>
                         <Input
-                          placeholder="e.g., 500mg"
+                          placeholder={t('addPrescriptionModal.placeholders.strengthExample')}
                           value={item.strength || ''}
                           onChange={(e) => updatePrescriptionItem(item.id, { strength: e.target.value })}
                           className="w-full"
@@ -323,13 +337,13 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Form</Label>
+                        <Label>{t('addPrescriptionModal.labels.form')}</Label>
                         <Select
                           value={item.form || ''}
                           onValueChange={(value) => updatePrescriptionItem(item.id, { form: value })}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select form" />
+                            <SelectValue placeholder={t('addPrescriptionModal.placeholders.selectForm')} />
                           </SelectTrigger>
                           <SelectContent>
                             {DOSAGE_FORMS.map(form => (
@@ -340,13 +354,13 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-red-500">Route *</Label>
+                        <Label className="text-red-500">{t('addPrescriptionModal.labels.route')} *</Label>
                         <Select
                           value={item.route || ''}
                           onValueChange={(value) => updatePrescriptionItem(item.id, { route: value })}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select route" />
+                            <SelectValue placeholder={t('addPrescriptionModal.placeholders.selectRoute')} />
                           </SelectTrigger>
                           <SelectContent>
                             {ROUTES.map(route => (
@@ -357,13 +371,13 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-red-500">Frequency *</Label>
+                        <Label className="text-red-500">{t('addPrescriptionModal.labels.frequency')} *</Label>
                         <Select
                           value={item.frequency || ''}
                           onValueChange={(value) => updatePrescriptionItem(item.id, { frequency: value })}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select frequency" />
+                            <SelectValue placeholder={t('addPrescriptionModal.placeholders.selectFrequency')} />
                           </SelectTrigger>
                           <SelectContent>
                             {FREQUENCIES.map(freq => (
@@ -377,11 +391,11 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>Duration</Label>
+                      <Label>{t('addPrescriptionModal.labels.duration')}</Label>
                       <div className="flex space-x-2">
                         <Input
                           type="number"
-                          placeholder="Duration"
+                          placeholder={t('addPrescriptionModal.placeholders.duration')}
                           value={item.duration || ''}
                           onChange={(e) => updatePrescriptionItem(item.id, { duration: parseInt(e.target.value) || undefined })}
                           className="flex-1"
@@ -403,10 +417,10 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Quantity</Label>
+                      <Label>{t('addPrescriptionModal.labels.quantity')}</Label>
                       <Input
                         type="number"
-                        placeholder="Quantity"
+                        placeholder={t('addPrescriptionModal.placeholders.quantity')}
                         value={item.quantity || ''}
                         onChange={(e) => updatePrescriptionItem(item.id, { quantity: parseInt(e.target.value) || undefined })}
                         className="w-full"
@@ -414,10 +428,10 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Refills</Label>
+                      <Label>{t('addPrescriptionModal.labels.refills')}</Label>
                       <Input
                         type="number"
-                        placeholder="Refills"
+                        placeholder={t('addPrescriptionModal.placeholders.refills')}
                         value={item.refills || ''}
                         onChange={(e) => updatePrescriptionItem(item.id, { refills: parseInt(e.target.value) || undefined })}
                         className="w-full"
@@ -426,9 +440,9 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Specific Instructions</Label>
+                    <Label>{t('addPrescriptionModal.labels.specificInstructions')}</Label>
                     <Textarea
-                      placeholder="Enter specific instructions for this prescription item..."
+                      placeholder={t('addPrescriptionModal.placeholders.specificInstructions')}
                       value={item.instructions || ''}
                       onChange={(e) => updatePrescriptionItem(item.id, { instructions: e.target.value })}
                       rows={2}
@@ -441,16 +455,16 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
           </div>
 
           {/* Prescription Details */}
-          <Card className="border border-gray-200/50 dark:border-gray-800/50">
+          <Card className="border border-gray-200/50 dark:border-gray-800/50 dark:bg-slate-900/80">
             <CardHeader>
               <CardTitle className="flex items-center text-lg">
                 <Calendar className="h-5 w-5 mr-2 text-primary" />
-                Prescription Details
+                {t('addPrescriptionModal.prescriptionDetails')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-                <Label className="sm:mb-0">Calendar Type:</Label>
+                <Label className="sm:mb-0">{t('addPrescriptionModal.calendarType')}:</Label>
                 <div className="flex items-center space-x-2">
                   <Button
                     type="button"
@@ -459,7 +473,7 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                     onClick={() => setCalendarType('gregorian')}
                     className="flex-1 sm:flex-initial"
                   >
-                    Gregorian (AD)
+                    {t('addPrescriptionModal.gregorian')}
                   </Button>
                   <Button
                     type="button"
@@ -468,13 +482,13 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                     onClick={() => setCalendarType('hijri')}
                     className="flex-1 sm:flex-initial"
                   >
-                    Hijri (AH)
+                    {t('addPrescriptionModal.hijri')}
                   </Button>
                 </div>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
+                  <Label>{t('addPrescriptionModal.startDate')}</Label>
                   <div className="max-h-64 overflow-y-auto">
                     <HijriCalendar
                       selectedDate={startDate}
@@ -486,7 +500,7 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
                 </div>
 
                 <div className="space-y-2">
-                  <Label>End Date (Optional)</Label>
+                  <Label>{t('addPrescriptionModal.endDate')}</Label>
                   <div className="max-h-64 overflow-y-auto">
                     <HijriCalendar
                       selectedDate={endDate}
@@ -503,9 +517,9 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
           {/* Reason and Notes */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-red-500">Reason for Prescription *</Label>
+              <Label className="text-red-500">{t('addPrescriptionModal.reasonForPrescription')} *</Label>
               <Textarea
-                placeholder="Enter the medical reason for this prescription..."
+                placeholder={t('addPrescriptionModal.placeholders.reasonForPrescription')}
                 value={reasonForPrescription}
                 onChange={(e) => setReasonForPrescription(e.target.value)}
                 rows={3}
@@ -515,9 +529,9 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
             </div>
 
             <div className="space-y-2">
-              <Label>Additional Notes</Label>
+              <Label>{t('addPrescriptionModal.additionalNotes')}</Label>
               <Textarea
-                placeholder="Any additional notes or special instructions..."
+                placeholder={t('addPrescriptionModal.placeholders.additionalNotes')}
                 value={additionalNotes}
                 onChange={(e) => setAdditionalNotes(e.target.value)}
                 rows={3}
@@ -529,11 +543,11 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
 
         <DialogFooter className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-muted-foreground text-center sm:text-left">
-            {prescriptionItems.filter(item => item.name.trim()).length} prescription item(s) ready
+            {prescriptionItems.filter(item => item.name.trim()).length} {t('addPrescriptionModal.prescriptionItemsReady')}
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="w-full sm:w-auto">
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -543,13 +557,13 @@ export function AddPrescriptionModal({ patientId, isOpen, onClose, onPrescriptio
               {isSubmitting ? (
                 <>
                   <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  {t('addPrescriptionModal.creating')}
                 </>
               ) : (
                 <>
                   <Pill className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Create Prescription</span>
-                  <span className="sm:hidden">Create</span>
+                  <span className="hidden sm:inline">{t('addPrescriptionModal.createPrescription')}</span>
+                  <span className="sm:hidden">{t('addPrescriptionModal.create')}</span>
                 </>
               )}
             </Button>

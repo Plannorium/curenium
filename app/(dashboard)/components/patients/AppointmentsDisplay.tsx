@@ -17,6 +17,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ServerCrash, CalendarPlus } from "lucide-react";
 import BookAppointmentModal from "./BookAppointmentModal";
 import { useSession } from "next-auth/react";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface AppointmentsDisplayProps {
   patientId: string;
@@ -24,6 +26,16 @@ interface AppointmentsDisplayProps {
 
 const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
   const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +44,7 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
     try {
       const res = await fetch(`/api/patients/${patientId}/appointments`);
       if (!res.ok) {
-        throw new Error("Failed to fetch appointments");
+        throw new Error(t('appointmentsDisplay.failedToFetch'));
       }
       const data = await res.json();
       setAppointments(data as Appointment[]);
@@ -56,7 +68,7 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
         }),
       });
       if (!res.ok) {
-        throw new Error("Failed to confirm appointment");
+        throw new Error(t('appointmentsDisplay.failedToConfirm'));
       }
       // Refresh appointments
       fetchAppointments();
@@ -91,7 +103,7 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
     return (
       <Alert variant="destructive" className="bg-red-50/80 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/50 backdrop-blur-lg">
         <ServerCrash className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('common.error')}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -100,31 +112,31 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
   return (
     <Card className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-2xl border-gray-200/50 dark:border-gray-800/50 shadow-xl">
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 sm:pb-6">
-        <CardTitle className="flex items-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          <CalendarPlus className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-          <span className="text-lg sm:text-2xl">Appointments</span>
-        </CardTitle>
-        {session?.user?.role && ['admin', 'receptionist'].includes(session.user.role) && (
-          <BookAppointmentModal patientId={patientId} onAppointmentBooked={fetchAppointments}>
-            <Button
-              size="sm"
-              className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            >
-              <CalendarPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-sm sm:text-base">Book Appointment</span>
-            </Button>
-          </BookAppointmentModal>
-        )}
-      </CardHeader>
+       <CardTitle className="flex items-center text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+         <CalendarPlus className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+         <span className="text-lg sm:text-2xl">{t('appointmentsDisplay.title')}</span>
+       </CardTitle>
+       {session?.user?.role && ['admin', 'receptionist'].includes(session.user.role) && (
+         <BookAppointmentModal patientId={patientId} onAppointmentBooked={fetchAppointments}>
+           <Button
+             size="sm"
+             className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+           >
+             <CalendarPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+             <span className="text-sm sm:text-base">{t('appointmentsDisplay.bookAppointment')}</span>
+           </Button>
+         </BookAppointmentModal>
+       )}
+     </CardHeader>
       <CardContent>
         {appointments.length > 0 ? (
           <div className="rounded-xl border border-gray-200/50 dark:border-gray-800/50 overflow-hidden bg-white/50 dark:bg-gray-900/30">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
-                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Date</TableHead>
-                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Reason</TableHead>
-                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Status</TableHead>
+                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">{t('appointmentsDisplay.date')}</TableHead>
+                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">{t('appointmentsDisplay.reason')}</TableHead>
+                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">{t('appointmentsDisplay.status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,7 +174,7 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
                             onClick={() => handleConfirmAppointment(a._id)}
                             className="text-xs"
                           >
-                            Confirm
+                            {t('appointmentsDisplay.confirm')}
                           </Button>
                         )}
                       </div>
@@ -176,10 +188,10 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
           <div className="text-center py-8 sm:py-12 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
             <CalendarPlus className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500 mb-3 sm:mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              No Appointments Yet
+              {t('appointmentsDisplay.noAppointmentsYet')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base px-4">
-              Schedule appointments to track patient visits and follow-ups.
+              {t('appointmentsDisplay.scheduleAppointmentsDesc')}
             </p>
             {session?.user?.role && ['admin', 'receptionist'].includes(session.user.role) && (
               <BookAppointmentModal patientId={patientId} onAppointmentBooked={fetchAppointments}>
@@ -188,7 +200,7 @@ const AppointmentsDisplay = ({ patientId }: AppointmentsDisplayProps) => {
                   className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <CalendarPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-sm sm:text-base">Schedule First Appointment</span>
+                  <span className="text-sm sm:text-base">{t('appointmentsDisplay.scheduleFirstAppointment')}</span>
                 </Button>
               </BookAppointmentModal>
             )}

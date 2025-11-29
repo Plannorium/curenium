@@ -4,17 +4,29 @@ import { Input } from "@/components/ui/input";
 import { Patient } from "@/types/patient";
 import { Loader2, UserPlus, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 interface PatientSearchProps {
   onSelectPatient: (patient: Patient) => void;
 }
 
 export default function PatientSearch({ onSelectPatient }: PatientSearchProps) {
+  const { language } = useLanguage();
   const [query, setQuery] = useState("");
   const [debouncedQuery] = useDebounce(query, 300);
   const [results, setResults] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   useEffect(() => {
     if (debouncedQuery) {
@@ -36,10 +48,10 @@ export default function PatientSearch({ onSelectPatient }: PatientSearchProps) {
         <div className="pl-4 pr-2 py-3">
           <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
         </div>
-        <Input 
-          placeholder="Search for a patient by name or MRN..." 
-          value={query} 
-          onChange={(e) => setQuery(e.target.value)} 
+        <Input
+          placeholder={t('patientSearch.placeholder')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 100)} // Delay to allow click on results
           className="flex-1 bg-transparent outline-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 text-sm shadow-none border-none"
@@ -67,7 +79,7 @@ export default function PatientSearch({ onSelectPatient }: PatientSearchProps) {
             </ul>
           ) : (
             <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-              {loading ? 'Searching...' : (debouncedQuery ? 'No patients found.' : 'Start typing to search.')}
+              {loading ? t('patientSearch.searching') : (debouncedQuery ? t('patientSearch.noPatientsFound') : t('patientSearch.startTyping'))}
             </div>
           )}
 

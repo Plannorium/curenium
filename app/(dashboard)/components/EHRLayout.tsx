@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/components/auth/RoleProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   const { language } = useLanguage();
@@ -14,10 +15,19 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { role } = useRole();
 
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const baseMenuItems = [
-    { href: "/dashboard/ehr/patients", label: "All Patients" },
-    { href: "/dashboard/ehr/appointments", label: "Appointments" },
-    { href: "/dashboard/ehr/audit-logs", label: "Audit Logs" },
+    { href: "/dashboard/ehr/patients", label: t('sidebar.patients') },
+    { href: "/dashboard/ehr/appointments", label: t('sidebar.appointments') },
+    { href: "/dashboard/ehr/audit-logs", label: t('sidebar.auditLogs') },
   ];
 
   // Add role-based menu items
@@ -26,19 +36,19 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
   if (role === "doctor" || role === "admin") {
     menuItems.push({
       href: "/dashboard/ehr/doctor-dashboard",
-      label: "Doctor Dashboard",
+      label: t('sidebar.doctorDashboard'),
     });
   }
 
   if (role === "nurse" || role === "admin") {
     menuItems.push({
       href: "/dashboard/ehr/nurses-dashboard",
-      label: "Nurse Dashboard",
+      label: t('sidebar.nurseDashboard'),
     });
   }
 
   if (role === "pharmacist" || role === "admin" || role === "doctor") {
-    menuItems.push({ href: "/dashboard/ehr/pharmacy", label: "Pharmacy" });
+    menuItems.push({ href: "/dashboard/ehr/pharmacy", label: t('sidebar.pharmacy') });
   }
 
   if (
@@ -47,26 +57,26 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
     role === "doctor" ||
     role === "lab-technician"
   ) {
-    menuItems.push({ href: "/dashboard/ehr/lab", label: "Lab" });
+    menuItems.push({ href: "/dashboard/ehr/lab", label: t('sidebar.lab') });
   }
 
   // Hospital Management Routes
   if (role === "doctor" || role === "matron_nurse" || role === "admin") {
-    menuItems.push({ href: "/dashboard/ehr/admissions", label: "Admissions" });
+    menuItems.push({ href: "/dashboard/ehr/admissions", label: t('sidebar.admissions') });
   }
 
   if (role === "matron_nurse" || role === "admin") {
-    menuItems.push({ href: "/dashboard/ehr/discharges", label: "Discharges" });
+    menuItems.push({ href: "/dashboard/ehr/discharges", label: t('sidebar.discharges') });
     menuItems.push({
       href: "/dashboard/ehr/shift-tracking",
-      label: "Shift Tracking",
+      label: t('sidebar.shiftTracking'),
     });
   }
 
   if (role === "admin") {
     menuItems.push({
       href: "/dashboard/ehr/hospital-management",
-      label: "Hospital Mgmt",
+      label: t('sidebar.hospitalMgmt'),
     });
   }
 
@@ -85,7 +95,7 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
             <Stethoscope
               className={`h-3 w-3 ${language === "ar" ? "ml-2" : "mr-2"}`}
             />
-            EHR Menu
+            {t('sidebar.ehrMenu')}
           </h3>
           <ChevronDownIcon
             size={16}

@@ -15,7 +15,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Patient } from "@/types/patient";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 export const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -51,7 +53,19 @@ interface PatientFormProps {
 }
 
 export default function PatientForm({ patient, onSubmit, isSubmitting }: PatientFormProps) {
+  const { language } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
+
+  const t = useMemo(() => {
+    return (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+  }, [language]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -111,16 +125,16 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {currentStep === 0 && (
           <div className="space-y-4 p-1">
-            <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{t('patientForm.personalInformation')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel>{t('patientForm.firstName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.firstNamePlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,9 +145,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel>{t('patientForm.lastName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.lastNamePlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -144,7 +158,7 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="dob"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
+                    <FormLabel>{t('patientForm.dateOfBirth')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
@@ -157,17 +171,17 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
+                    <FormLabel>{t('patientForm.gender')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner">
-                          <SelectValue placeholder="Select a gender" />
+                          <SelectValue placeholder={t('patientForm.selectGender')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="male">{t('patientForm.male')}</SelectItem>
+                        <SelectItem value="female">{t('patientForm.female')}</SelectItem>
+                        <SelectItem value="other">{t('patientForm.other')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -180,16 +194,16 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
 
         {currentStep === 1 && (
           <div className="space-y-4 p-1">
-            <h3 className="text-lg font-semibold border-b pb-2">Contact Information</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{t('patientForm.contactInformation')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="contact.email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>{t('patientForm.emailAddress')}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="john.doe@example.com" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input type="email" placeholder={t('patientForm.emailPlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,9 +214,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="contact.phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>{t('patientForm.phoneNumber')}</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="123-456-7890" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input type="tel" placeholder={t('patientForm.phonePlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -214,16 +228,16 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
 
         {currentStep === 2 && (
           <div className="space-y-4 p-1">
-            <h3 className="text-lg font-semibold border-b pb-2">Address</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{t('patientForm.address')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="address.street"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Street</FormLabel>
+                    <FormLabel>{t('patientForm.street')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="123 Main St" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.streetPlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,9 +248,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="address.city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City</FormLabel>
+                    <FormLabel>{t('patientForm.city')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Anytown" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.cityPlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -247,9 +261,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="address.state"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>State</FormLabel>
+                    <FormLabel>{t('patientForm.state')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="CA" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.statePlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -260,9 +274,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="address.zip"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Zip</FormLabel>
+                    <FormLabel>{t('patientForm.zip')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="12345" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.zipPlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -274,16 +288,16 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
 
         {currentStep === 3 && (
           <div className="space-y-4 p-1">
-            <h3 className="text-lg font-semibold border-b pb-2">Emergency Contact</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{t('patientForm.emergencyContact')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="emergencyContact.name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t('patientForm.fullName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Jane Doe" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.emergencyNamePlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -294,9 +308,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="emergencyContact.phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>{t('patientForm.phoneNumber')}</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="123-456-7890" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input type="tel" placeholder={t('patientForm.phonePlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -308,16 +322,16 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
 
         {currentStep === 4 && (
           <div className="space-y-4 p-1">
-            <h3 className="text-lg font-semibold border-b pb-2">Insurance</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">{t('patientForm.insurance')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="insurance.provider"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Provider</FormLabel>
+                    <FormLabel>{t('patientForm.provider')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Health Inc." {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.providerPlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -328,9 +342,9 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
                 name="insurance.policyNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Policy Number</FormLabel>
+                    <FormLabel>{t('patientForm.policyNumber')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="ABC123456789" {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
+                      <Input placeholder={t('patientForm.policyNumberPlaceholder')} {...field} className="bg-white/50 dark:bg-gray-900/50 border-gray-200/50 dark:border-gray-800/50 rounded-lg shadow-inner" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -343,17 +357,17 @@ export default function PatientForm({ patient, onSubmit, isSubmitting }: Patient
         <div className="flex justify-between">
           {currentStep > 0 && (
             <Button type="button" onClick={prevStep} variant="outline">
-              Previous
+              {t('patientForm.previous')}
             </Button>
           )}
           {currentStep < 4 && (
             <Button type="button" onClick={nextStep} className="ml-auto">
-              Next
+              {t('patientForm.next')}
             </Button>
           )}
           {currentStep === 4 && (
             <Button type="submit" disabled={isSubmitting} className="ml-auto">
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit"}
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t('patientForm.submit')}
             </Button>
           )}
         </div>

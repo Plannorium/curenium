@@ -9,12 +9,24 @@ import { Toaster, toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 import { Search, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 export default function PatientsPage() {
+  const { language } = useLanguage();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const searchParams = useSearchParams();
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -61,12 +73,12 @@ export default function PatientsPage() {
             </Button>
           </div>
         </div>
-        <h1 className="text-lg sm:text-2xl font-bold">Patient Management</h1>
+        <h1 className="text-lg sm:text-2xl font-bold">{t('patientsPage.title')}</h1>
           <AddPatientModal onPatientAdded={handlePatientAdded}>
             <Button className='cursor-pointer text-sm md:text-base'>
               <UserPlus className="lg:mr-2 h-4 w-4" />
             <span className='hidden md:block'>
-              Add Patient
+              {t('patientsPage.addPatient')}
               </span>
           </Button>
         </AddPatientModal>
@@ -101,8 +113,8 @@ export default function PatientsPage() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
               <Search className="h-12 w-12 sm:h-16 sm:w-16 mb-4 text-gray-300 dark:text-gray-600" />
-              <h2 className="text-lg sm:text-xl font-semibold">No Patient Selected</h2>
-              <p className="mt-2 max-w-md text-sm sm:text-base">Search for a patient to view their details, or create a new patient record.</p>
+              <h2 className="text-lg sm:text-xl font-semibold">{t('patientsPage.noPatientSelected')}</h2>
+              <p className="mt-2 max-w-md text-sm sm:text-base">{t('patientsPage.noPatientSelectedDesc')}</p>
             </div>
           )}
         </main>

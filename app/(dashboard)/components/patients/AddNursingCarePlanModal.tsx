@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from 'react';
-import { Modal } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface AddNursingCarePlanModalProps {
   patientId: string;
@@ -16,6 +18,16 @@ interface AddNursingCarePlanModalProps {
 }
 
 export const AddNursingCarePlanModal = ({ patientId, nurseId, isOpen, onClose }: AddNursingCarePlanModalProps) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [diagnoses, setDiagnoses] = useState('');
   const [interventions, setInterventions] = useState('');
   const [outcomes, setOutcomes] = useState('');
@@ -27,7 +39,7 @@ export const AddNursingCarePlanModal = ({ patientId, nurseId, isOpen, onClose }:
     e.preventDefault();
 
     if ((status === 'Inactive' || status === 'Resolved') && !evaluation) {
-      toast.error('Evaluation is required when status is Inactive or Resolved.');
+      toast.error(t('addNursingCarePlanModal.evaluationRequired'));
       return;
     }
 
@@ -51,52 +63,57 @@ export const AddNursingCarePlanModal = ({ patientId, nurseId, isOpen, onClose }:
         throw new Error('Failed to add nursing care plan');
       }
 
-      toast.success('Nursing care plan added successfully');
+      toast.success(t('addNursingCarePlanModal.planAdded'));
       onClose();
     } catch (error) {
-      toast.error((error as Error).message);
+      toast.error(t('addNursingCarePlanModal.failedToAdd'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Nursing Care Plan">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="diagnoses" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Diagnoses (comma-separated)</label>
-          <Input id="diagnoses" value={diagnoses} onChange={(e) => setDiagnoses(e.target.value)} required />
-        </div>
-        <div>
-          <label htmlFor="interventions" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Interventions (comma-separated)</label>
-          <Textarea id="interventions" value={interventions} onChange={(e) => setInterventions(e.target.value)} required />
-        </div>
-        <div>
-          <label htmlFor="outcomes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Outcomes (comma-separated)</label>
-          <Textarea id="outcomes" value={outcomes} onChange={(e) => setOutcomes(e.target.value)} required />
-        </div>
-        <div>
-          <label htmlFor="evaluation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Evaluation</label>
-          <Textarea id="evaluation" value={evaluation} onChange={(e) => setEvaluation(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Resolved">Resolved</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex justify-end space-x-2">
-          <Button className='cursor-pointer' type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button className='cursor-pointer' type="submit" disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Plan'}</Button>
-        </div>
-      </form>
-    </Modal>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="backdrop-blur-xl bg-background/95 dark:bg-slate-900/80 border-border/50 shadow-2xl max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('addNursingCarePlanModal.title')}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="diagnoses" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('addNursingCarePlanModal.diagnosesLabel')}</label>
+            <Input id="diagnoses" value={diagnoses} onChange={(e) => setDiagnoses(e.target.value)} required />
+          </div>
+          <div>
+            <label htmlFor="interventions" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('addNursingCarePlanModal.interventionsLabel')}</label>
+            <Textarea id="interventions" value={interventions} onChange={(e) => setInterventions(e.target.value)} required />
+          </div>
+          <div>
+            <label htmlFor="outcomes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('addNursingCarePlanModal.outcomesLabel')}</label>
+            <Textarea id="outcomes" value={outcomes} onChange={(e) => setOutcomes(e.target.value)} required />
+          </div>
+          <div>
+            <label htmlFor="evaluation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('addNursingCarePlanModal.evaluationLabel')}</label>
+            <Textarea id="evaluation" value={evaluation} onChange={(e) => setEvaluation(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('addNursingCarePlanModal.statusLabel')}</label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('addNursingCarePlanModal.selectStatus')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">{t('addNursingCarePlanModal.active')}</SelectItem>
+                <SelectItem value="Resolved">{t('addNursingCarePlanModal.resolved')}</SelectItem>
+                <SelectItem value="Inactive">{t('addNursingCarePlanModal.inactive')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button className='cursor-pointer' type="button" variant="outline" onClick={onClose}>{t('addNursingCarePlanModal.cancel')}</Button>
+            <Button className='cursor-pointer' type="submit" disabled={isSubmitting}>{isSubmitting ? t('addNursingCarePlanModal.adding') : t('addNursingCarePlanModal.addPlan')}</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
