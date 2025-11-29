@@ -7,6 +7,8 @@ import { BellIcon, Loader2, X, SearchIcon, AlertTriangle, Info } from 'lucide-re
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { playSound } from '@/lib/sound/soundGenerator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface User {
   _id: string;
@@ -29,12 +31,12 @@ interface SendAlertModalProps {
   currentRoom?: string;
 }
 
-const alertLevelConfig = {
+const alertLevelConfig = (t: (key: string) => string) => ({
   critical: {
     icon: BellIcon,
     color: 'red',
-    title: 'Critical Alert',
-    description: 'Medical emergency, requires immediate attention.',
+    title: t('sendAlertModal.criticalAlert'),
+    description: t('sendAlertModal.criticalDescription'),
     styles: {
       dialog: 'border-red-500/30 dark:border-red-500/40',
       iconContainer: 'bg-red-500/10 border-red-500/20 text-red-500 dark:text-red-400',
@@ -44,8 +46,8 @@ const alertLevelConfig = {
   urgent: {
     icon: AlertTriangle,
     color: 'amber',
-    title: 'Urgent Alert',
-    description: 'Assistance required, prompt response needed.',
+    title: t('sendAlertModal.urgentAlert'),
+    description: t('sendAlertModal.urgentDescription'),
     styles: {
       dialog: 'border-amber-500/30 dark:border-amber-500/40',
       iconContainer: 'bg-amber-500/10 border-amber-500/20 text-amber-500 dark:text-amber-400',
@@ -55,17 +57,27 @@ const alertLevelConfig = {
   info: {
     icon: Info,
     color: 'blue',
-    title: 'Info Alert',
-    description: 'General update for all team members.',
+    title: t('sendAlertModal.infoAlert'),
+    description: t('sendAlertModal.infoDescription'),
     styles: {
       dialog: 'border-blue-500/30 dark:border-blue-500/40',
       iconContainer: 'bg-blue-500/10 border-blue-500/20 text-blue-500 dark:text-blue-400',
       button: 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white',
     },
   },
-};
+});
 
 export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose, onAlertSent, allUsers, allChannels = [], channelMembers, currentRoom }) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState<'critical' | 'urgent' | 'info'>('critical');
   const [isSendingAlert, setIsSendingAlert] = useState(false);
@@ -85,7 +97,7 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
     setIsSendingAlert(true);
     try {
       if (!channelMembers && selectedRecipients.length === 0) {
-        alert('Please select at least one user or channel.');
+        alert(t('sendAlertModal.selectRecipientError'));
         setIsSendingAlert(false);
         return;
       }
@@ -129,7 +141,7 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const config = alertLevelConfig[alertType];
+  const config = alertLevelConfig(t)[alertType];
   const Icon = config.icon;
 
   return (
@@ -141,7 +153,7 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
             <div className={`p-2 rounded-lg mr-3 border ${config.styles.iconContainer}`}>
               <Icon size={20} />
             </div>
-            Send New Alert
+            {t('sendAlertModal.sendNewAlert')}
           </DialogTitle>
           <DialogDescription className="pt-1 pl-12">
             {config.description}
@@ -153,27 +165,27 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
 
         <div className="px-6 pb-6 space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Alert Type</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">{t('sendAlertModal.alertType')}</label>
             <Select value={alertType} onValueChange={(value: 'critical' | 'urgent' | 'info') => setAlertType(value)}>
               <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60 text-gray-800 dark:text-gray-100">
-                <SelectValue placeholder="Select alert type" />
+                <SelectValue placeholder={t('sendAlertModal.selectAlertType')} />
               </SelectTrigger>
               <SelectContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg">
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
+                <SelectItem value="critical">{t('sendAlertModal.critical')}</SelectItem>
+                <SelectItem value="urgent">{t('sendAlertModal.urgent')}</SelectItem>
+                <SelectItem value="info">{t('sendAlertModal.info')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {!channelMembers && (
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Recipients</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">{t('sendAlertModal.recipients')}</label>
               <div className="relative">
                 <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder="Search users or channels..."
+                  placeholder={t('sendAlertModal.searchUsersOrChannels')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-gray-50/80 dark:bg-gray-900/80 border border-gray-300/70 dark:border-gray-700/60 rounded-lg pl-10 pr-4 py-2 w-full text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200"
@@ -244,19 +256,19 @@ export const SendAlertModal: React.FC<SendAlertModalProps> = ({ isOpen, onClose,
           )}
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Message</label>
-            <textarea value={alertMessage} onChange={(e) => setAlertMessage(e.target.value)} className="bg-gray-50/80 dark:bg-gray-900/80 border border-gray-300/70 dark:border-gray-700/60 rounded-lg px-3 py-2 w-full text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 resize-none" rows={3} placeholder="Describe the situation..." />
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">{t('sendAlertModal.message')}</label>
+            <textarea value={alertMessage} onChange={(e) => setAlertMessage(e.target.value)} className="bg-gray-50/80 dark:bg-gray-900/80 border border-gray-300/70 dark:border-gray-700/60 rounded-lg px-3 py-2 w-full text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 resize-none" rows={3} placeholder={t('sendAlertModal.describeSituation')} />
           </div>
         </div>
 
         <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
           <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
-            Cancel
+            {t('sendAlertModal.cancel')}
           </Button>
           <Button className={`w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 ${config.styles.button}`} onClick={handleSendAlert} disabled={!alertMessage.trim() || isSendingAlert}>
             {isSendingAlert ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</>
-            ) : 'Send Alert'}
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('sendAlertModal.sending')}</>
+            ) : t('sendAlertModal.sendAlert')}
           </Button>
         </DialogFooter>
       </DialogContent>

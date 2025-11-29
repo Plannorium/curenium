@@ -27,8 +27,8 @@ export function LanguageSwitcher() {
           size="sm"
           className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none"
         >
-          <Languages className="h-4 w-4 mr-2" />
-          {language === 'ar' ? 'العربية' : 'EN'}
+          <Languages className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+          {language === 'ar' ? 'ar' : 'EN'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
@@ -40,7 +40,7 @@ export function LanguageSwitcher() {
               language === lang.code ? 'bg-primary/10 text-primary' : ''
             }`}
           >
-            <span className="mr-2">{lang.flag}</span>
+            <span className="mr-1.5 md:mr-2">{lang.flag}</span>
             {lang.name}
           </DropdownMenuItem>
         ))}

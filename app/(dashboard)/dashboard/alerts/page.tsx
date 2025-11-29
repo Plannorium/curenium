@@ -8,6 +8,8 @@ import { AlertDetailsModal } from '../../components/AlertDetailsModal';
 import { useAlerts } from '@/hooks/useAlerts';
 import { SendAlertModal } from '../../components/SendAlertModal';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface User {
   _id: string;
@@ -36,9 +38,19 @@ const levelConfig = {
 
 export default function AlertsPage() {
   const { alerts } = useAlerts();
+  const { language } = useLanguage();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -61,9 +73,9 @@ export default function AlertsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Alerts</h1>
+        <h1 className="text-2xl font-bold">{t('alerts.title')}</h1>
         <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Send Alert
+          <Plus className={`h-4 w-4 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} /> {t('alerts.sendAlert')}
         </Button>
       </div>
 

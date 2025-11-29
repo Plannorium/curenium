@@ -17,6 +17,8 @@ import AddShiftModal from './AddShiftModal';
 import NotesModal from './NotesModal'; // Import NotesModal
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Shift {
   _id: string;
@@ -50,11 +52,21 @@ interface ShiftViewProps {
 const ShiftView = ({ limit }: ShiftViewProps) => {
    const { data: session } = useSession();
    const { calendarType, setCalendarType } = useCalendar();
+   const { language } = useLanguage();
    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
    const [displayMonth, setDisplayMonth] = useState<Date>(selectedDate || new Date());
    const [shifts, setShifts] = useState<Shift[]>([]);
    const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
    const [currentTime, setCurrentTime] = useState(new Date());
+
+   const t = (key: string) => {
+     const keys = key.split('.');
+     let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+     for (const k of keys) {
+       value = value?.[k];
+     }
+     return value || key;
+   };
 
   const fetchShifts = async () => {
     try {
@@ -315,8 +327,8 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
               <CalendarIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">Shift Schedule</h1>
-              <p className="text-sm text-muted-foreground">Manage team schedules and on-call assignments</p>
+              <h1 className="text-xl font-semibold text-foreground">{t('shiftView.title')}</h1>
+              <p className="text-sm text-muted-foreground">{t('shiftView.subtitle')}</p>
             </div>
           </div>
           <AddShiftModal onShiftAdded={fetchShifts}>
@@ -326,8 +338,8 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
             >
               <Plus className="h-4 w-4 lg:mr-2" />
              <span className='hidden md:block'>
-              Add Shift
-              </span> 
+              {t('shiftView.addShift')}
+              </span>
             </Button>
           </AddShiftModal>
         </div>
@@ -381,9 +393,9 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
         <div className="w-full md:w-2/3 lg:w-3/5 xl:w-1/2 bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 border-b md:border-b-0 md:border-r overflow-y-auto p-2">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">Today&apos;s Shifts</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t('shiftView.todaysShifts')}</h2>
               <Badge variant="outline" className="text-xs">
-                {limit ? Math.min(filteredShifts.length, limit) : filteredShifts.length} {((limit ? Math.min(filteredShifts.length, limit) : filteredShifts.length) === 1) ? 'shift' : 'shifts'}
+                {limit ? Math.min(filteredShifts.length, limit) : filteredShifts.length} {((limit ? Math.min(filteredShifts.length, limit) : filteredShifts.length) === 1) ? t('shiftView.shift') : t('shiftView.shifts')}
               </Badge>
             </div>
             
@@ -411,7 +423,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                             )}
                             {(shift.department || shift.ward) && (
                               <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                Advanced
+                                {t('shiftView.advanced')}
                               </Badge>
                             )}
                           </div>
@@ -457,7 +469,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                           {shift.status === 'on-shift' && <div className="w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full mr-1.5" />}
                           {shift.status === 'on-call' && <div className="w-2 h-2 bg-accent-600 dark:bg-accent-400 rounded-full mr-1.5" />}
                           {shift.status === 'upcoming' && <div className="w-2 h-2 bg-muted-400 rounded-full mr-1.5" />}
-                          <span className="capitalize">{typeof shift.status === 'string' ? shift.status.replace('-', ' ') : 'unknown'}</span>
+                          <span className="capitalize">{t('shiftView.status.' + shift.status)}</span>
                         </Badge>
 
                         {/* Mobile icon */}
@@ -471,7 +483,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => setSelectedShift(shift)}>
                               <StickyNote className="mr-2 h-4 w-4" />
-                              View Notes
+                              {t('shiftView.viewNotes')}
                             </DropdownMenuItem>
 
                             {/* Shift Action Buttons */}
@@ -481,7 +493,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                                 className="text-green-600 hover:text-green-700"
                               >
                                 <Play className="mr-2 h-4 w-4" />
-                                Clock In
+                                {t('shiftView.clockIn')}
                               </DropdownMenuItem>
                             )}
 
@@ -491,7 +503,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                                 className="text-red-600 hover:text-red-700"
                               >
                                 <Square className="mr-2 h-4 w-4" />
-                                Clock Out
+                                {t('shiftView.clockOut')}
                               </DropdownMenuItem>
                             )}
 
@@ -501,7 +513,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                                 className="text-blue-600 hover:text-blue-700"
                               >
                                 <UserCheck className="mr-2 h-4 w-4" />
-                                Go On Call
+                                {t('shiftView.goOnCall')}
                               </DropdownMenuItem>
                             )}
 
@@ -511,7 +523,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                                 className="text-blue-600 hover:text-blue-700"
                               >
                                 <UserCheck className="mr-2 h-4 w-4" />
-                                Go Off Call
+                                {t('shiftView.goOffCall')}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -526,12 +538,12 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                 <div className="p-4 bg-muted/50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <CalendarIcon className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">No shifts scheduled</h3>
-                <p className="text-muted-foreground mb-6">No shifts are scheduled for this day.</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('shiftView.noShiftsScheduled')}</h3>
+                <p className="text-muted-foreground mb-6">{t('shiftView.noShiftsMessage')}</p>
                 <AddShiftModal onShiftAdded={fetchShifts}>
                   <Button className='cursor-pointer' variant="outline" size="sm">
                     <Plus className="w-4 h-4 mr-2" />
-                    Schedule Shift
+                    {t('shiftView.scheduleShift')}
                   </Button>
                 </AddShiftModal>
               </div>
@@ -546,7 +558,7 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
               <CardHeader className="px-0 pb-4">
                 <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
                   <Shield className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  On-Call Team
+                  {t('shiftView.onCallTeam')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-0">
@@ -568,13 +580,13 @@ const ShiftView = ({ limit }: ShiftViewProps) => {
                           variant="secondary"
                           className="bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300 text-xs"
                         >
-                          On-Call
+                          {t('shiftView.onCall')}
                         </Badge>
                       </div>
                     </div>
                   )) : (
                     <div className="text-center py-6">
-                      <p className="text-sm text-muted-foreground">No on-call staff for this day</p>
+                      <p className="text-sm text-muted-foreground">{t('shiftView.noOnCallStaff')}</p>
                     </div>
                   )}
                 </div>

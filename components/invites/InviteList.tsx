@@ -8,6 +8,8 @@ import { Users, Plus, Mail, Shield, Clock } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRole } from '@/components/auth/RoleProvider';
 import { Loader } from '@/components/ui/Loader';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Invite {
   _id: string;
@@ -20,9 +22,19 @@ interface Invite {
 export const InviteList: React.FC = () => {
   const { data: session } = useSession();
   const { role: userRole } = useRole();
+  const { language } = useLanguage();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   useEffect(() => {
     const fetchInvites = async () => {
@@ -79,6 +91,16 @@ export const InviteList: React.FC = () => {
     }
   };
 
+  // Get translated role name
+  const getRoleName = (role: string) => {
+    return t(`inviteList.roles.${role}`) || role.charAt(0).toUpperCase() + role.slice(1);
+  };
+
+  // Get translated status name
+  const getStatusName = (status: string) => {
+    return t(`inviteList.status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   // Filter valid invites
   const validInvites = invites.filter((inv): inv is Invite => !!inv && typeof inv === 'object' && !!inv._id);
 
@@ -100,8 +122,8 @@ export const InviteList: React.FC = () => {
               <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Team Invitations</h2>
-              <p className="text-sm text-muted-foreground">Manage and track user invitations</p>
+              <h2 className="text-xl font-semibold text-foreground">{t('inviteList.title')}</h2>
+              <p className="text-sm text-muted-foreground">{t('inviteList.subtitle')}</p>
             </div>
           </div>
           {userRole === 'admin' && (
@@ -111,7 +133,7 @@ export const InviteList: React.FC = () => {
             >
               <Plus className="w-4 h-4 lg:mr-2" />
               <span className="hidden md:block">
-              Invite User
+              {t('inviteList.inviteUser')}
               </span>
             </Button>
           )}
@@ -131,16 +153,16 @@ export const InviteList: React.FC = () => {
             <div className="p-4 bg-muted/50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               <Mail className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No invitations yet</h3>
-            <p className="text-muted-foreground mb-6">Start building your team by sending your first invitation.</p>
+            <h3 className="text-lg font-medium text-foreground mb-2">{t('inviteList.noInvitations')}</h3>
+            <p className="text-muted-foreground mb-6">{t('inviteList.buildTeamMessage')}</p>
             {userRole === 'admin' && (
               <Button
                 onClick={() => setIsModalOpen(true)}
                 variant="outline"
                 className="border-primary-200 text-primary-600 hover:bg-primary-50 dark:border-primary-800 dark:text-primary-400 dark:hover:bg-primary-950/30 cursor-pointer"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Send First Invite
+                <Plus className={`w-4 h-4 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                {t('inviteList.sendFirstInvite')}
               </Button>
             )}
           </div>
@@ -167,19 +189,19 @@ export const InviteList: React.FC = () => {
                           >
                             {status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
                             <span className='hidden md:block'>
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                            {getStatusName(status)}
                             </span>
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Shield className="w-3 h-3" />
-                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                            {getRoleName(role)}
                           </span>
                           {invite?.expiresAt && (
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                              {t('inviteList.expires').replace('{date}', new Date(invite.expiresAt).toLocaleDateString())}
                             </span>
                           )}
                         </div>

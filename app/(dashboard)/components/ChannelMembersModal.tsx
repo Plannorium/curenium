@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SearchIcon, UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface User {
   id: string;
@@ -31,6 +33,15 @@ export const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({
   onlineUserIds,
   onViewProfile,
 }) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredUsers = users.filter(user =>
@@ -41,11 +52,11 @@ export const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="backdrop-blur-xl bg-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl max-w-md p-0">
         <DialogHeader className="p-6 pb-4 border-b border-border/30">
-          <DialogTitle className="text-lg font-semibold">Channel Members ({users.length})</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">{t('channelMembersModal.title')} ({users.length})</DialogTitle>
           <div className="relative pt-2">
             <SearchIcon size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search members..."
+              placeholder={t('channelMembersModal.searchMembers')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 bg-background/70 dark:bg-slate-800/60 border-border/50 focus:ring-2 focus:ring-primary/50"
@@ -110,7 +121,7 @@ export const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({
             })}
             {filteredUsers.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No members found.</p>
+                <p className="text-muted-foreground">{t('channelMembersModal.noMembersFound')}</p>
               </div>
             )}
           </motion.div>

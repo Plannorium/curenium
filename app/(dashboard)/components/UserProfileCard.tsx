@@ -4,7 +4,9 @@
  import React, { useState, useEffect } from 'react'; 
  import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; 
  import { Button } from '@/components/ui/button'; 
- import { XIcon, MessageSquare, Loader2 } from 'lucide-react'; 
+ import { XIcon, MessageSquare, Loader2 } from 'lucide-react';
+ import { useLanguage } from '@/contexts/LanguageContext';
+ import { dashboardTranslations } from '@/lib/dashboard-translations';
  
 
  interface User { 
@@ -32,9 +34,18 @@
  } 
  
 
- export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onClose, onStartChat, currentUserId }) => { 
-   const [userChannels, setUserChannels] = useState<Channel[]>([]); 
-   const [isLoading, setIsLoading] = useState(false); 
+ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onClose, onStartChat, currentUserId }) => {
+   const { language } = useLanguage();
+   const t = (key: string) => {
+     const keys = key.split('.');
+     let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+     for (const k of keys) {
+       value = value?.[k];
+     }
+     return value || key;
+   };
+   const [userChannels, setUserChannels] = useState<Channel[]>([]);
+   const [isLoading, setIsLoading] = useState(false);
  
 
    useEffect(() => { 
@@ -80,36 +91,36 @@
              { user .role && <p className ="text-sm text-muted-foreground font-medium">{ user .role}</p>} 
  
 
-             <div className ="mt-6 w-full text-left"> 
-               <h4 className ="font-semibold text-foreground mb-2">Channels</h4> 
-               <div className ="flex flex-wrap gap-2"> 
-                 {isLoading ? ( 
-                   <div className ="flex items-center justify-center w-full"> 
-                     <Loader2 className ="animate-spin text-primary" size ={24} /> 
-                   </div> 
-                 ) : userChannels.length > 0 ? userChannels.map( channel  => ( 
-                   <span key ={ channel ._id} className ="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full"># { channel .name}</span> 
-                 )) : ( 
-                   <p className ="text-xs text-muted-foreground">Not a member of any channels yet.</p> 
-                 )} 
-               </div> 
-             </div> 
+             <div className ="mt-6 w-full text-left">
+               <h4 className ="font-semibold text-foreground mb-2">{t('userProfileCard.channels')}</h4>
+               <div className ="flex flex-wrap gap-2">
+                 {isLoading ? (
+                   <div className ="flex items-center justify-center w-full">
+                     <Loader2 className ="animate-spin text-primary" size ={24} />
+                   </div>
+                 ) : userChannels.length > 0 ? userChannels.map( channel  => (
+                   <span key ={ channel ._id} className ="bg-primary/10 text-primary text-xs font-semibold px-2 py-1 rounded-full"># { channel .name}</span>
+                 )) : (
+                   <p className ="text-xs text-muted-foreground">{t('userProfileCard.notMemberOfChannels')}</p>
+                 )}
+               </div>
+             </div>
  
 
            { user ._id !== currentUserId  && ( 
              <div className ="mt-8"> 
-               <Button 
-                 className ="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-primary/40" 
+               <Button
+                 className ="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-primary/40"
                  onClick ={() => {
                    if (currentUserId) {
                      const room = [currentUserId, user._id].sort().join("--");
                      onStartChat(room);
                    }
                  }}
-               > 
-                 <MessageSquare size ={16} className ="mr-2" /> 
-                 Message 
-               </Button> 
+               >
+                 <MessageSquare size ={16} className ="mr-2" />
+                 {t('userProfileCard.message')}
+               </Button>
              </div> 
            )} 
          </div> 

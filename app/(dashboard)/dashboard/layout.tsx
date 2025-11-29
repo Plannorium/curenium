@@ -7,17 +7,24 @@ import Alerts from '@/app/(dashboard)/components/Alerts';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 import { Loader } from '@/components/ui/Loader';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
+import { useSession } from 'next-auth/react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
-export default function DashboardLayout({ 
-  children 
-}: { 
-  children: React.ReactNode 
+export default function DashboardLayout({
+  children
+}: {
+  children: React.ReactNode
 }) {
+  const { data: session } = useSession();
+  const { language } = useLanguage();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setCollapsed] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
   const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const dashboardT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
 
   const toggleSidebar = () => {
@@ -60,7 +67,7 @@ export default function DashboardLayout({
       <div className={`flex-1 lg:h-screen flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <Navbar toggleSidebar={toggleSidebar} />
         <main className="lg:flex-1 overflow-x-hidden overflow-y-auto bg-dark-100 dark:bg-dark-900 px-2 py-1 md:px-4 md:pl-7 md:py-3">
-           <Suspense fallback={<Loader variant="fullscreen" text="Loading Curenium..." />}>
+           <Suspense fallback={<Loader variant="fullscreen" text={dashboardT.common.loading} />}>
              {views[currentView] || children}
            </Suspense>
          </main>

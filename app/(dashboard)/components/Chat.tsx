@@ -48,6 +48,7 @@ import {
   SearchIcon,
   SendIcon,
   SmileIcon,
+  SparklesIcon,
   Trash2,
   Users,
   VideoIcon,
@@ -82,123 +83,115 @@ import PdfPreviewCard from "./PdfPreviewCard";
 import AudioVisualizer from "./AudioVisualizer";
 import LiveAudioVisualizer from "./LiveAudioVisualizer";
 import type { IUser } from "@/models/User";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
+import { useTheme } from "@/components/ThemeProvider";
 
-interface User {
-  id: string;
-  _id: string;
-  fullName: string;
-  image?: string;
-  role?: string;
-  email?: string;
-  isOnline?: boolean;
-  online?: boolean;
-}
+const Chat: React.FC = () => {
+  const { data: session } = useSession();
+  const { language } = useLanguage();
+  const { theme } = useTheme();
+  const router = useRouter();
+  const pathname = usePathname();
+  const fullName = session?.user?.name || "Anonymous";
+  const searchParams = useSearchParams();
+  const activeRoom = searchParams?.get("room") || "general";
 
-interface AlertMessage {
-  _id: string;
-  level: "critical" | "urgent" | "info";
-  message: string;
-  createdBy: {
+  const t = (key: string) => {
+    const keys = key.split(".");
+    let value: any =
+      dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
+  interface User {
+    id: string;
     _id: string;
     fullName: string;
     image?: string;
-  };
-  createdAt: string;
-}
+    role?: string;
+    email?: string;
+    isOnline?: boolean;
+    online?: boolean;
+  }
 
-interface Channel {
-  _id: string;
-  id: string; // for compatibility if used elsewhere
-  name: string;
-  members: string[];
-}
+  interface AlertMessage {
+    _id: string;
+    level: "critical" | "urgent" | "info";
+    message: string;
+    createdBy: {
+      _id: string;
+      fullName: string;
+      image?: string;
+    };
+    createdAt: string;
+  }
 
-interface DM {
-  _id: string;
-  participants: IUser[];
-  room: string;
-  messages: any[]; // You might want to type this more strictly
-}
+  interface Channel {
+    _id: string;
+    id: string; // for compatibility if used elsewhere
+    name: string;
+    members: string[];
+  }
 
-interface DMRoom {
-  dm: DM;
-}
+  interface DM {
+    _id: string;
+    participants: IUser[];
+    room: string;
+    messages: any[]; // You might want to type this more strictly
+  }
 
-const AudioPlayer = ({ src }: { src: string }) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  interface DMRoom {
+    dm: DM;
+  }
 
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
+  const AudioPlayer = ({ src }: { src: string }) => {
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const progressRef = useRef<HTMLDivElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const togglePlay = () => {
+      if (audioRef.current) {
+        if (isPlaying) {
+          audioRef.current.pause();
+        } else {
+          audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
       }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current && !isDragging) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const formatTime = (time: number) => {
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
-    const seconds = Math.floor(time % 60);
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    }
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
-  const handleSeek = (event: React.MouseEvent) => {
-    if (progressRef.current && audioRef.current) {
-      const rect = progressRef.current.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const percentage = Math.max(0, Math.min(1, clickX / rect.width));
-      const newTime = percentage * duration;
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const handleMouseDown = (event: React.MouseEvent) => {
-    setIsDragging(true);
-    handleSeek(event);
-  };
-
-  const handleMouseMove = (event: React.MouseEvent) => {
-    if (isDragging) {
-      handleSeek(event);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      setIsDragging(false);
     };
 
-    const handleGlobalMouseMove = (event: MouseEvent) => {
-      if (isDragging && progressRef.current && audioRef.current) {
+    const handleTimeUpdate = () => {
+      if (audioRef.current && !isDragging) {
+        setCurrentTime(audioRef.current.currentTime);
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      if (audioRef.current) {
+        setDuration(audioRef.current.duration);
+      }
+    };
+
+    const formatTime = (time: number) => {
+      const hours = Math.floor(time / 3600);
+      const minutes = Math.floor((time % 3600) / 60);
+      const seconds = Math.floor(time % 60);
+
+      if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      }
+      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    };
+
+    const handleSeek = (event: React.MouseEvent) => {
+      if (progressRef.current && audioRef.current) {
         const rect = progressRef.current.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
         const percentage = Math.max(0, Math.min(1, clickX / rect.width));
@@ -208,708 +201,749 @@ const AudioPlayer = ({ src }: { src: string }) => {
       }
     };
 
-    document.addEventListener("mouseup", handleGlobalMouseUp);
-    document.addEventListener(
-      "mousemove",
-      handleGlobalMouseMove as EventListener
-    );
-    return () => {
-      document.removeEventListener("mouseup", handleGlobalMouseUp);
-      document.removeEventListener(
+    const handleMouseDown = (event: React.MouseEvent) => {
+      setIsDragging(true);
+      handleSeek(event);
+    };
+
+    const handleMouseMove = (event: React.MouseEvent) => {
+      if (isDragging) {
+        handleSeek(event);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    useEffect(() => {
+      const handleGlobalMouseUp = () => {
+        setIsDragging(false);
+      };
+
+      const handleGlobalMouseMove = (event: MouseEvent) => {
+        if (isDragging && progressRef.current && audioRef.current) {
+          const rect = progressRef.current.getBoundingClientRect();
+          const clickX = event.clientX - rect.left;
+          const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+          const newTime = percentage * duration;
+          audioRef.current.currentTime = newTime;
+          setCurrentTime(newTime);
+        }
+      };
+
+      document.addEventListener("mouseup", handleGlobalMouseUp);
+      document.addEventListener(
         "mousemove",
         handleGlobalMouseMove as EventListener
       );
-    };
-  }, [isDragging, duration]);
-
-  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-  return (
-    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-linear-to-r from-background/80 to-background/60 dark:from-gray-800/80 dark:to-gray-800/60 backdrop-blur-sm border border-border/50 dark:border-gray-700/50 shadow-lg w-66 lg:w-74">
-      <audio
-        ref={audioRef}
-        src={src}
-        crossOrigin="anonymous"
-        preload="metadata"
-        onEnded={() => setIsPlaying(false)}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        className="hidden"
-      />
-      <Button
-        onClick={togglePlay}
-        size="sm"
-        variant="ghost"
-        className="rounded-full h-10 w-10 p-0 shrink-0 hover:bg-primary/10 transition-all duration-200"
-      >
-        {isPlaying ? (
-          <PauseIcon className="h-5 w-5 text-primary" />
-        ) : (
-          <PlayIcon className="h-5 w-5 text-primary ml-0.5" />
-        )}
-      </Button>
-      <div className="flex-1 flex flex-col gap-1">
-        <div
-          ref={progressRef}
-          className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden select-none"
-          onClick={handleSeek}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-        >
-          <div
-            className="absolute top-0 left-0 h-full bg-linear-to-r from-primary to-primary/80 rounded-full transition-all duration-100"
-            style={{ width: `${progressPercentage}%` }}
-          />
-          <div
-            className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white dark:bg-gray-200 border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing"
-            style={{ left: `calc(${progressPercentage}% - 8px)` }}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              setIsDragging(true);
-            }}
-          />
-        </div>
-        <div className="flex justify-between items-center text-xs text-muted-foreground font-mono">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const isSingleEmoji = (str: string): boolean => {
-  if (!str) return false;
-  const trimmed = str.trim();
-
-  // Use Intl.Segmenter to count grapheme clusters. This is the most reliable way to count "characters" as perceived by users.
-  // It correctly handles emojis with skin tones, ZWJ sequences, etc.
-  try {
-    const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
-    const segments = [...segmenter.segment(trimmed)];
-
-    if (segments.length !== 1) {
-      return false;
-    }
-
-    // Now check if that single grapheme is an emoji.
-    const emojiRegex = /\p{Emoji}/u;
-    return emojiRegex.test(segments[0].segment);
-  } catch (e) {
-    // Fallback for environments where Intl.Segmenter is not supported
-    console.warn(
-      "Intl.Segmenter not supported, falling back to regex for emoji detection."
-    );
-    const emojiRegex = /^\p{Extended_Pictographic}$/u;
-    return emojiRegex.test(trimmed);
-  }
-};
-
-const formatFileSize = (bytes?: number) => {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-interface MessageBubbleProps {
-  msg: any;
-  isSender: boolean;
-  user: any;
-  showTime: boolean;
-  openDocPreview: (file: any) => void;
-  openLightbox: (
-    images: Array<{ url: string; name: string }>,
-    initialIndex: number
-  ) => void;
-  handleReaction: (messageId: string, emoji: string) => void;
-  onAlertClick: (alert: AlertMessage) => void;
-  onReactionClick: (messageId: string, emoji: string, users: any[]) => void;
-  onReply: (message: any) => void;
-  onDelete: (messageId: string) => void;
-  onStartThread: (message: any) => void;
-  onScrollToMessage: (messageId: string) => void;
-  sendReadReceipt: (messageId: string) => void;
-  voiceUploadProgress: Record<string, number>;
-  onJoinCall: (callId: string) => void;
-  id: string;
-  isCallActive: boolean;
-  users: User[];
-  onMentionClick: (user: User) => void;
-}
-
-const MessageBubble = ({
-  msg,
-  isSender,
-  user,
-  showTime,
-  openDocPreview,
-  openLightbox,
-  handleReaction,
-  onAlertClick,
-  onReactionClick,
-  onReply,
-  onDelete,
-  onStartThread,
-  onScrollToMessage,
-  sendReadReceipt,
-  voiceUploadProgress,
-  onJoinCall,
-  isCallActive,
-  id,
-  users,
-  onMentionClick,
-}: MessageBubbleProps) => {
-  const { data: session } = useSession();
-  const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
-  const [isActionsVisible, setIsActionsVisible] = useState(false);
-  const reactionPickerRef = useRef<HTMLDivElement>(null);
-  const messageRef = useRef<HTMLDivElement>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const messageText = msg.text || msg.content;
-  const isEmoji = isSingleEmoji(messageText);
-
-  // Function to parse message text and render mentions as clickable elements
-  const renderMessageWithMentions = (text: string) => {
-    if (!text) return text;
-
-    // Split text by mentions and regular text
-    const parts = text.split(/(@\w+)/g);
-
-    return parts.map((part, index) => {
-      if (part.startsWith("@")) {
-        // This is a mention
-        const mentionText = part.slice(1); // Remove the @ symbol
-        const mentionedUser = users.find(
-          (u) =>
-            u.fullName.toLowerCase().startsWith(mentionText.toLowerCase()) ||
-            u.fullName.split(" ")[0].toLowerCase() === mentionText.toLowerCase()
+      return () => {
+        document.removeEventListener("mouseup", handleGlobalMouseUp);
+        document.removeEventListener(
+          "mousemove",
+          handleGlobalMouseMove as EventListener
         );
+      };
+    }, [isDragging, duration]);
 
-        if (mentionedUser) {
-          return (
-            <span
-              key={index}
-              className="mention-tag bg-primary/10 text-primary px-1 py-0.5 rounded-md cursor-pointer hover:bg-primary/20 transition-colors"
-              onClick={() => onMentionClick(mentionedUser)}
-            >
-              {part}
-            </span>
-          );
-        }
-      }
-
-      // Check for links in regular text
-      const linkRegex = /(https?:\/\/[^\s]+)/g;
-      const linkParts = part.split(linkRegex);
-
-      return linkParts.map((linkPart, linkIndex) => {
-        if (linkRegex.test(linkPart)) {
-          return (
-            <a
-              key={`${index}-${linkIndex}`}
-              href={linkPart}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              {linkPart}
-            </a>
-          );
-        }
-        return linkPart;
-      });
-    });
-  };
-  const [duration, setDuration] = useState<string | null>(null);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (msg.type === "call_invitation" && msg.createdAt && !msg.callEnded) {
-      const startTime = new Date(msg.createdAt).getTime();
-      interval = setInterval(() => {
-        const diff = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = String(Math.floor(diff / 60)).padStart(2, "0");
-        const seconds = String(diff % 60).padStart(2, "0");
-        setDuration(`${minutes}:${seconds}`);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [msg.type, msg.createdAt, msg.callEnded]);
-
-  useEffect(() => {
-    if (!messageRef.current || isSender || msg.status === "read") return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          sendReadReceipt(msg.id);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.8 }
-    );
-
-    observer.observe(messageRef.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [msg.id, isSender, msg.status, sendReadReceipt]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        reactionPickerRef.current &&
-        !reactionPickerRef.current.contains(event.target as Node)
-      ) {
-        setReactionPickerOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const handleTouchStart = () => {
-    longPressTimerRef.current = setTimeout(() => {
-      setIsActionsVisible(true);
-    }, 500); // 500ms long press
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  };
-
-  const handleClickOutsideActions = () => {
-    setIsActionsVisible(false);
-  };
-
-  useEffect(() => {
-    if (isActionsVisible) {
-      const handleClick = () => setIsActionsVisible(false);
-      document.addEventListener("click", handleClick);
-      return () => document.removeEventListener("click", handleClick);
-    }
-  }, [isActionsVisible]);
-
-  const timeString = msg.createdAt
-    ? new Date(msg.createdAt).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-  // ---------- IMAGE GALLERY ----------
-  const renderImages = () => {
-    const files = Array.isArray(msg.file)
-      ? msg.file
-      : msg.file
-        ? [msg.file]
-        : [];
-    const images = files.filter(
-      (f: any) =>
-        f?.resource_type?.startsWith?.("image") ||
-        f?.type?.startsWith?.("image") ||
-        /\.(jpe?g|png|webp|gif)$/i.test(f?.url)
-    );
-
-    if (!images.length) return null;
+    const progressPercentage =
+      duration > 0 ? (currentTime / duration) * 100 : 0;
 
     return (
-      <div
-        className={images.length > 1 ? "grid grid-cols-2 gap-1 mt-1" : "mt-1 "}
-      >
-        {images.map((img: any, i: number) => (
-          <button
-            key={i}
-            onClick={() =>
-              openLightbox(
-                images.map((f: any) => ({ url: f.url, name: f.name })),
-                i
-              )
-            }
-            className="relative overflow-hidden rounded-lg group cursor-pointer"
+      <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-linear-to-r from-background/80 to-background/60 dark:from-gray-800/80 dark:to-gray-800/60 backdrop-blur-sm border border-border/50 dark:border-gray-700/50 shadow-lg w-66 lg:w-74">
+        <audio
+          ref={audioRef}
+          src={src}
+          crossOrigin="anonymous"
+          preload="metadata"
+          onEnded={() => setIsPlaying(false)}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          className="hidden"
+        />
+        <Button
+          onClick={togglePlay}
+          size="sm"
+          variant="ghost"
+          className="rounded-full h-10 w-10 p-0 shrink-0 hover:bg-primary/10 transition-all duration-200"
+        >
+          {isPlaying ? (
+            <PauseIcon className="h-5 w-5 text-primary" />
+          ) : (
+            <PlayIcon className="h-5 w-5 text-primary ml-0.5" />
+          )}
+        </Button>
+        <div className="flex-1 flex flex-col gap-1">
+          <div
+            ref={progressRef}
+            className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden select-none"
+            onClick={handleSeek}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           >
-            <img
-              src={img.url}
-              alt={img.name}
-              className="h-auto max-h-28 max-w-[330px] object-cover rounded-lg transition-transform group-hover:scale-105"
+            <div
+              className="absolute top-0 left-0 h-full bg-linear-to-r from-primary to-primary/80 rounded-full transition-all duration-100"
+              style={{ width: `${progressPercentage}%` }}
             />
-          </button>
-        ))}
+            <div
+              className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white dark:bg-gray-200 border-2 border-primary rounded-full shadow-md cursor-grab active:cursor-grabbing"
+              style={{ left: `calc(${progressPercentage}% - 8px)` }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+            />
+          </div>
+          <div className="flex justify-between items-center text-xs text-muted-foreground font-mono">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
       </div>
     );
   };
 
-  // ---------- NON‑IMAGE FILES ----------
-  const renderFiles = () => {
-    const files = Array.isArray(msg.file)
-      ? msg.file
-      : msg.file
-        ? [msg.file]
-        : [];
-    const nonImages = files.filter(
-      (f: any) =>
-        f?.url &&
-        !f?.resource_type?.startsWith?.("image") &&
-        !f?.type?.startsWith?.("image") &&
-        !/\.(jpe?g|png|webp|gif)$/i.test(f.url)
-    );
+  const isSingleEmoji = (str: string): boolean => {
+    if (!str) return false;
+    const trimmed = str.trim();
 
-    if (!nonImages.length) return null;
+    // Use Intl.Segmenter to count grapheme clusters. This is the most reliable way to count "characters" as perceived by users.
+    // It correctly handles emojis with skin tones, ZWJ sequences, etc.
+    try {
+      const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+      const segments = [...segmenter.segment(trimmed)];
 
-    return (
-      <div className="space-y-2">
-        {nonImages.map((f: any, i: number) => (
-          <React.Fragment key={i}>
-            {(() => {
-              const isVoiceMessage =
-                f.type?.startsWith("audio/") ||
-                (f.resource_type === "video" && f.url.endsWith(".webm"));
-              if (isVoiceMessage) {
-                // Normal player when upload is finished
-                if (f.url) return <AudioPlayer src={f.url} />;
-                return null;
+      if (segments.length !== 1) {
+        return false;
+      }
+
+      // Now check if that single grapheme is an emoji.
+      const emojiRegex = /\p{Emoji}/u;
+      return emojiRegex.test(segments[0].segment);
+    } catch (e) {
+      // Fallback for environments where Intl.Segmenter is not supported
+      console.warn(
+        "Intl.Segmenter not supported, falling back to regex for emoji detection."
+      );
+      const emojiRegex = /^\p{Extended_Pictographic}$/u;
+      return emojiRegex.test(trimmed);
+    }
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  interface MessageBubbleProps {
+    msg: any;
+    isSender: boolean;
+    user: any;
+    showTime: boolean;
+    openDocPreview: (file: any) => void;
+    openLightbox: (
+      images: Array<{ url: string; name: string }>,
+      initialIndex: number
+    ) => void;
+    handleReaction: (messageId: string, emoji: string) => void;
+    onAlertClick: (alert: AlertMessage) => void;
+    onReactionClick: (messageId: string, emoji: string, users: any[]) => void;
+    onReply: (message: any) => void;
+    onDelete: (messageId: string) => void;
+    onStartThread: (message: any) => void;
+    onScrollToMessage: (messageId: string) => void;
+    sendReadReceipt: (messageId: string) => void;
+    voiceUploadProgress: Record<string, number>;
+    onJoinCall: (callId: string) => void;
+    id: string;
+    isCallActive: boolean;
+    users: User[];
+    onMentionClick: (user: User) => void;
+  }
+
+  const MessageBubble = ({
+    msg,
+    isSender,
+    user,
+    showTime,
+    openDocPreview,
+    openLightbox,
+    handleReaction,
+    onAlertClick,
+    onReactionClick,
+    onReply,
+    onDelete,
+    onStartThread,
+    onScrollToMessage,
+    sendReadReceipt,
+    voiceUploadProgress,
+    onJoinCall,
+    isCallActive,
+    id,
+    users,
+    onMentionClick,
+  }: MessageBubbleProps) => {
+    const { data: session } = useSession();
+    const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
+    const [isActionsVisible, setIsActionsVisible] = useState(false);
+    const reactionPickerRef = useRef<HTMLDivElement>(null);
+    const messageRef = useRef<HTMLDivElement>(null);
+    const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const messageText = msg.text || msg.content;
+    const isEmoji = isSingleEmoji(messageText);
+
+    // Function to parse message text and render mentions as clickable elements
+    const renderMessageWithMentions = (text: string) => {
+      if (!text) return text;
+
+      // Split text by mentions and regular text
+      const parts = text.split(/(@\w+)/g);
+
+      return parts.map((part, index) => {
+        if (part.startsWith("@")) {
+          // This is a mention
+          const mentionText = part.slice(1); // Remove the @ symbol
+          const mentionedUser = users.find(
+            (u) =>
+              u.fullName.toLowerCase().startsWith(mentionText.toLowerCase()) ||
+              u.fullName.split(" ")[0].toLowerCase() ===
+                mentionText.toLowerCase()
+          );
+
+          if (mentionedUser) {
+            return (
+              <span
+                key={index}
+                className="mention-tag bg-primary/10 text-primary px-1 py-0.5 rounded-md cursor-pointer hover:bg-primary/20 transition-colors"
+                onClick={() => onMentionClick(mentionedUser)}
+              >
+                {part}
+              </span>
+            );
+          }
+        }
+
+        // Check for links in regular text
+        const linkRegex = /(https?:\/\/[^\s]+)/g;
+        const linkParts = part.split(linkRegex);
+
+        return linkParts.map((linkPart, linkIndex) => {
+          if (linkRegex.test(linkPart)) {
+            return (
+              <a
+                key={`${index}-${linkIndex}`}
+                href={linkPart}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                {linkPart}
+              </a>
+            );
+          }
+          return linkPart;
+        });
+      });
+    };
+    const [duration, setDuration] = useState<string | null>(null);
+
+    useEffect(() => {
+      let interval: NodeJS.Timeout | null = null;
+      if (msg.type === "call_invitation" && msg.createdAt && !msg.callEnded) {
+        const startTime = new Date(msg.createdAt).getTime();
+        interval = setInterval(() => {
+          const diff = Math.floor((Date.now() - startTime) / 1000);
+          const minutes = String(Math.floor(diff / 60)).padStart(2, "0");
+          const seconds = String(diff % 60).padStart(2, "0");
+          setDuration(`${minutes}:${seconds}`);
+        }, 1000);
+      }
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    }, [msg.type, msg.createdAt, msg.callEnded]);
+
+    useEffect(() => {
+      if (!messageRef.current || isSender || msg.status === "read") return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            sendReadReceipt(msg.id);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.8 }
+      );
+
+      observer.observe(messageRef.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }, [msg.id, isSender, msg.status, sendReadReceipt]);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          reactionPickerRef.current &&
+          !reactionPickerRef.current.contains(event.target as Node)
+        ) {
+          setReactionPickerOpen(false);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, []);
+
+    const handleTouchStart = () => {
+      longPressTimerRef.current = setTimeout(() => {
+        setIsActionsVisible(true);
+      }, 500); // 500ms long press
+    };
+
+    const handleTouchEnd = () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    };
+
+    const handleClickOutsideActions = () => {
+      setIsActionsVisible(false);
+    };
+
+    useEffect(() => {
+      if (isActionsVisible) {
+        const handleClick = () => setIsActionsVisible(false);
+        document.addEventListener("click", handleClick);
+        return () => document.removeEventListener("click", handleClick);
+      }
+    }, [isActionsVisible]);
+
+    const timeString = msg.createdAt
+      ? new Date(msg.createdAt).toLocaleTimeString(
+          language === "ar" ? "ar" : "en",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )
+      : new Date().toLocaleTimeString(language === "ar" ? "ar" : "en", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+    // ---------- IMAGE GALLERY ----------
+    const renderImages = () => {
+      const files = Array.isArray(msg.file)
+        ? msg.file
+        : msg.file
+          ? [msg.file]
+          : [];
+      const images = files.filter(
+        (f: any) =>
+          f?.resource_type?.startsWith?.("image") ||
+          f?.type?.startsWith?.("image") ||
+          /\.(jpe?g|png|webp|gif)$/i.test(f?.url)
+      );
+
+      if (!images.length) return null;
+
+      return (
+        <div
+          className={
+            images.length > 1 ? "grid grid-cols-2 gap-1 mt-1" : "mt-1 "
+          }
+        >
+          {images.map((img: any, i: number) => (
+            <button
+              key={i}
+              onClick={() =>
+                openLightbox(
+                  images.map((f: any) => ({ url: f.url, name: f.name })),
+                  i
+                )
               }
+              className="relative overflow-hidden rounded-lg group cursor-pointer"
+            >
+              <img
+                src={img.url}
+                alt={img.name}
+                className="h-auto max-h-28 max-w-[330px] object-cover rounded-lg transition-transform group-hover:scale-105"
+              />
+            </button>
+          ))}
+        </div>
+      );
+    };
 
-              if (f.type === "application/pdf" || f.name?.endsWith(".pdf")) {
+    // ---------- NON‑IMAGE FILES ----------
+    const renderFiles = () => {
+      const files = Array.isArray(msg.file)
+        ? msg.file
+        : msg.file
+          ? [msg.file]
+          : [];
+      const nonImages = files.filter(
+        (f: any) =>
+          f?.url &&
+          !f?.resource_type?.startsWith?.("image") &&
+          !f?.type?.startsWith?.("image") &&
+          !/\.(jpe?g|png|webp|gif)$/i.test(f.url)
+      );
+
+      if (!nonImages.length) return null;
+
+      return (
+        <div className="space-y-2">
+          {nonImages.map((f: any, i: number) => (
+            <React.Fragment key={i}>
+              {(() => {
+                const isVoiceMessage =
+                  f.type?.startsWith("audio/") ||
+                  (f.resource_type === "video" && f.url.endsWith(".webm"));
+                if (isVoiceMessage) {
+                  // Normal player when upload is finished
+                  if (f.url) return <AudioPlayer src={f.url} />;
+                  return null;
+                }
+
+                if (f.type === "application/pdf" || f.name?.endsWith(".pdf")) {
+                  return (
+                    <PdfPreviewCard
+                      file={f}
+                      onPreview={() => openDocPreview(f)}
+                    />
+                  );
+                }
+
                 return (
-                  <PdfPreviewCard
+                  <FileAttachment
                     file={f}
                     onPreview={() => openDocPreview(f)}
                   />
                 );
-              }
+              })()}
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    };
 
-              return (
-                <FileAttachment file={f} onPreview={() => openDocPreview(f)} />
-              );
-            })()}
-          </React.Fragment>
-        ))}
-      </div>
+    if (msg.type === "call_invitation") {
+      const callEnded = msg.callEnded;
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="group relative flex items-start gap-3"
+        >
+          <div className="shrink-0 pt-1">
+            <div className="w-8 h-8 flex items-center justify-center bg-card dark:bg-gray-800 rounded-lg border border-border/50 shadow-sm">
+              <PhoneIcon className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-baseline gap-2">
+              <span className="font-semibold text-foreground text-sm">
+                {t("chat.callStarted")}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {timeString}
+              </span>
+            </div>
+            <div className="mt-1 p-4 rounded-lg bg-card/50 dark:bg-gray-800/30 border border-border/30 max-w-md">
+              {callEnded ? (
+                <div className="text-sm text-muted-foreground">
+                  Call ended. Duration: {msg.duration}
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-foreground">
+                      {msg.text || `${msg.fullName} started a call.`}
+                    </p>
+                    {duration && (
+                      <span className="text-sm font-mono text-green-400 animate-pulse">
+                        {duration}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => onJoinCall(msg.callId)}
+                    className="w-full mt-3 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    <PhoneIcon className="w-4 h-4 mr-2" />
+                    {t("chat.joinCall")}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    if (msg.type === "alert_notification" && msg.alert) {
+      // Handle other alert types here if needed
+      const alert: AlertMessage = msg.alert;
+      const alertColors = {
+        critical: "red",
+        urgent: "amber",
+        info: "blue",
+      };
+      const color = alertColors[alert.level];
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full flex justify-center rounded-full"
+        >
+          <button
+            onClick={() => onAlertClick(alert)}
+            className={`w-full max-w-xs lg:max-w-md text-center group relative flex justify-center items-center p-2.5 lg:p-3 rounded-full transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-900/20 dark:border-${color}-500/20 dark:hover:bg-${color}-900/30 dark:hover:border-${color}-500/30`}
+          >
+            <div
+              className={`p-1.5 lg:p-2 bg-${color}-500/10 rounded-lg mr-3 lg:mr-4 border border-${color}-500/20 dark:bg-${color}-900/20 dark:border-${color}-500/30`}
+            >
+              <BellIcon
+                size={22}
+                className={`text-${color}-500 animate-pulse`}
+              />
+            </div>
+            <div className="text-left">
+              <p
+                className={`font-bold text-xs lg:text-sm text-${color}-500 uppercase`}
+              >
+                {alert.level} Alert
+              </p>
+              {/* <p className="font-medium text-foreground">{alert.message}</p> */}
+            </div>
+          </button>
+        </motion.div>
+      );
+    }
+    // ---------- MAIN RENDER ----------
+    return (
+      <motion.div
+        id={id}
+        ref={messageRef}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+        className={`group relative flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <Avatar className="h-8 w-8 shrink-0 ring-2 ring-background/50 shadow-sm">
+          <AvatarImage src={user?.image || undefined} />
+          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+            {(msg.fullName ?? "")
+              .split(" ")
+              .map((n: string) => n[0] || "")
+              .join("")
+              .slice(0, 2)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex flex-col gap-1 w-full max-w-[calc(100%-4rem)]">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground text-sm">
+              {msg.fullName}
+            </span>
+            {showTime && (
+              <span className="text-xs text-muted-foreground">
+                {timeString}
+              </span>
+            )}
+          </div>
+
+          <div className={cn("flex flex-col relative items-start group")}>
+            <div
+              className={cn(
+                "relative group rounded-xl bg-linear-to-br p-3 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
+                !isEmoji &&
+                  `px-2.5 py-1.5 ${
+                    isSender
+                      ? "from-primary/0 to-primary/10 bg-card dark:bg-gray-900/80 border border-accent-50 dark:border-gray-900/70"
+                      : "bg-card border-border/40 dark:bg-gray-800/50 dark:border-gray-700/50"
+                  }`
+              )}
+            >
+              <div
+                className={`absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 ${isActionsVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700`}
+              >
+                <div className="relative" ref={reactionPickerRef}>
+                  <button
+                    onClick={() => setReactionPickerOpen((p) => !p)}
+                    className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
+                  >
+                    <SmileIcon size={15} className="text-muted-foreground" />
+                  </button>
+                  {isReactionPickerOpen && (
+                    <div className="absolute z-20 bottom-full right-0 mb-2">
+                      <ReactionPicker
+                        onEmojiClick={(emoji) => {
+                          handleReaction(msg.id, emoji);
+                          setReactionPickerOpen(false);
+                        }}
+                        onClose={() => setReactionPickerOpen(false)}
+                      />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => onReply(msg)}
+                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
+                >
+                  <CornerUpLeft size={15} className="text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => onStartThread(msg)}
+                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
+                >
+                  <MessageSquareText
+                    size={15}
+                    className="text-muted-foreground"
+                  />
+                </button>
+                <button
+                  onClick={() => onDelete(msg.id)}
+                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
+                >
+                  <Trash2 size={15} className="text-muted-foreground" />
+                </button>
+              </div>
+
+              {/* REPLIED TO MESSAGE */}
+              {msg.replyTo && (
+                <div className="mb-2">
+                  <div
+                    className="relative flex items-start gap-2 rounded-lg bg-background/30 p-2 cursor-pointer border-l-4 border-primary/60 shadow-inner dark:bg-gray-800/50"
+                    onClick={() => onScrollToMessage(msg.replyTo.id)}
+                  >
+                    {(() => {
+                      const fileData = Array.isArray(msg.replyTo.file)
+                        ? msg.replyTo.file[0]
+                        : msg.replyTo.file;
+                      if (!fileData) return null;
+
+                      if (
+                        fileData.type?.startsWith("image") ||
+                        fileData.thumbnailUrl
+                      ) {
+                        const imageUrl = fileData.thumbnailUrl || fileData.url;
+                        return (
+                          <img
+                            src={imageUrl}
+                            alt="reply-thumbnail"
+                            className="h-10 w-10 rounded-md object-cover"
+                          />
+                        );
+                      }
+
+                      // Fallback for PDFs and other file types
+                      return (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                          <FileIcon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      );
+                    })()}
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-sm font-semibold text-foreground">
+                        {msg.replyTo?.fullName || "Someone"}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2 max-h-10 overflow-hidden">
+                        {msg.replyTo.text ||
+                          (Array.isArray(msg.replyTo.file)
+                            ? msg.replyTo.file[0]?.name
+                            : (msg.replyTo.file as any)?.name) ||
+                          "File"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {msg.deleted ? ( // This should be the first check
+                <div className="flex items-center gap-2">
+                  <Trash2 size={14} className="text-muted-foreground/80" />
+                  <p className="text-sm leading-relaxed wrap-break-word text-muted-foreground italic">
+                    message deleted by {msg.deleted.by}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* TEXT */}
+                  {messageText && (
+                    <p
+                      className={`text-[1rem] leading-relaxed wrap-break-word ${isEmoji ? "text-[4rem]" : "whitespace-pre-wrap"}`}
+                    >
+                      {renderMessageWithMentions(messageText)}
+                    </p>
+                  )}
+
+                  {/* IMAGES */}
+                  {renderImages()}
+
+                  {/* FILES */}
+                  {renderFiles()}
+                </>
+              )}
+
+              {/* SENT CHECK */}
+              {isSender && !msg.file && (
+                <div className="absolute bottom-[-1.5] right-1 text-[0.78rem] text-muted-foreground opacity-70">
+                  {msg.status === "read" ? (
+                    <span className="text-blue-500">✓✓</span>
+                  ) : msg.status === "delivered" ? (
+                    <span>✓✓</span>
+                  ) : (
+                    <span>✓</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 mt-0 min-h-6">
+              {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                <>
+                  {Object.entries(msg.reactions).map(
+                    ([emoji, users]: [string, any]) => (
+                      <div key={emoji} className="relative group">
+                        <button
+                          onClick={() => onReactionClick(msg.id, emoji, users)}
+                          className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer dark:bg-primary/5 dark:border-primary/10 dark:hover:bg-primary/10"
+                        >
+                          <span>{emoji}</span>
+                          <span className="font-medium text-primary text-[0.6rem]">
+                            {Array.isArray(users) ? users.length : 0}
+                          </span>
+                        </button>
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
     );
   };
 
-  if (msg.type === "call_invitation") {
-    const callEnded = msg.callEnded;
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="group relative flex items-start gap-3"
-      >
-        <div className="shrink-0 pt-1">
-          <div className="w-8 h-8 flex items-center justify-center bg-card dark:bg-gray-800 rounded-lg border border-border/50 shadow-sm">
-            <PhoneIcon className="w-4 h-4 text-muted-foreground" />
-          </div>
-        </div>
-        <div className="flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="font-semibold text-foreground text-sm">
-              A call started
-            </span>
-            <span className="text-xs text-muted-foreground">{timeString}</span>
-          </div>
-          <div className="mt-1 p-4 rounded-lg bg-card/50 dark:bg-gray-800/30 border border-border/30 max-w-md">
-            {callEnded ? (
-              <div className="text-sm text-muted-foreground">
-                Call ended. Duration: {msg.duration}
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-foreground">
-                    {msg.text || `${msg.fullName} started a call.`}
-                  </p>
-                  {duration && (
-                    <span className="text-sm font-mono text-green-400 animate-pulse">
-                      {duration}
-                    </span>
-                  )}
-                </div>
-                <Button
-                  onClick={() => onJoinCall(msg.callId)}
-                  className="w-full mt-3 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
-                >
-                  <PhoneIcon className="w-4 h-4 mr-2" />
-                  Join Call
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (msg.type === "alert_notification" && msg.alert) {
-    // Handle other alert types here if needed
-    const alert: AlertMessage = msg.alert;
-    const alertColors = {
-      critical: "red",
-      urgent: "amber",
-      info: "blue",
-    };
-    const color = alertColors[alert.level];
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full flex justify-center rounded-full"
-      >
-        <button
-          onClick={() => onAlertClick(alert)}
-          className={`w-full max-w-xs lg:max-w-md text-center group relative flex justify-center items-center p-2.5 lg:p-3 rounded-full transition-all duration-300 cursor-pointer backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 bg-${color}-500/10 border-${color}-500/30 hover:bg-${color}-500/15 hover:border-${color}-500/40 dark:bg-${color}-900/20 dark:border-${color}-500/20 dark:hover:bg-${color}-900/30 dark:hover:border-${color}-500/30`}
-        >
-          <div
-            className={`p-1.5 lg:p-2 bg-${color}-500/10 rounded-lg mr-3 lg:mr-4 border border-${color}-500/20 dark:bg-${color}-900/20 dark:border-${color}-500/30`}
-          >
-            <BellIcon size={22} className={`text-${color}-500 animate-pulse`} />
-          </div>
-          <div className="text-left">
-            <p
-              className={`font-bold text-xs lg:text-sm text-${color}-500 uppercase`}
-            >
-              {alert.level} Alert
-            </p>
-            {/* <p className="font-medium text-foreground">{alert.message}</p> */}
-          </div>
-        </button>
-      </motion.div>
-    );
-  }
-  // ---------- MAIN RENDER ----------
-  return (
-    <motion.div
-      id={id}
-      ref={messageRef}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-      className={`group relative flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300`}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      <Avatar className="h-8 w-8 shrink-0 ring-2 ring-background/50 shadow-sm">
-        <AvatarImage src={user?.image || undefined} />
-        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-          {(msg.fullName ?? "")
-            .split(" ")
-            .map((n: string) => n[0] || "")
-            .join("")
-            .slice(0, 2)}
-        </AvatarFallback>
-      </Avatar>
-
-      <div className="flex flex-col gap-1 w-full max-w-[calc(100%-4rem)]">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground text-sm">
-            {msg.fullName}
-          </span>
-          {showTime && (
-            <span className="text-xs text-muted-foreground">{timeString}</span>
-          )}
-        </div>
-
-        <div className={cn("flex flex-col relative items-start group")}>
-          <div
-            className={cn(
-              "relative group rounded-xl bg-linear-to-br p-3 transition-all duration-200 max-w-full sm:max-w-88 lg:max-w-126",
-              !isEmoji &&
-                `px-2.5 py-1.5 ${
-                  isSender
-                    ? "from-primary/0 to-primary/10 bg-card dark:bg-gray-900/80 border border-accent-50 dark:border-gray-900/70"
-                    : "bg-card border-border/40 dark:bg-gray-800/50 dark:border-gray-700/50"
-                }`
-            )}
-          >
-            <div
-              className={`absolute top-0 right-0 -mt-3 mr-1.5 flex items-center space-x-1 ${isActionsVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity bg-card border rounded-2xl px-1.5 py-1 shadow-md z-10 dark:bg-gray-800 dark:border-gray-700`}
-            >
-              <div className="relative" ref={reactionPickerRef}>
-                <button
-                  onClick={() => setReactionPickerOpen((p) => !p)}
-                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
-                >
-                  <SmileIcon size={15} className="text-muted-foreground" />
-                </button>
-                {isReactionPickerOpen && (
-                  <div className="absolute z-20 bottom-full right-0 mb-2">
-                    <ReactionPicker
-                      onEmojiClick={(emoji) => {
-                        handleReaction(msg.id, emoji);
-                        setReactionPickerOpen(false);
-                      }}
-                      onClose={() => setReactionPickerOpen(false)}
-                    />
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => onReply(msg)}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
-              >
-                <CornerUpLeft size={15} className="text-muted-foreground" />
-              </button>
-              <button
-                onClick={() => onStartThread(msg)}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
-              >
-                <MessageSquareText
-                  size={15}
-                  className="text-muted-foreground"
-                />
-              </button>
-              <button
-                onClick={() => onDelete(msg.id)}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-accent transition-colors dark:hover:bg-gray-700"
-              >
-                <Trash2 size={15} className="text-muted-foreground" />
-              </button>
-            </div>
-
-            {/* REPLIED TO MESSAGE */}
-            {msg.replyTo && (
-              <div className="mb-2">
-                <div
-                  className="relative flex items-start gap-2 rounded-lg bg-background/30 p-2 cursor-pointer border-l-4 border-primary/60 shadow-inner dark:bg-gray-800/50"
-                  onClick={() => onScrollToMessage(msg.replyTo.id)}
-                >
-                  {(() => {
-                    const fileData = Array.isArray(msg.replyTo.file)
-                      ? msg.replyTo.file[0]
-                      : msg.replyTo.file;
-                    if (!fileData) return null;
-
-                    if (
-                      fileData.type?.startsWith("image") ||
-                      fileData.thumbnailUrl
-                    ) {
-                      const imageUrl = fileData.thumbnailUrl || fileData.url;
-                      return (
-                        <img
-                          src={imageUrl}
-                          alt="reply-thumbnail"
-                          className="h-10 w-10 rounded-md object-cover"
-                        />
-                      );
-                    }
-
-                    // Fallback for PDFs and other file types
-                    return (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                        <FileIcon className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    );
-                  })()}
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-semibold text-foreground">
-                      {msg.replyTo?.fullName || "Someone"}
-                    </p>
-                    <p className="text-sm text-muted-foreground line-clamp-2 max-h-10 overflow-hidden">
-                      {msg.replyTo.text ||
-                        (Array.isArray(msg.replyTo.file)
-                          ? msg.replyTo.file[0]?.name
-                          : (msg.replyTo.file as any)?.name) ||
-                        "File"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {msg.deleted ? ( // This should be the first check
-              <div className="flex items-center gap-2">
-                <Trash2 size={14} className="text-muted-foreground/80" />
-                <p className="text-sm leading-relaxed wrap-break-word text-muted-foreground italic">
-                  message deleted by {msg.deleted.by}
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* TEXT */}
-                {messageText && (
-                  <p
-                    className={`text-[1rem] leading-relaxed wrap-break-word ${isEmoji ? "text-[4rem]" : "whitespace-pre-wrap"}`}
-                  >
-                    {renderMessageWithMentions(messageText)}
-                  </p>
-                )}
-
-                {/* IMAGES */}
-                {renderImages()}
-
-                {/* FILES */}
-                {renderFiles()}
-              </>
-            )}
-
-            {/* SENT CHECK */}
-            {isSender && !msg.file && (
-              <div className="absolute bottom-[-1.5] right-1 text-[0.78rem] text-muted-foreground opacity-70">
-                {msg.status === "read" ? (
-                  <span className="text-blue-500">✓✓</span>
-                ) : msg.status === "delivered" ? (
-                  <span>✓✓</span>
-                ) : (
-                  <span>✓</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 mt-0 min-h-6">
-            {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-              <>
-                {Object.entries(msg.reactions).map(
-                  ([emoji, users]: [string, any]) => (
-                    <div key={emoji} className="relative group">
-                      <button
-                        onClick={() => onReactionClick(msg.id, emoji, users)}
-                        className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1 py-0.5 text-[0.6rem] hover:bg-primary/20 transition-colors duration-200 cursor-pointer dark:bg-primary/5 dark:border-primary/10 dark:hover:bg-primary/10"
-                      >
-                        <span>{emoji}</span>
-                        <span className="font-medium text-primary text-[0.6rem]">
-                          {Array.isArray(users) ? users.length : 0}
-                        </span>
-                      </button>
-                    </div>
-                  )
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-export default function Chat() {
-  const { data: session } = useSession();
-  const router = useRouter();
-  const pathname = usePathname();
-  const fullName = session?.user?.name || "Anonymous";
-  const searchParams = useSearchParams();
-  const activeRoom = searchParams?.get("room") || "general";
   // const { messages, sendCombinedMessage, typingUsers, sendTyping, onlineUsers } = useChat(activeRoom);
   const [text, setText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -2413,7 +2447,7 @@ export default function Chat() {
         <div className="text-center p-8">
           <MessageCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
           <p className="text-muted-foreground font-medium">
-            Sign in to view conversations.
+            {t("chat.signInMessage")}
           </p>
         </div>
       </div>
@@ -2464,9 +2498,11 @@ export default function Chat() {
       >
         <DialogContent className="max-w-md g-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl rounded-2xl">
           <DialogHeader className="text-left">
-            <DialogTitle className="text-xl font-bold">New Message</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              {t("chat.newMessage")}
+            </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Search for people in your organization to start a conversation.
+              {t("chat.searchPeople")}
             </DialogDescription>
           </DialogHeader>
 
@@ -2495,7 +2531,9 @@ export default function Chat() {
                     }}
                     className="w-full flex items-center p-2.5 rounded-xl hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-all duration-200 text-left cursor-pointer"
                   >
-                    <div className="relative mr-3">
+                    <div
+                      className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
+                    >
                       <Avatar className="h-9 w-9 border-2 border-border/20 dark:border-gray-700/50">
                         <AvatarImage src={user.image || undefined} />
                         <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
@@ -2527,16 +2565,15 @@ export default function Chat() {
                     disabled={usersToInvite.length === 0}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                   >
-                    Invite
+                    {t("chat.invite")}
                   </Button>
 
                   <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold text-foreground">
-                    No users found
+                    {t("chat.noUsersFound")}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Try adjusting your search or invite new members to your
-                    organization.
+                    {t("chat.adjustSearchOrInvite")}
                   </p>
                 </div>
               )}
@@ -2586,7 +2623,7 @@ export default function Chat() {
               <div className="relative" ref={emojiPickerRef}>
                 <input
                   type="text"
-                  placeholder="Search conversations"
+                  placeholder={t("chat.searchConversations")}
                   className="backdrop-blur-sm bg-background/50 dark:bg-gray-800/50 border border-border/60 dark:border-gray-700/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -2603,8 +2640,8 @@ export default function Chat() {
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground tracking-wider"
               >
                 <h3 className="flex items-center">
-                  <Users className="h-3 w-3 mr-2" />
-                  Channels
+                  <Users className={`h-3 w-3 ${language === "ar" ? "ml-2" : "mr-2"}`} />
+                  {t("sidebar.channels")}
                 </h3>
                 <ChevronDownIcon
                   size={16}
@@ -2627,13 +2664,13 @@ export default function Chat() {
                       onClick={() => handleRoomChange("general")}
                     >
                       <span
-                        className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
+                        className={`w-2.5 h-2.5 rounded-full ${language === "ar" ? "ml-3" : "mr-3"} shadow-sm ${
                           activeRoom === "general"
                             ? "bg-primary"
                             : "bg-green-500 opacity-60 group-hover:opacity-100 transition-opacity"
                         }`}
                       ></span>
-                      General
+                      {t("sidebar.general")}
                     </button>
                     {/* No manage button for the general channel */}
                   </div>
@@ -2666,7 +2703,7 @@ export default function Chat() {
                           }
                         >
                           <span
-                            className={`w-2.5 h-2.5 rounded-full mr-3 shadow-sm ${
+                            className={`w-2.5 h-2.5 rounded-full ${language === "ar" ? "ml-3" : "mr-3"} shadow-sm ${
                               activeRoom ===
                               channel.name
                                 .trim()
@@ -2693,13 +2730,13 @@ export default function Chat() {
                   <div className="px-3 cursor-pointer">
                     <button
                       onClick={() => setCreateChannelModalOpen(true)}
-                      className="group flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 dark:border-gray-700/50 dark:hover:border-primary/50 dark:bg-gray-800/20 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                      className="group flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 dark:border-gray-700/50 dark:hover:border-primary/50 dark:bg-gray-800/20 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5 cursor-pointer"
                     >
                       <Plus
                         size={16}
                         className="mr-2 text-muted-foreground group-hover:text-primary transition-colors"
                       />
-                      Add Channel
+                      {t("chat.addChannel")}
                     </button>
                   </div>
                 </div>
@@ -2713,8 +2750,8 @@ export default function Chat() {
                 className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground tracking-wider"
               >
                 <h3 className="flex items-center">
-                  <MessageCircle className="h-3 w-3 mr-2" />
-                  Direct Messages
+                  <MessageCircle className={`h-3 w-3 ${language === "ar" ? "ml-2" : "mr-2"}`}  />
+                  {t("sidebar.directMessages")}
                 </h3>
                 <ChevronDownIcon
                   size={16}
@@ -2740,7 +2777,9 @@ export default function Chat() {
                           : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <div className="relative mr-3">
+                      <div
+                        className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
+                      >
                         <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
                           <AvatarImage src={currentUser.image || undefined} />
                           <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
@@ -2757,7 +2796,7 @@ export default function Chat() {
                       </div>
                       <div className="flex flex-col items-start">
                         <span className="text-xs text-muted-foreground -mt-1">
-                          Notes to self
+                          {t("sidebar.notesToSelf")}
                         </span>
                       </div>
                     </button>
@@ -2806,7 +2845,9 @@ export default function Chat() {
                               : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <div className="relative mr-3">
+                          <div
+                            className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
+                          >
                             <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
                               <AvatarImage src={user.image || undefined} />
                               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
@@ -2829,12 +2870,14 @@ export default function Chat() {
                     onClick={() => setIsNewChatDialogOpen(true)}
                     className="group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
                   >
-                    <div className="relative mr-3">
+                    <div
+                      className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
+                    >
                       <div className="h-6 w-6 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
                         <Plus className="h-4 w-4" />
                       </div>
                     </div>
-                    Start a new chat
+                    {t("chat.startNewChat")}
                   </button>
                 </div>
               )}
@@ -2866,7 +2909,7 @@ export default function Chat() {
               <div className="flex items-center overflow-hidden">
                 <h2 className="text-base font-bold text-foreground cursor-pointer truncate">
                   {activeRoom === "general"
-                    ? "General"
+                    ? t("sidebar.general")
                     : activeRoom ===
                         `${session?.user?._id}-${session?.user?._id}`
                       ? currentUser?.fullName ||
@@ -2877,10 +2920,13 @@ export default function Chat() {
                             ?.fullName || "Chat"
                         : currentChannel?.name || "Chat"}
                 </h2>
-                <div className="flex items-center ml-3">
+                <div
+                  className={`flex items-center ${language === "ar" ? "mr-3" : "ml-3"}`}
+                >
                   <div
                     className={cn(
-                      "w-2.5 h-2.5 rounded-full mr-2",
+                      "w-2.5 h-2.5 rounded-full",
+                      language === "ar" ? "ml-2" : "mr-2",
                       isDmRoom
                         ? otherUser && otherUser.online
                           ? "bg-green-500"
@@ -2994,7 +3040,7 @@ export default function Chat() {
               <div className="border-b border-border/50 p-2 flex items-center gap-2 bg-card/50 animate-in fade-in-0 slide-in-from-top-2 duration-300">
                 <input
                   type="text"
-                  placeholder="Search in chat..."
+                  placeholder={t("chat.searchInChat")}
                   className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 py-1"
                   value={chatSearchQuery}
                   onChange={handleChatSearch}
@@ -3138,21 +3184,20 @@ export default function Chat() {
             >
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Are you sure?</DialogTitle>
+                  <DialogTitle>{t("chat.areYouSure")}</DialogTitle>
                 </DialogHeader>
                 <DialogDescription>
-                  This action will permanently delete the message. This cannot
-                  be undone.
+                  {t("chat.deleteMessageConfirm")}
                 </DialogDescription>
                 <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => setShowDeleteConfirm(false)}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>{" "}
                   <Button variant="destructive" onClick={confirmDeleteMessage}>
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -3195,7 +3240,7 @@ export default function Chat() {
                       )}
                       <div className="flex-1 overflow-hidden">
                         <p className="text-xs font-semibold text-primary">
-                          Replying to{" "}
+                          {t("chat.replyingTo")}{" "}
                           {replyingTo.sender?.fullName ||
                             replyingTo.fullName ||
                             "Someone"}
@@ -3226,7 +3271,7 @@ export default function Chat() {
               {stagedFiles.length > 0 && (
                 <div className="mb-2 p-2 border border-border/50 rounded-lg bg-background/50 dark:bg-gray-800/50">
                   <p className="text-sm font-semibold mb-2 px-2">
-                    Attached Files
+                    {t("chat.attachedFiles")}
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {stagedFiles.map((file, index) => (
@@ -3301,7 +3346,7 @@ export default function Chat() {
                       value={text}
                       onChange={handleTyping}
                       onKeyDown={handleKeyDown}
-                      placeholder="Type your message..."
+                      placeholder={t("chat.typeMessage")}
                       className="bg-transparent border-none focus:outline-none text-foreground placeholder:text-muted-foreground w-full resize-none py-1 text-sm leading-relaxed max-h-32"
                       rows={1}
                     />
@@ -3325,12 +3370,12 @@ export default function Chat() {
                       {recordingState === "sending" && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Sending…
+                          {t("chat.sending")}
                         </div>
                       )}
                       {recordingState === "paused" && (
                         <div className="text-sm text-muted-foreground animate-pulse">
-                          Paused
+                          {t("chat.paused")}
                         </div>
                       )}
                     </div>
@@ -3339,7 +3384,7 @@ export default function Chat() {
                     <div className="absolute bottom-full left-0 mb-2 bg-card/95 backdrop-blur-lg border border-border/50 rounded-xl shadow-xl max-h-64 overflow-y-auto z-50 min-w-72 max-w-80">
                       <div className="p-2 border-b border-border/30">
                         <p className="text-xs font-medium text-muted-foreground px-2">
-                          Mention users
+                          {t("chat.mentionUsers")}
                         </p>
                       </div>
                       {filteredMentionUsers.map((user, index) => (
@@ -3391,14 +3436,16 @@ export default function Chat() {
                           {showEmojiPicker && (
                             <div
                               ref={emojiPickerRef}
-                              className="absolute bottom-full right-0 mb-2 z-1000 shadow-xl border border-border/50 rounded-2xl overflow-hidden"
+                              className={`absolute bottom-full ${language === "ar" ? "left-0" : "right-0"} mb-2 z-1000 shadow-xl border border-border/50 rounded-2xl overflow-hidden`}
                               style={{ width: "min(320px, 90vw)" }}
                             >
                               <EmojiPicker
                                 onEmojiClick={handleEmojiClick}
                                 height={350}
                                 width="100%"
-                                theme={Theme.AUTO}
+                                theme={
+                                  theme === "dark" ? Theme.DARK : Theme.LIGHT
+                                }
                               />
                             </div>
                           )}
@@ -3507,11 +3554,9 @@ export default function Chat() {
               {/* AI Summary Panel */}
               <div className="p-4 border-b border-border/30 dark:border-gray-700/50">
                 <div className="flex items-center justify-between">
+                    <SparklesIcon className="h-4 w-4 text-primary" />
                   <h3 className="font-bold text-foreground flex items-center">
-                    <div className="p-1.5 bg-primary/10 rounded-lg mr-2 border border-primary/20">
-                      <BellIcon className="h-4 w-4 text-primary" />
-                    </div>
-                    AI Assistant
+                    {t("chat.aiAssistant")}
                   </h3>
                   <Button
                     variant="ghost"
@@ -3528,11 +3573,13 @@ export default function Chat() {
               <div className="p-4">
                 <div className="backdrop-blur-sm bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6 shadow-sm dark:bg-primary/10 dark:border-primary/20">
                   <h4 className="font-semibold text-foreground mb-3 flex items-center">
-                    <div className="w-2 h-2 bg-primary rounded-full mr-2 animate-pulse"></div>
-                    Conversation Summary
+                    <div
+                      className={`w-2 h-2 bg-primary rounded-full ${language === "ar" ? "ml-2" : "mr-2"} animate-pulse`}
+                    ></div>
+                    {t("chat.conversationSummary")}
                   </h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Coming Soon
+                    {t("chat.comingSoon")}
                   </p>
                 </div>
               </div>
@@ -3666,12 +3713,9 @@ export default function Chat() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <VideoIcon className="text-primary" />
-              Start a Sync Call
+              {t("chat.startSyncCall")}
             </DialogTitle>
-            <DialogDescription>
-              To start a call, we need access to your camera and microphone.
-              Your browser will ask you for permission.
-            </DialogDescription>
+            <DialogDescription>{t("chat.callPermissions")}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
@@ -3679,7 +3723,7 @@ export default function Chat() {
               variant="outline"
               onClick={() => setPermissionDialogOpen(false)}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -3688,7 +3732,7 @@ export default function Chat() {
               }}
               className="bg-primary hover:bg-primary/90 cursor-pointer"
             >
-              Proceed
+              {t("chat.proceed")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3701,4 +3745,6 @@ export default function Chat() {
       </div> */}
     </>
   );
-}
+};
+
+export default Chat;

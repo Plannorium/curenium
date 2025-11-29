@@ -34,6 +34,8 @@ import { toast } from "sonner";
 import { GestureOverlay } from "./GestureOverlay";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { useGestureControl, Gesture } from '../../lib/use-gesture-control';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface CallProps {
   callId: string;
@@ -97,7 +99,7 @@ const useSpeakingIndicator = (stream: MediaStream | null) => {
   return isSpeaking;
 };
 
-const VideoTile = forwardRef<HTMLVideoElement, { stream: MediaStream; isMuted: boolean; userName: string; isLocal?: boolean; isVideoOff?: boolean; isSpeaking?: boolean; isScreenShare?: boolean; }>(({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking, isScreenShare }, fwdRef) => {
+const VideoTile = forwardRef<HTMLVideoElement, { stream: MediaStream; isMuted: boolean; userName: string; isLocal?: boolean; isVideoOff?: boolean; isSpeaking?: boolean; isScreenShare?: boolean; t: (key: string) => string; }>(({ stream, isMuted, userName, isLocal, isVideoOff, isSpeaking, isScreenShare, t }, fwdRef) => {
 
   const videoRef = useCallback((node: HTMLVideoElement) => {
     if (node) {
@@ -127,7 +129,7 @@ const VideoTile = forwardRef<HTMLVideoElement, { stream: MediaStream; isMuted: b
           </div>
           <div className="flex items-center gap-2 text-sm opacity-80">
             <VideoOff size={16} />
-            <span>Camera is off</span>
+            <span>{t('call.cameraOff')}</span>
           </div>
         </div>
       )}
@@ -155,7 +157,7 @@ const TooltipButton = ({ children, tooltip, forceHide }: { children: React.React
   );
 };
 
-const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'default' }: { onToggleScreenShare: () => void; isScreenSharing: boolean; variant?: 'default' | 'minimized' }) => {
+const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'default', t }: { onToggleScreenShare: () => void; isScreenSharing: boolean; variant?: 'default' | 'minimized'; t: (key: string) => string }) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -182,7 +184,7 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
   const iconSize = variant === 'minimized' ? 20 : 24;
 
   return (
-    <TooltipButton tooltip={isScreenSharing ? 'Screen sharing options' : 'Share screen'} forceHide={isPopupOpen}>
+    <TooltipButton tooltip={isScreenSharing ? t('call.screenSharingOptions') : t('call.shareScreen')} forceHide={isPopupOpen}>
       <div className="relative" ref={popupRef}>
         <Button
           onClick={handleMainButtonClick}
@@ -202,11 +204,11 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
               <div className="flex flex-col">
                 <button onClick={() => handleOptionClick('stop')} className="flex items-center gap-3 px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 w-full">
                   <StopCircle size={16} />
-                  <span>Stop Sharing</span>
+                  <span>{t('call.stopSharing')}</span>
                 </button>
                 <button onClick={() => handleOptionClick('change')} className="flex items-center gap-3 px-4 py-3 text-left text-sm text-white/90 hover:bg-white/5 w-full">
                   <ScreenShare size={16} />
-                  <span>Share Something Else</span>
+                  <span>{t('call.shareSomethingElse')}</span>
                 </button>
               </div>
             </motion.div>
@@ -218,8 +220,18 @@ const ScreenShareButton = ({ onToggleScreenShare, isScreenSharing, variant = 'de
 };
 
 const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStreams, onEndCall, userName, onToggleScreenShare, isScreenSharing, screenStream, isMuted, isVideoOff, onToggleMute, onToggleVideo }) => {
+  const { language } = useLanguage();
   const { width, height } = useWindowSize();
   const isMobile = width < 768;
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   // Ensure we have a canonical call id (so invite links and join actions point to the
   // exact same call instance). If the incoming `callId` is missing an instance
   // suffix, append a short uuid and rewrite the URL with history.replaceState.
@@ -357,9 +369,9 @@ const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStream
     if (localVideoElement && localVideoElement.readyState >= 2) {
       setIsGestureControlEnabled(true);
       setShowGesturePopup(false);
-      toast.success('Gesture control enabled!');
+      toast.success(t('call.gestureControlEnabled'));
     } else {
-      toast.error('Video not ready yet – try again in a second.');
+      toast.error(t('call.videoNotReady'));
     }
   };
 
@@ -406,7 +418,7 @@ const Call: React.FC<CallProps> = ({ callId, localStream, onInvite, remoteStream
     // Use normalizedCallId so invitations always point to the canonical call instance
     const link = `${window.location.origin}/call/${normalizedCallId}`;
     navigator.clipboard.writeText(link);
-    toast.success("Call link copied to clipboard!");
+    toast.success(t('call.callLinkCopied'));
   };
 
   const handleSendChatMessage = () => {
@@ -429,7 +441,7 @@ setIsReactionPickerOpen(false);
   const chatPanel = (
     <div className="h-full w-full bg-gray-900/90 backdrop-blur-lg border-l border-white/10 flex flex-col">
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
-        <h3 className="font-bold text-white">In-call messages</h3>
+        <h3 className="font-bold text-white">{t('call.inCallMessages')}</h3>
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsChatOpen(false)} variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10"><Maximize2 size={16} /></Button>
         </div>
@@ -449,7 +461,7 @@ setIsReactionPickerOpen(false);
     
       <div className="p-4 border-t border-white/10">
         <div className="flex items-center gap-2 bg-gray-800/70 rounded-lg p-2">
-          <input type="text" placeholder="Type a message..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} className="bg-transparent w-full text-white placeholder:text-white/50 focus:outline-none text-sm" />
+          <input type="text" placeholder={t('call.typeMessage')} value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()} className="bg-transparent w-full text-white placeholder:text-white/50 focus:outline-none text-sm" />
           <Button onClick={handleSendChatMessage} size="icon" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 w-8 h-8"><Send size={16} /></Button>
         </div>
       </div>
@@ -472,7 +484,7 @@ setIsReactionPickerOpen(false);
 
           <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <TooltipButton tooltip="Maximize">
+            <TooltipButton tooltip={t('call.maximize')}>
               <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white cursor-pointer">
                 <Maximize2 size={16} />
               </Button>
@@ -480,14 +492,14 @@ setIsReactionPickerOpen(false);
           </div>
 
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <TooltipButton tooltip={isMuted ? 'Unmute' : 'Mute'}>
+            <TooltipButton tooltip={isMuted ? t('call.unmute') : t('call.mute')}>
               <Button onClick={handleToggleMute} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 text-white cursor-pointer">{isMuted ? <MicOff size={18} /> : <Mic size={18} />}</Button>
             </TooltipButton>
-            <TooltipButton tooltip={isVideoOff ? 'Turn on camera' : 'Turn off camera'}>
+            <TooltipButton tooltip={isVideoOff ? t('call.turnCameraOn') : t('call.turnCameraOff')}>
               <Button onClick={handleToggleVideo} variant="outline" size="icon" className="w-10 h-10 rounded-full bg-black/60 hover:bg-white/20 text-white cursor-pointer">{isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}</Button>
             </TooltipButton>
-            <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} />
-            <TooltipButton tooltip="End call">
+            <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} t={t} />
+            <TooltipButton tooltip={t('call.endCall')}>
               <Button onClick={handleEndCall} variant="destructive" size="icon" className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white cursor-pointer"><PhoneOff size={18} /></Button>
             </TooltipButton>
           </div>
@@ -528,7 +540,7 @@ setIsReactionPickerOpen(false);
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
           {isScreenSharing && screenStream && (
             <div className="w-full max-h-full h-340 lg:h-fit lg:max-h-fit overflow-hidden p-2 md:py-4 md:px-1.5">
-              <VideoTile stream={screenStream} isMuted={true} userName={"Your Screen"} isLocal={true} isScreenShare={true} />
+              <VideoTile stream={screenStream} isMuted={true} userName={t('call.yourScreen')} isLocal={true} isScreenShare={true} t={t} />
             </div>
           )}
 
@@ -544,6 +556,7 @@ setIsReactionPickerOpen(false);
                     isLocal={true}
                     isVideoOff={isVideoOff}
                     isSpeaking={isLocalSpeaking}
+                    t={t}
                   />
                   {isGestureControlEnabled && localVideoElement && (
                     <GestureOverlay
@@ -556,8 +569,8 @@ setIsReactionPickerOpen(false);
                 </div>
               )}
               {Object.entries(remoteStreams).map(([peerId, remote]) => (
-                <RemoteVideoTile key={peerId} peerId={peerId} remote={remote} />
-              ))}
+                 <RemoteVideoTile key={peerId} peerId={peerId} remote={remote} t={t} />
+               ))}
             </div>
           </div>
         </div>
@@ -576,12 +589,12 @@ setIsReactionPickerOpen(false);
         </div>
 
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/70 backdrop-blur-md p-2 rounded-full border border-white/10 shadow-2xl w-auto">
-          {/* <TooltipButton tooltip={isGestureControlEnabled ? 'Disable Gesture Control' : 'Enable Gesture Control'}>
+          {/* <TooltipButton tooltip={isGestureControlEnabled ? t('call.disableGestureControl') : t('call.enableGestureControl')}>
             <Button
               onClick={() => {
                 if (isGestureControlEnabled) {
                   setIsGestureControlEnabled(false);
-                  toast.info('Gesture control disabled.');
+                  toast.info(t('call.gestureControlDisabled'));
                 } else {
                   setShowGestureWalkthrough(true);
                 }
@@ -597,15 +610,15 @@ setIsReactionPickerOpen(false);
             </Button>
           </TooltipButton> */}
 
-          <TooltipButton tooltip={isMuted ? 'Unmute' : 'Mute'}>
+          <TooltipButton tooltip={isMuted ? t('call.unmute') : t('call.mute')}>
             <Button onClick={handleToggleMute} size="icon" className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${isMuted ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isMuted ? <MicOff size={19} /> : <Mic size={19} />}</Button>
           </TooltipButton>
 
-          <TooltipButton tooltip={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}>
+          <TooltipButton tooltip={isVideoOff ? t('call.turnCameraOn') : t('call.turnCameraOff')}>
             <Button onClick={handleToggleVideo} size="icon" className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${isVideoOff ? 'bg-red-500/90 text-white hover:bg-red-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}>{isVideoOff ? <VideoOff size={19} /> : <Video size={19} />}</Button>
           </TooltipButton>
 
-          <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" />
+          <ScreenShareButton onToggleScreenShare={onToggleScreenShare} isScreenSharing={isScreenSharing} variant="minimized" t={t} />
 
           <div className="relative" ref={reactionPickerRef}>
             <Button onClick={() => setIsReactionPickerOpen(prev => !prev)} size="icon" className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14"><Smile size={19} /></Button>
@@ -643,7 +656,7 @@ setIsReactionPickerOpen(false);
                   }}
                 >
                   <Hand className="mr-2 h-4 w-4" />
-                  {isGestureControlEnabled ? 'Disable Gestures' : 'Enable Gestures'}
+                  {isGestureControlEnabled ? t('call.disableGestures') : t('call.enableGestures')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -651,7 +664,7 @@ setIsReactionPickerOpen(false);
                   onClick={() => { onInvite(); setIsMoreOptionsOpen(false); }}
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Invite Members
+                  {t('call.inviteMembers')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -659,17 +672,17 @@ setIsReactionPickerOpen(false);
                   onClick={() => { handleCopyLink(); setIsMoreOptionsOpen(false); }}
                 >
                   <Link className="mr-2 h-4 w-4" />
-                  Copy Invite Link
+                  {t('call.copyInviteLink')}
                 </Button>
               </div>
             </PopoverContent>
           </Popover>
 
-          <TooltipButton tooltip="End Call">
+          <TooltipButton tooltip={t('call.endCall')}>
             <Button onClick={handleEndCall} variant="destructive" size="icon" className="rounded-full w-12 h-10 lg:w-16 lg:h-12 sm:w-20 sm:h-14"><PhoneOff size={19} /></Button>
           </TooltipButton>
 
-          <TooltipButton tooltip={isChatOpen ? 'Close Chat' : 'Open Chat'}>
+          <TooltipButton tooltip={isChatOpen ? t('call.closeChat') : t('call.openChat')}>
             <Button onClick={() => setIsChatOpen(!isChatOpen)} size="icon" className={`rounded-full w-10 h-10 lg:w-12 lg:h-12 sm:w-14 sm:h-14 transition-colors ${isChatOpen ? 'bg-blue-500/90 text-white hover:bg-blue-600/90' : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'}`}><MessageSquare size={19} /></Button>
           </TooltipButton>
         </div>
@@ -677,7 +690,7 @@ setIsReactionPickerOpen(false);
 
 
         <div className="absolute top-4 right-4" style={{ right: isChatOpen ? `${chatWidth + 24}px` : '1rem', transition: 'right 0.25s ease' }}>
-          <TooltipButton tooltip="Minimize">
+          <TooltipButton tooltip={t('call.minimize')}>
             <Button onClick={handleToggleMinimize} variant="ghost" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 text-white"><Minimize2 size={19} /></Button>
           </TooltipButton>
         </div>
@@ -714,9 +727,9 @@ setIsReactionPickerOpen(false);
   );
 };
 
-const RemoteVideoTile = ({ peerId, remote }: { peerId: string; remote: { stream: MediaStream; name: string } }) => {
+const RemoteVideoTile = ({ peerId, remote, t }: { peerId: string; remote: { stream: MediaStream; name: string }; t: (key: string) => string }) => {
   const isSpeaking = useSpeakingIndicator(remote.stream);
-  return <VideoTile stream={remote.stream} isMuted={false} userName={remote.name} isSpeaking={isSpeaking} />;
+  return <VideoTile stream={remote.stream} isMuted={false} userName={remote.name} isSpeaking={isSpeaking} t={t} />;
 };
 
 export default Call;

@@ -21,6 +21,9 @@ import { useRole } from "@/components/auth/RoleProvider";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useChatContext } from "@/contexts/ChatContext";
 import { useTheme } from "@/components/ThemeProvider";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
+import useSWR from 'swr';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -56,11 +59,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { data: session } = useSession();
   const { role } = useRole();
   const { theme } = useTheme();
+  const { language } = useLanguage();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeRoom = searchParams?.get("room");
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
+
+  const sidebarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -109,20 +115,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [session]);
 
   const navItems: NavItem[] = [
-    { name: "Home", icon: <HomeIcon size={20} />, path: "/dashboard" },
+    { name: sidebarT.sidebar.home, icon: <HomeIcon size={20} />, path: "/dashboard" },
     {
-      name: "Chat",
+      name: sidebarT.sidebar.chat,
       icon: <MessageSquareIcon size={20} />,
       path: "/dashboard/chat",
     },
-    { name: "Alerts", icon: <BellIcon size={20} />, path: "/dashboard/alerts" },
+    { name: sidebarT.sidebar.alerts, icon: <BellIcon size={20} />, path: "/dashboard/alerts" },
     {
-      name: "Shifts",
+      name: sidebarT.sidebar.shifts,
       icon: <CalendarIcon size={20} />,
       path: "/dashboard/shifts",
     },
     {
-      name: "EHR",
+      name: sidebarT.sidebar.ehr,
       icon: <Stethoscope size={20} />,
       path: "/dashboard/ehr/patients",
     },
@@ -130,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   if (role === "admin") {
     navItems.push({
-      name: "Admin",
+      name: sidebarT.sidebar.admin,
       icon: <Briefcase size={20} />,
       path: "/dashboard/admin",
     });
@@ -144,7 +150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <h3
           className={`px-3 py-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider ${isCollapsed ? "lg:hidden" : ""}`}
         >
-          EHR Menu
+          {sidebarT.sidebar.ehrMenu}
         </h3>
         <div className="mt-3 space-y-1">
           <Link
@@ -156,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             } ${isCollapsed ? "lg:justify-center" : ""}`}
           >
             <span className="truncate whitespace-nowrap transition-colors duration-200">
-              Patients
+              {sidebarT.sidebar.patients}
             </span>
           </Link>
           <Link
@@ -168,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             } ${isCollapsed ? "lg:justify-center" : ""}`}
           >
             <span className="truncate whitespace-nowrap transition-colors duration-200">
-              Appointments
+              {sidebarT.sidebar.appointments}
             </span>
           </Link>
           {(role === "doctor" || role === "admin" || role === "nurse") && (
@@ -181,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Lab
+                {sidebarT.sidebar.lab}
               </span>
             </Link>
           )}
@@ -194,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             } ${isCollapsed ? "lg:justify-center" : ""}`}
           >
             <span className="truncate whitespace-nowrap transition-colors duration-200">
-              Audit Logs
+              {sidebarT.sidebar.auditLogs}
             </span>
           </Link>
           {/* Hospital Management Routes */}
@@ -208,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Admissions
+                {sidebarT.sidebar.admissions}
               </span>
             </Link>
           )}
@@ -222,7 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Discharges
+                {sidebarT.sidebar.discharges}
               </span>
             </Link>
           )}
@@ -236,7 +242,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Shift Tracking
+                {sidebarT.sidebar.shiftTracking}
               </span>
             </Link>
           )}
@@ -250,7 +256,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Hospital Mgmt
+                {sidebarT.sidebar.hospitalMgmt}
               </span>
             </Link>
           )}
@@ -266,7 +272,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 } ${isCollapsed ? "lg:justify-center" : ""}`}
               >
                 <span className="truncate whitespace-nowrap transition-colors duration-200">
-                  Doctor Dashboard
+                  {sidebarT.sidebar.doctorDashboard}
                 </span>
               </Link>
             ))}
@@ -281,7 +287,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Nurse Dashboard
+                {sidebarT.sidebar.nurseDashboard}
               </span>
             </Link>)
           )}
@@ -298,7 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               } ${isCollapsed ? "lg:justify-center" : ""}`}
             >
               <span className="truncate whitespace-nowrap transition-colors duration-200">
-                Pharmacy
+                {sidebarT.sidebar.pharmacy}
               </span>
             </Link>
           )}
@@ -311,7 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <h3
           className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
         >
-          Channels
+          {sidebarT.sidebar.channels}
         </h3>
         <div className="mt-1 space-y-1 px-2">
           <Link
@@ -327,9 +333,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               #
             </span>
             <span
-              className={`ml-2 truncate whitespace-nowrap ${isCollapsed ? "lg:hidden" : ""}`}
+              className={`${language === 'ar' ? 'mr-2' : 'ml-2'} truncate whitespace-nowrap ${isCollapsed ? "lg:hidden" : ""}`}
             >
-              General
+              {sidebarT.sidebar.general}
             </span>
           </Link>
           {channels.map((channel) => (
@@ -349,7 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 #
               </span>
               <span
-                className={`ml-2 truncate whitespace-nowrap ${isCollapsed ? "lg:hidden" : ""}`}
+                className={`${language === 'ar' ? 'mr-2' : 'ml-2'} truncate whitespace-nowrap ${isCollapsed ? "lg:hidden" : ""}`}
               >
                 {channel.name}
               </span>
@@ -359,7 +365,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <h3
           className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
         >
-          Direct Messages
+          {sidebarT.sidebar.directMessages}
         </h3>
         <div className="mt-1 space-y-1 px-2">
           <Link
@@ -386,11 +392,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
             <div
-              className={`ml-3 overflow-hidden ${isCollapsed ? "lg:hidden" : ""}`}
+              className={`${language === 'ar' ? 'mr-3' : 'ml-3'} overflow-hidden ${isCollapsed ? "lg:hidden" : ""}`}
             >
-              <p className={`font-semibold truncate`}>Notes to self</p>
+              <p className={`font-semibold truncate`}>{sidebarT.sidebar.notesToSelf}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                Personal space
+                {sidebarT.sidebar.personalSpace}
               </p>
             </div>
           </Link>
@@ -436,7 +442,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </div>
                 <div
-                  className={`ml-3 overflow-hidden ${isCollapsed ? "lg:hidden" : ""}`}
+                  className={`${language === 'ar' ? 'mr-3' : 'ml-3'} overflow-hidden ${isCollapsed ? "lg:hidden" : ""}`}
                 >
                   <p
                     className={`text-[0.925rem] md:text-base font-semibold truncate`}
@@ -479,7 +485,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </Link>
           <button
             onClick={toggleCollapse}
-            className={`hidden lg:flex items-center justify-center p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${isCollapsed ? "relative left-[12]" : ""}`}
+            className={`hidden lg:flex items-center justify-center p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${isCollapsed ? "relative left-[12]" : ""} ${language === 'ar' ? "right-[12] left-0" : ""} transition-all duration-200`}
           >
             <ChevronLeftIcon
               size={18}
@@ -516,7 +522,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {item.icon}
                 </span>
                 <span
-                  className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? "lg:hidden" : ""}`}
+                  className={`${language === 'ar' ? 'mr-3' : 'ml-3'} whitespace-nowrap transition-all duration-200 ${isCollapsed ? "lg:hidden" : ""}`}
                 >
                   {item.name}
                 </span>
@@ -539,9 +545,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400"
             />
             <span
-              className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? "lg:hidden" : ""}`}
+              className={`${language === 'ar' ? 'mr-3' : 'ml-3'} whitespace-nowrap transition-all duration-200 ${isCollapsed ? "lg:hidden" : ""}`}
             >
-              Settings
+              {sidebarT.sidebar.settings}
             </span>
           </Link>
 
@@ -553,9 +559,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="text-gray-400 dark:text-gray-500 group-hover:text-red-500"
             />
             <span
-              className={`ml-3 whitespace-nowrap transition-all duration-200 ${isCollapsed ? "lg:hidden" : ""}`}
+              className={`${language === 'ar' ? 'mr-3' : 'ml-3'} whitespace-nowrap transition-all duration-200 ${isCollapsed ? "lg:hidden" : ""}`}
             >
-              Logout
+              {sidebarT.sidebar.logout}
             </span>
           </button>
         </div>

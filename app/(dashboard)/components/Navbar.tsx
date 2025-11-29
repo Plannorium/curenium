@@ -31,6 +31,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Notifications from './Notifications';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -45,9 +48,12 @@ interface UserData {
 export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
   const { data: session } = useSession();
+  const { language } = useLanguage();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  const navbarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
   useEffect(() => {
     setMounted(true);
@@ -78,12 +84,12 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="mr-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
+          className={`${language === 'ar' ? 'ml-4' : 'mr-4'} rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden`}
         >
           <MenuIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         </Button>
         {/* <div className="relative hidden md:flex items-center bg-gray-100 dark:bg-gray-900 border border-transparent rounded-lg px-4 py-2 flex-1 max-w-xs hover:border-gray-300 dark:hover:border-gray-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-          <SearchIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-3" />
+          <SearchIcon className={`h-4 w-4 text-gray-500 dark:text-gray-400 ${language === 'ar' ? 'ml-3' : 'mr-3'}`} />
           <input
             type="text"
             placeholder="Search..."
@@ -105,9 +111,9 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" align="end">
-              <DropdownMenuItem>New Patient</DropdownMenuItem>
-              <DropdownMenuItem>New Appointment</DropdownMenuItem>
-              <DropdownMenuItem>New Task</DropdownMenuItem>
+              <DropdownMenuItem>{navbarT.common.create} Patient</DropdownMenuItem>
+              <DropdownMenuItem>{navbarT.common.create} Appointment</DropdownMenuItem>
+              <DropdownMenuItem>{navbarT.common.create} Task</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -124,7 +130,9 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             <MoonIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           )}
         </Button>
-{/* 
+
+        <LanguageSwitcher />
+{/*
         <Button
           variant="ghost"
           size="icon"
@@ -203,8 +211,8 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                   href="/dashboard/settings/account"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <User className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
-                  <span>Profile</span>
+                  <User className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
+                  <span>{navbarT.common.view}</span>
                 </Link>
               </DropdownMenuItem>
               
@@ -213,8 +221,8 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                   href="/dashboard/settings/billing"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <CreditCard className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
-                  <span>Billing</span>
+                  <CreditCard className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
+                  <span>{navbarT.common.view}</span>
                 </Link>
               </DropdownMenuItem>
               
@@ -223,8 +231,8 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                   href="/dashboard/settings"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <Settings className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
-                  <span>Settings</span>
+                  <Settings className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
+                  <span>{navbarT.sidebar.settings}</span>
                 </Link>
               </DropdownMenuItem>
               
@@ -233,8 +241,8 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                   href="/dashboard/organization/team"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <UsersIcon className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400" />
-                  <span>Team</span>
+                  <UsersIcon className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
+                  <span>{navbarT.common.view}</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -246,8 +254,8 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                 onClick={() => signOut()}
                 className="flex items-center px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-600 dark:text-red-500 cursor-pointer"
               >
-                <LogOut className="h-4 w-4 mr-3" />
-                <span>Log out</span>
+                <LogOut className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'}`} />
+                <span>{navbarT.sidebar.logout}</span>
               </DropdownMenuItem>
             </div>
           </DropdownMenuContent>

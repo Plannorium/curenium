@@ -11,13 +11,9 @@ import AuditLogs from '@/app/(dashboard)/components/AuditLogs';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
 import { InviteList } from '@/components/invites/InviteList';
 import useSWR from 'swr';
-import { translations } from '@/lib/translations';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 import { Loader } from '@/components/ui/Loader';
-
-interface Organization {
-  name: string;
-  language: keyof typeof translations;
-}
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Shift {
   _id: string;
@@ -48,12 +44,13 @@ const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json()
 
 const DashboardContent: React.FC = () => {
   const { data: session, status } = useSession();
+  const { language } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState('');
 
-  // First fetch user profile to get organizationId
-  const { data: userProfile, error: profileError } = useSWR(
+  // Fetch organization for name
+  const { data: userProfile } = useSWR(
     (status === 'authenticated' && session?.user?.id) ? ['/api/profile', pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
@@ -61,7 +58,7 @@ const DashboardContent: React.FC = () => {
 
   const orgId = userProfile?.organizationId;
 
-  const { data: organization, error: orgError } = useSWR<Organization>(
+  const { data: organization } = useSWR(
     (status === 'authenticated' && orgId) ? [`/api/organization?id=${orgId}`, pathname] : null,
     ([url]) => fetcher(url),
     { revalidateOnMount: true, dedupingInterval: 0 }
@@ -97,7 +94,8 @@ const DashboardContent: React.FC = () => {
     }
   }, [status, router]);
 
-  const welcomeMessage = organization?.language ? translations[organization.language as keyof typeof translations]?.welcome || translations.en.welcome : translations.en.welcome;
+  const dashboardT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
+  const welcomeMessage = dashboardT.dashboard.welcome;
 
   const isAdmin = session?.user?.role === 'admin';
 
@@ -131,7 +129,7 @@ const DashboardContent: React.FC = () => {
         </div>
         <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-black pointer-events-none hidden dark:block"></div>
         <div className="relative h-screen p-4 sm:p-6 md:p-8 rounded-xs md:rounded-lg flex items-center justify-center">
-          <Loader variant="fullscreen" text="Loading your dashboard..." />
+          <Loader variant="fullscreen" text={dashboardT.dashboard.loadingDashboard} />
         </div>
       </div>
     );
@@ -162,7 +160,7 @@ const DashboardContent: React.FC = () => {
             <Button className="mt-4 sm:mt-0 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white dark:text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm border border-primary/20">
               <BrainIcon className="mr-2 h-4 w-4" />
               <Sparkles className="mr-1 h-3 w-3" />
-              Ask AI Assistant
+              {dashboardT.dashboard.askAIAssistant}
             </Button>
           </div>
 
@@ -173,7 +171,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-200 dark:text-primary-foreground/90">
-                  {currentShift ? 'Current Shift' : 'Upcoming Shift'}
+                  {currentShift ? dashboardT.dashboard.currentShift : dashboardT.dashboard.upcomingShift}
                 </CardTitle>
                 <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                   <CalendarIcon className="h-4 w-4 text-white dark:text-primary-foreground" />
@@ -186,7 +184,7 @@ const DashboardContent: React.FC = () => {
                       {format(new Date(currentShift.startTime), 'HH:mm')} - {format(new Date(currentShift.endTime), 'HH:mm')}
                     </div>
                     <p className="text-sm text-gray-300 dark:text-primary-foreground/80 font-medium">
-                      {formatDistanceToNow(new Date(currentShift.endTime))} remaining
+                      {formatDistanceToNow(new Date(currentShift.endTime))} {dashboardT.dashboard.remaining}
                     </p>
                     {isAdmin && allCurrentShifts.length > 1 && (
                       <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
@@ -200,7 +198,7 @@ const DashboardContent: React.FC = () => {
                       {format(new Date(upcomingShift.startTime), 'HH:mm')} - {format(new Date(upcomingShift.endTime), 'HH:mm')}
                     </div>
                     <p className="text-sm text-gray-300 dark:text-primary-foreground/80 font-medium">
-                      Starts in {formatDistanceToNow(new Date(upcomingShift.startTime))}
+                      {dashboardT.dashboard.startsIn} {formatDistanceToNow(new Date(upcomingShift.startTime))}
                     </p>
                     {isAdmin && allUpcomingShifts.length > 1 && (
                       <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
@@ -212,13 +210,13 @@ const DashboardContent: React.FC = () => {
                   <div className="text-lg font-semibold text-white dark:text-primary-foreground">
                     {isAdmin && allCurrentShifts.length > 0 ? (
                       <>
-                        No personal shifts
+                        {dashboardT.dashboard.noPersonalShifts}
                         <p className="text-xs text-gray-400 dark:text-primary-foreground/60 mt-1">
-                          {allCurrentShifts.length} active: {allCurrentShifts.map(s => s.user.fullName).join(', ')}
+                          {allCurrentShifts.length} {dashboardT.dashboard.activeShifts}: {allCurrentShifts.map(s => s.user.fullName).join(', ')}
                         </p>
                       </>
                     ) : (
-                      'No upcoming shifts'
+                      dashboardT.dashboard.noUpcomingShifts
                     )}
                   </div>
                 )}
@@ -229,14 +227,14 @@ const DashboardContent: React.FC = () => {
             <Card className="group relative overflow-hidden backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 dark:from-red-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">Active Alerts</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">{dashboardT.dashboard.activeAlerts}</CardTitle>
                 <div className="p-2 bg-red-500/10 rounded-lg backdrop-blur-sm border border-red-500/20">
                   <BellIcon className="h-4 w-4 text-red-500" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                <div className="text-2xl md:text-3xl font-bold text-red-500 mb-1">{criticalAlerts} Critical</div>
-                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">+{urgentAlerts} Urgent</p>
+                <div className="text-2xl md:text-3xl font-bold text-red-500 mb-1">{criticalAlerts} {dashboardT.dashboard.critical}</div>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">+{urgentAlerts} {dashboardT.dashboard.urgent}</p>
               </CardContent>
             </Card>
 
@@ -244,7 +242,7 @@ const DashboardContent: React.FC = () => {
             <Card className="group relative overflow-hidden backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 dark:from-amber-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">Pending Appointments</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">{dashboardT.dashboard.pendingAppointments}</CardTitle>
                 <div className="p-2 bg-amber-500/10 rounded-lg backdrop-blur-sm border border-amber-500/20">
                   <ClipboardListIcon className="h-4 w-4 text-amber-600 dark:text-amber-500" />
                 </div>
@@ -252,7 +250,7 @@ const DashboardContent: React.FC = () => {
               <CardContent className="relative">
                 <div className="text-2xl md:text-3xl font-bold text-foreground dark:text-white mb-1">{pendingAppointments}</div>
                 <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">
-                  <span className="text-amber-600 dark:text-amber-500 font-semibold">{overdueAppointments} Overdue</span>
+                  <span className="text-amber-600 dark:text-amber-500 font-semibold">{overdueAppointments} {dashboardT.dashboard.overdue}</span>
                 </p>
               </CardContent>
             </Card>
@@ -261,14 +259,14 @@ const DashboardContent: React.FC = () => {
             <Card className="group relative overflow-hidden backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 dark:from-green-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">Active Staff</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">{dashboardT.dashboard.activeStaff}</CardTitle>
                 <div className="p-2 bg-green-500/10 rounded-lg backdrop-blur-sm border border-green-500/20">
                   <Users className="h-4 w-4 text-green-600 dark:text-green-500" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
                 <div className="text-2xl md:text-3xl font-bold text-foreground dark:text-white mb-1">{activeStaff} / {totalStaff}</div>
-                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">Cardiology Department</p>
+                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">{dashboardT.dashboard.cardiologyDepartment}</p>
               </CardContent>
             </Card>
           </div>
@@ -286,7 +284,7 @@ const DashboardContent: React.FC = () => {
                     <div className="p-2 bg-primary/10 rounded-lg mr-3 border border-primary/20">
                       <Activity className="h-5 w-5 text-primary" />
                     </div>
-                    Department Activity
+                    {dashboardT.dashboard.departmentActivity}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="relative">
@@ -300,7 +298,7 @@ const DashboardContent: React.FC = () => {
                     <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
                       <ClipboardListIcon className="h-5 w-5 text-blue-500" />
                     </div>
-                    Recent Audit Logs
+                    {dashboardT.dashboard.recentAuditLogs}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="relative">
@@ -316,8 +314,11 @@ const DashboardContent: React.FC = () => {
 };
 
 const Dashboard: React.FC = () => {
+  const { language } = useLanguage();
+  const dashboardT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
+
   return (
-   <Suspense fallback={<Loader variant="fullscreen" text="Loading Dashboard..." />}>
+   <Suspense fallback={<Loader variant="fullscreen" text={dashboardT.dashboard.loading} />}>
       <DashboardContent />
     </Suspense>
   );

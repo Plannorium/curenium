@@ -22,6 +22,8 @@ import {
 import { Plus, Calendar, Clock, User, Briefcase, Loader2, FileText } from "lucide-react";
 import HijriCalendar from "@/components/ui/hijri-calendar";
 import { useCalendar } from "@/components/ui/calendar-context";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // ... (interfaces and roles remain the same)
 interface User {
@@ -59,6 +61,7 @@ const roles = {
 
 const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
   ({ onShiftAdded, children }) => {
+    const { language } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -76,6 +79,15 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { calendarType, setCalendarType } = useCalendar();
+
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
 
     useEffect(() => {
       const fetchData = async () => {
@@ -206,7 +218,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              <span className="text-sm md:text-base">Schedule Advanced Shift</span>
+              <span className="text-sm md:text-base">{t('addShiftModal.title')}</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -217,13 +229,13 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Assign to User
+                {t('addShiftModal.assignToUser')}
               </Label>
               <Select value={selectedUser} onValueChange={setSelectedUser} disabled={isLoading}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
                   <SelectValue
                     placeholder={
-                      isLoading ? "Loading users..." : "Select a user"
+                      isLoading ? t('addShiftModal.loadingUsers') : t('addShiftModal.selectUser')
                     }
                   />
                 </SelectTrigger>
@@ -254,14 +266,14 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <Briefcase className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Role
+                {t('addShiftModal.role')}
               </Label>
               <Input
                 id="role"
                 type="text"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                placeholder="Role will auto-populate when user is selected"
+                placeholder={t('addShiftModal.rolePlaceholder')}
                 className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
                 readOnly
               />
@@ -273,11 +285,11 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Department
+                {t('addShiftModal.department')}
               </Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select department (optional)" />
+                  <SelectValue placeholder={t('addShiftModal.selectDepartment')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-950">
                   {departments.map((dept) => (
@@ -295,11 +307,11 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Ward
+                {t('addShiftModal.ward')}
               </Label>
               <Select value={selectedWard} onValueChange={setSelectedWard} disabled={!selectedDepartment}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder={selectedDepartment ? "Select ward (optional)" : "Select department first"} />
+                  <SelectValue placeholder={selectedDepartment ? t('addShiftModal.selectWard') : t('addShiftModal.selectDepartmentFirst')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-950">
                   {wards.map((ward) => (
@@ -313,11 +325,11 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
 
             <div className="space-y-4">
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                     <Calendar className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                    Start Date
+                    {t('addShiftModal.startDate')}
                   </Label>
                   <HijriCalendar
                     selectedDate={startDate ? new Date(startDate) : undefined}
@@ -331,7 +343,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                     <Calendar className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                    End Date
+                    {t('addShiftModal.endDate')}
                   </Label>
                   <HijriCalendar
                     selectedDate={endDate ? new Date(endDate) : undefined}
@@ -346,7 +358,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
               {startDate && endDate && new Date(startDate).getTime() !== new Date(endDate).getTime() && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    📅 Multi-day shift: {Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                    📅 {t('addShiftModal.multiDayShift').replace('{days}', Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)).toString())}
                   </p>
                 </div>
               )}
@@ -355,7 +367,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                     <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                    Start Time
+                    {t('addShiftModal.startTime')}
                   </Label>
                   <Input
                     type="time"
@@ -368,7 +380,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                     <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                    End Time
+                    {t('addShiftModal.endTime')}
                   </Label>
                   <Input
                     type="time"
@@ -385,14 +397,14 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
                 >
                   <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  Shift Notes (Optional)
+                  {t('addShiftModal.shiftNotes')}
                 </Label>
                 <Input
                   id="shiftNotes"
                   type="text"
                   value={shiftNotes}
                   onChange={(e) => setShiftNotes(e.target.value)}
-                  placeholder="Any special notes for this shift"
+                  placeholder={t('addShiftModal.shiftNotesPlaceholder')}
                   className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
                 />
               </div>
@@ -407,7 +419,7 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
               disabled={isSubmitting}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              Cancel
+              {t('addShiftModal.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -416,12 +428,12 @@ const AddShiftModal: React.FC<AddShiftModalProps> = React.memo(
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('addShiftModal.adding')}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  <span>Add Shift</span>
+                  <span>{t('addShiftModal.addShift')}</span>
                 </>
               )}
             </Button>
