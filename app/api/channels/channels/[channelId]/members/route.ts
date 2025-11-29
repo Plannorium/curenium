@@ -8,7 +8,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 export const runtime = 'nodejs';
 
 // Add a member to a channel
-export async function POST(request: NextRequest, context: { params: { channelId: string } }) {
+export async function POST(request: NextRequest, context: any) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.organizationId || !session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, context: { params: { channelId:
 }
 
 // Remove a member from a channel
-export async function DELETE(request: NextRequest, context: { params: { channelId: string } }) {
+export async function DELETE(request: NextRequest, context: any) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.organizationId || !session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });

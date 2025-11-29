@@ -1,9 +1,5 @@
 const https = require('https');
 
-// Worker URL and auth key
-const WORKER_URL = 'https://curenium-chat.almussanplanner12.workers.dev';
-const AUTH_KEY = '58vZ7T4yt8zZSiTJAgZZnoGWwFNgCFp1tgA/nY/jr5u=';
-
 // Function to make HTTPS request
 function makeRequest(url, options = {}) {
   return new Promise((resolve, reject) => {

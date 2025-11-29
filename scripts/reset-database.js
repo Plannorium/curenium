@@ -2,10 +2,7 @@ const mongoose = require('mongoose');
 
 async function resetDatabase() {
   try {
-    // Connect to MongoDB
-    await mongoose.connect('mongodb+srv://almussanplanner12_db_user:Mplannorium%40020525@cluster0.laurh2a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
 
-    console.log('Connected to MongoDB');
 
     // Collections to reset (add more as needed)
     const collectionsToReset = [
