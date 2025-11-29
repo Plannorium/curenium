@@ -98,6 +98,48 @@ export class ChatRoom {
             return new Response('Method not allowed', { status: 405 });
         }
 
+        if (url.pathname === '/api/reset') {
+            if (request.method === 'POST') {
+                // Optional: Add auth check here (e.g., API key)
+                await this.state.blockConcurrencyWhile(async () => {
+                    await this.state.storage.deleteAll(); // Clears all persistent storage
+                    this.messages = []; // Clear in-memory messages
+                    this.callSessionId = undefined; // Clear call session
+                    this.users.clear(); // Clear users
+                    this.sessions.forEach(session => {
+                        try {
+                            session.socket.close(1000, 'Room reset');
+                        } catch (error) {
+                            console.error('Error closing session during reset:', error);
+                        }
+                    });
+                    this.sessions = []; // Clear all sessions
+                    throw new Error('Reset complete'); // Evicts in-memory state, forcing restart
+                });
+                return new Response('Chat room reset', { status: 200, headers: corsHeaders });
+            }
+            return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+        }
+
+        // Handle reset requests before WebSocket upgrade check
+        if (url.searchParams.get('reset') === 'true' && request.method === 'POST') {
+            await this.state.blockConcurrencyWhile(async () => {
+                await this.state.storage.deleteAll(); // Clears all persistent storage
+                this.messages = []; // Clear in-memory messages
+                this.callSessionId = undefined; // Clear call session
+                this.users.clear(); // Clear users
+                this.sessions.forEach(session => {
+                    try {
+                        session.socket.close(1000, 'Room reset');
+                    } catch (error) {
+                        console.error('Error closing session during reset:', error);
+                    }
+                });
+                this.sessions = []; // Clear all sessions
+            });
+            return new Response('Chat room reset', { status: 200, headers: corsHeaders });
+        }
+
         if (url.pathname === '/api/call-end') {
             if (request.method === 'POST') {
                 const { callId, duration } = await request.json<{ callId: string; duration: string }>();
@@ -914,9 +956,37 @@ export default <ExportedHandler<Env>>{
             return stub.fetch(newRequest);
         }
 
+        // Handle reset requests for specific rooms
+        if (url.pathname.startsWith('/api/chat/reset/')) {
+            const roomId = url.pathname.replace('/api/chat/reset/', '');
+            const id = env.CHAT_ROOM.idFromName(roomId);
+            const stub = env.CHAT_ROOM.get(id);
+            const resetRequest = new Request(`${url.origin}/api/reset`, {
+                method: 'POST',
+                headers: request.headers,
+                body: request.body
+            });
+            resetRequest.headers.set('X-Env', JSON.stringify(env));
+            return stub.fetch(resetRequest);
+        }
+
         // Default route for WebSocket connections and HTTP messages
         const room = url.searchParams.get('room');
         if (room) {
+            // Check if this is a reset request
+            const isReset = url.searchParams.get('reset') === 'true';
+            if (isReset && request.method === 'POST') {
+                const id = env.CHAT_ROOM.idFromName(room);
+                const stub = env.CHAT_ROOM.get(id);
+                const resetRequest = new Request(`${url.origin}/api/reset`, {
+                    method: 'POST',
+                    headers: request.headers,
+                    body: request.body
+                });
+                resetRequest.headers.set('X-Env', JSON.stringify(env));
+                return stub.fetch(resetRequest);
+            }
+
             const id = env.CHAT_ROOM.idFromName(room);
             const stub = env.CHAT_ROOM.get(id);
             const newRequest = new Request(request.url, request);

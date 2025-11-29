@@ -8,9 +8,21 @@ import { Bell, CheckCircle, Clock, AlertTriangle, MessageSquare, Eye } from "luc
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 export default function AllNotificationsPage() {
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +51,7 @@ export default function AllNotificationsPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 flex items-center justify-center">
         <div className="text-center">
           <Loader />
-          <p className="mt-4 text-gray-600 dark:text-gray-400 font-medium">Loading notifications...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 font-medium">{t('notifications.loading')}</p>
         </div>
       </div>
     );
@@ -53,10 +65,10 @@ export default function AllNotificationsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                Notifications
+                {t('notifications.title')}
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-400 mt-2 font-medium">
-                Stay updated with your latest activities and alerts
+                {t('notifications.subtitle')}
               </p>
             </div>
             {unreadCount > 0 && (
@@ -65,7 +77,7 @@ export default function AllNotificationsPage() {
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Mark All Read
+                {t('notifications.markAllRead')}
               </Button>
             )}
           </div>
@@ -78,7 +90,7 @@ export default function AllNotificationsPage() {
                   <Bell className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('notifications.total')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{notifications.length}</p>
                 </div>
               </div>
@@ -89,7 +101,7 @@ export default function AllNotificationsPage() {
                   <Clock className="w-6 h-6 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unread</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('notifications.unread')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{unreadCount}</p>
                 </div>
               </div>
@@ -100,7 +112,7 @@ export default function AllNotificationsPage() {
                   <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Read</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('notifications.read')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{notifications.length - unreadCount}</p>
                 </div>
               </div>
@@ -150,14 +162,14 @@ export default function AllNotificationsPage() {
                               className="bg-transparent border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-400 dark:hover:text-gray-900 transition-all duration-300"
                             >
                               <Eye className="w-4 h-4 mr-2" />
-                              View Details
+                              {t('notifications.viewDetails')}
                             </Button>
                           </Link>
                         </div>
                       )}
                       {notification.sender && (
                         <div className="mt-2 flex items-center space-x-2">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">From:</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.from')}:</span>
                           <div className="flex items-center space-x-2">
                             <Avatar className="h-5 w-5">
                               <AvatarImage src={notification.sender.image} />
@@ -172,7 +184,7 @@ export default function AllNotificationsPage() {
                       {!notification.read && (
                         <div className="mt-3 flex items-center">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            New
+                            {t('notifications.new')}
                           </span>
                         </div>
                       )}
@@ -186,9 +198,9 @@ export default function AllNotificationsPage() {
               <div className="mx-auto w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-6">
                 <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No notifications yet</h3>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('notifications.noNotifications')}</h3>
               <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-                You're all caught up! We'll notify you when there's something new to see.
+                {t('notifications.allCaughtUp')}
               </p>
             </div>
           )}

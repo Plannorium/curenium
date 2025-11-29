@@ -8,7 +8,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 export const runtime = 'nodejs';
 
 // Add a member to a channel
-export async function POST(request: NextRequest, context: { params: Promise<{ channelId: string }> }) {
+export async function POST(request: NextRequest, context: any) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.organizationId || !session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ch
   try {
     await dbConnect();
     const { userId } = await request.json() as { userId: string };
-    const { channelId } = await context.params;
+    const { channelId } = context.params;
 
     // Check if current user has permission to modify this channel
     const channel = await Channel.findOne({
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ch
 }
 
 // Remove a member from a channel
-export async function DELETE(request: NextRequest, context: { params: Promise<{ channelId: string }> }) {
+export async function DELETE(request: NextRequest, context: any) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.organizationId || !session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -61,7 +61,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   try {
     await dbConnect();
     const { userId } = await request.json() as { userId: string };
-    const { channelId } = await context.params;
+    const { channelId } = context.params;
 
     // Check if current user has permission to modify this channel
     const channel = await Channel.findOne({

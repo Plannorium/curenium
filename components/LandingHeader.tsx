@@ -42,12 +42,12 @@ export function LandingHeader() {
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
 
-      <div className="relative container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+      <div className="relative container mx-auto flex h-16 items-center justify-between px-2.5 md:px-6">
         {/* Logo and Brand */}
         <div className="flex items-center">
           <Link
             href="/"
-            className="flex items-center gap-3 group"
+            className="flex items-center gap-1.5 md:gap-3 group"
             prefetch={false}
           >
             {isHydrated ? (
@@ -134,7 +134,7 @@ export function LandingHeader() {
         </nav>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 md:gap-3">
           <LanguageSwitcher />
           {session ? (
             <Link href="/dashboard" prefetch={false}>
@@ -156,7 +156,7 @@ export function LandingHeader() {
                   {t('nav.login')}
                 </Button>
               </Link>
-              <Link href="/signup" prefetch={false}>
+              <Link href="/signup" prefetch={false} className="hidden md:block">
                 <Button
                   size="sm"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
@@ -166,7 +166,7 @@ export function LandingHeader() {
               </Link>
             </>
           )}
-          <div className="ml-2 ">
+          <div className="ml-1.5 md:ml-2 ">
             <ThemeSwitcher />
           </div>
         </div>

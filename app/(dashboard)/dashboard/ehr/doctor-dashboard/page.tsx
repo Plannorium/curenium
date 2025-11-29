@@ -732,6 +732,7 @@ const DoctorDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               <InsuranceDisplay patientId={selectedPatient._id} />
               <AuditLogDisplay patientId={selectedPatient._id} />
+              <LabOrdersDisplay patientId={selectedPatient._id} />
             </div>
           </div>
         );

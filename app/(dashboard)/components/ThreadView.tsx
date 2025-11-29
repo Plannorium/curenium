@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/hooks/useChat";
 import { SendIcon } from "lucide-react";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface User {
   id: string;
@@ -63,7 +65,17 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   isCallActive,
   onMentionClick,
 }) => {
+  const { language } = useLanguage();
   const [replyContent, setReplyContent] = useState("");
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const parentMessage = messages.find((m) => m.id === threadId);
   const threadReplies = messages.filter((m) => m.threadId === threadId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -79,21 +91,23 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
     }
   };
 
+  const isRTL = language === 'ar';
+
   return (
     <AnimatePresence>
       {isOpen && threadId && (
         <motion.div
-          initial={{ x: "100%" }}
+          initial={{ x: isRTL ? "-100%" : "100%" }}
           animate={{ x: "0%" }}
-          exit={{ x: "100%" }}
+          exit={{ x: isRTL ? "-100%" : "100%" }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className={`absolute top-0 right-0 h-full w-full max-w-md bg-card/95 backdrop-blur-lg border-l border-border/50 shadow-2xl flex flex-col z-40 ${className}`}
+          className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} h-full w-full max-w-md bg-card/95 backdrop-blur-lg ${isRTL ? 'border-r' : 'border-l'} border-border/50 shadow-2xl flex flex-col z-40 ${className}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/50 flex-shrink-0">
             <div className="flex items-center gap-3">
               <MessageSquare className="text-primary" size={20} />
-              <h3 className="font-bold text-lg text-foreground">Thread</h3>
+              <h3 className="font-bold text-lg text-foreground">{t('threadView.title')}</h3>
             </div>
             <Button
               variant="ghost"
@@ -184,7 +198,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                     handleSendReply();
                   }
                 }}
-                placeholder={`Reply in thread...`}
+                placeholder={t('threadView.replyPlaceholder')}
                 className="pr-12 min-h-[40px] resize-none"
                 rows={1}
               />

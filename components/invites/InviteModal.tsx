@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Mail, Shield, Send } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Invite {
   _id: string;
@@ -19,10 +21,20 @@ interface InviteModalProps {
 }
 
 export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInviteCreated }) => {
+  const { language } = useLanguage();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('staff');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,8 +78,8 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInv
                 <Mail className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Invite Team Member</h2>
-                <p className="text-sm text-muted-foreground">Send an invitation to join your organization</p>
+                <h2 className="text-lg font-semibold text-foreground">{t('inviteModal.title')}</h2>
+                <p className="text-sm text-muted-foreground">{t('inviteModal.subtitle')}</p>
               </div>
             </div>
             <Button
@@ -85,17 +97,17 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInv
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
-              Email Address
+              {t('inviteModal.emailAddress')}
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Mail className={`absolute ${language === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground`} />
               <input
                 type="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                placeholder="colleague@hospital.com"
+                className={`w-full py-3 bg-background border border-input rounded-lg shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors ${language === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'}`}
+                placeholder={t('inviteModal.emailPlaceholder')}
                 required
               />
             </div>
@@ -103,31 +115,35 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInv
 
           <div className="space-y-2">
             <label htmlFor="role" className="block text-sm font-medium text-foreground">
-              Role & Permissions
+              {t('inviteModal.rolePermissions')}
             </label>
             <div className="relative">
-              <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Shield className={`absolute ${language === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground`} />
               <select
                 id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors appearance-none"
+                className={`w-full py-3 bg-background border border-input rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors appearance-none ${language === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'}`}
               >
-                <option value="admin">Administrator - Full access</option>
-                <option value="doctor">Doctor - Patient care access</option>
-                <option value="nurse">Nurse - Care coordination</option>
-                <option value="labtech">Lab Technician - Lab results</option>
-                <option value="reception">Reception - Patient intake</option>
-                <option value="manager">Manager - Department oversight</option>
-                <option value="staff">Staff - Basic access</option>
-                <option value="user">User - Basic access</option>
+                <option value="admin">{t('inviteList.roles.admin')}</option>
+                <option value="doctor">{t('inviteList.roles.doctor')}</option>
+                <option value="nurse">{t('inviteList.roles.nurse')}</option>
+                <option value="labtech">{t('inviteList.roles.labtech')}</option>
+                <option value="reception">{t('inviteList.roles.reception')}</option>
+                <option value="manager">{t('inviteList.roles.manager')}</option>
+                <option value="staff">{t('inviteList.roles.staff')}</option>
+                <option value="user">{t('inviteList.roles.user')}</option>
               </select>
             </div>
           </div>
 
           {error && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">
+                {error === 'Failed to send invite.' ? t('inviteModal.failedToSend') :
+                 error === 'Network error. Please try again.' ? t('inviteModal.networkError') :
+                 error}
+              </p>
             </div>
           )}
 
@@ -149,12 +165,12 @@ export const InviteModal: React.FC<InviteModalProps> = ({ isOpen, onClose, onInv
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
-                  Sending...
+                  {t('inviteModal.sending')}
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Send className="w-4 h-4" />
-                  Send Invitation
+                  <Send className={`w-4 h-4 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                  {t('inviteModal.sendInvitation')}
                 </div>
               )}
             </Button>

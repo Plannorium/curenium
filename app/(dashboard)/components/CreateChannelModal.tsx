@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface CreateChannelModalProps {
   isOpen: boolean;
@@ -25,6 +27,15 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
   onClose,
   onChannelCreated,
 }) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const [channelName, setChannelName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +54,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
   const handleCreate = async () => {
     if (!channelName.trim()) {
-      setError("Channel name cannot be empty.");
+      setError(t('createChannelModal.emptyNameError'));
       return;
     }
     setError("");
@@ -62,10 +73,10 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
         setChannelName("");
       } else {
         const data: { message?: string } = await response.json();
-        setError(data.message || "Failed to create channel.");
+        setError(data.message || t('createChannelModal.createFailedError'));
       }
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError(t('createChannelModal.unexpectedError'));
       console.error(err);
     } finally {
       setIsCreating(false);
@@ -90,7 +101,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
         <DialogHeader>
           <DialogTitle
             className="
-              flex items-center gap-2 
+              flex items-center gap-2
               text-lg font-semibold text-foreground/90
               tracking-tight
             "
@@ -98,7 +109,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Plus size={18} />
             </div>
-            Create New Channel
+            {t('createChannelModal.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -113,18 +124,18 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               htmlFor="channel-name"
               className="text-right text-muted-foreground/80"
             >
-              Name
+              {t('createChannelModal.nameLabel')}
             </Label>
             <Input
               id="channel-name"
               value={channelName}
               onChange={(e) => setChannelName(e.target.value)}
-              placeholder="e.g., patient-updates"
+              placeholder={t('createChannelModal.namePlaceholder')}
               className="
-                col-span-3 
+                col-span-3
                 bg-background/50 dark:bg-gray-800/50
                 border border-border/30 dark:border-gray-700/60
-                rounded-xl 
+                rounded-xl
                 focus:ring-2 focus:ring-primary/30
                 shadow-inner
               "
@@ -143,22 +154,22 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
             onClick={handleClose}
             disabled={isCreating}
             className="
-              border-border/30 
-              hover:bg-background/60 
-              transition-all duration-200 
+              border-border/30
+              hover:bg-background/60
+              transition-all duration-200
               rounded-xl shadow-sm cursor-pointer
             "
           >
-            Cancel
+            {t('createChannelModal.cancel')}
           </Button>
           <Button
             onClick={handleCreate}
             disabled={isCreating || !channelName.trim()}
             className="
-              bg-primary/90 
-              hover:bg-primary 
-              text-primary-foreground 
-              rounded-xl 
+              bg-primary/90
+              hover:bg-primary
+              text-primary-foreground
+              rounded-xl
               shadow-[0_4px_16px_-4px_var(--primary)]
               transition-all duration-200 cursor-pointer
             "
@@ -168,7 +179,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
             ) : (
               <Plus className="mr-2 h-4 w-4" />
             )}
-            Create Channel
+            {t('createChannelModal.createChannel')}
           </Button>
         </DialogFooter>
       </DialogContent>

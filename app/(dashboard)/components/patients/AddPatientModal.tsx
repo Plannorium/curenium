@@ -14,6 +14,8 @@ import { Patient } from '@/types/patient';
 import { PatientFormData } from './PatientForm';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface AddPatientModalProps {
   onPatientAdded: (patient: Patient) => void;
@@ -22,8 +24,18 @@ interface AddPatientModalProps {
 
 const AddPatientModal: React.FC<AddPatientModalProps> = ({ onPatientAdded, children }) => {
   const { data: session } = useSession();
+  const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   const handlePatientSubmit = async (data: PatientFormData) => {
     setIsSubmitting(true);
@@ -63,7 +75,7 @@ const AddPatientModal: React.FC<AddPatientModalProps> = ({ onPatientAdded, child
             <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg mr-3 md:mr-4">
               <Plus className="h-5 w-5 md:h-6 md:w-6 text-white" />
             </div>
-            Add New Patient
+            {t('addPatientModal.title')}
           </DialogTitle>
         </DialogHeader>
         <div className="p-6">
