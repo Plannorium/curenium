@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Patient {
   _id: string;
@@ -105,6 +107,15 @@ interface AdmissionDetailsModalProps {
 const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
   ({ admission, onAdmissionUpdated, children }) => {
     const { data: session } = useSession();
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
     const [isOpen, setIsOpen] = useState(false);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [wards, setWards] = useState<Ward[]>([]);
@@ -185,16 +196,16 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
         });
 
         if (response.ok) {
-          toast.success(`Admission ${action.replace('_', ' ')} successfully`);
+          toast.success(t('admissionDetailsModal.success.actionSuccess').replace('{action}', action.replace('_', ' ')));
           onAdmissionUpdated();
           setIsOpen(false);
         } else {
           const error = await response.json() as { message?: string };
-          toast.error(error.message || `Failed to ${action} admission`);
+          toast.error(error.message || t('admissionDetailsModal.errors.failedToAction').replace('{action}', action));
         }
       } catch (error) {
         console.error(`Failed to ${action} admission:`, error);
-        toast.error(`An error occurred while ${action}ing admission`);
+        toast.error(t('admissionDetailsModal.errors.errorActioning').replace('{action}', action));
       } finally {
         setIsSubmitting(false);
       }
@@ -242,7 +253,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Eye className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Admission Details
+              {t('admissionDetailsModal.title')}
             </DialogTitle>
           </DialogHeader>
 
@@ -267,16 +278,16 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">Age:</span> {admission.patient.dob ? new Date().getFullYear() - new Date(admission.patient.dob).getFullYear() : 'N/A'}
+                  <span className="font-medium">{t('admissionDetailsModal.labels.age')}</span> {admission.patient.dob ? new Date().getFullYear() - new Date(admission.patient.dob).getFullYear() : 'N/A'}
                 </div>
                 <div>
-                  <span className="font-medium">Gender:</span> {admission.patient.gender || 'N/A'}
+                  <span className="font-medium">{t('admissionDetailsModal.labels.gender')}</span> {admission.patient.gender || 'N/A'}
                 </div>
                 <div>
-                  <span className="font-medium">Doctor:</span> {admission.doctor.fullName}
+                  <span className="font-medium">{t('admissionDetailsModal.labels.doctor')}</span> {admission.doctor.fullName}
                 </div>
                 <div>
-                  <span className="font-medium">Requested:</span> {new Date(admission.requestedAt).toLocaleString()}
+                  <span className="font-medium">{t('admissionDetailsModal.labels.requested')}</span> {new Date(admission.requestedAt).toLocaleString()}
                 </div>
               </div>
             </div>
@@ -298,7 +309,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                 <div>
                   <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                     <FileText className="h-4 w-4 mr-2" />
-                    Reason for Admission
+                    {t('admissionDetailsModal.labels.reasonForAdmission')}
                   </Label>
                   <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                     {admission.reason}
@@ -309,7 +320,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                   <div>
                     <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                       <Clock className="h-4 w-4 mr-2" />
-                      Estimated Stay
+                      {t('admissionDetailsModal.labels.estimatedStay')}
                     </Label>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                       {admission.estimatedStay} days
@@ -320,7 +331,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                 {admission.specialRequirements && admission.specialRequirements.length > 0 && (
                   <div>
                     <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Special Requirements
+                      {t('admissionDetailsModal.labels.specialRequirements')}
                     </Label>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {admission.specialRequirements.map((req, index) => (
@@ -338,7 +349,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                   <div>
                     <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                       <User className="h-4 w-4 mr-2" />
-                      Doctor Notes
+                      {t('admissionDetailsModal.labels.doctorNotes')}
                     </Label>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                       {admission.doctorNotes}
@@ -350,7 +361,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                   <div>
                     <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                       <User className="h-4 w-4 mr-2" />
-                      Matron Nurse Notes
+                      {t('admissionDetailsModal.labels.matronNurseNotes')}
                     </Label>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                       {admission.matronNurseNotes}
@@ -362,7 +373,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                   <div>
                     <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                       <Bed className="h-4 w-4 mr-2" />
-                      Ward Assignment
+                      {t('admissionDetailsModal.labels.wardAssignment')}
                     </Label>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                       {admission.ward.name} (Ward {admission.ward.wardNumber})
@@ -378,17 +389,17 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200">Approve Admission Request</h4>
+                  <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200">{t('admissionDetailsModal.sections.approveAdmissionRequest')}</h4>
 
                   <div className="space-y-2">
                     <Label htmlFor="approval-notes" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Approval Notes
+                      {t('admissionDetailsModal.labels.approvalNotes')}
                     </Label>
                     <Textarea
                       id="approval-notes"
                       value={matronNurseNotes}
                       onChange={(e) => setMatronNurseNotes(e.target.value)}
-                      placeholder="Add approval notes..."
+                      placeholder={t('admissionDetailsModal.labels.approvalNotesPlaceholder')}
                       className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
                     />
                   </div>
@@ -397,14 +408,14 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                     <div className="space-y-2">
                       <Label htmlFor="department" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                         <Building className="h-4 w-4 mr-2" />
-                        Department *
+                        {t('admissionDetailsModal.labels.departmentRequired')}
                       </Label>
                       <Select value={selectedDepartment} onValueChange={(value) => {
                         setSelectedDepartment(value);
                         setSelectedWard(""); // Reset ward when department changes
                       }}>
                         <SelectTrigger className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                          <SelectValue placeholder="Select department" />
+                          <SelectValue placeholder={t('admissionDetailsModal.labels.selectDepartment')} />
                         </SelectTrigger>
                         <SelectContent>
                           {departments.map((dept) => (
@@ -419,7 +430,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                     <div className="space-y-2">
                       <Label htmlFor="ward" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                         <Bed className="h-4 w-4 mr-2" />
-                        Ward *
+                        {t('admissionDetailsModal.labels.wardRequired')}
                       </Label>
                       <Select value={selectedWard} onValueChange={setSelectedWard} disabled={!selectedDepartment || wardsLoading}>
                         <SelectTrigger className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
@@ -434,7 +445,10 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                         <SelectContent>
                           {filteredWards.map((ward) => (
                             <SelectItem key={ward._id} value={ward._id}>
-                              {ward.name} (Ward {ward.wardNumber}) - {ward.totalBeds - ward.occupiedBeds} beds available
+                              {t('admissionDetailsModal.wardDisplayText')
+                                .replace('{name}', ward.name)
+                                .replace('{number}', ward.wardNumber.toString())
+                                .replace('{available}', (ward.totalBeds - ward.occupiedBeds).toString())}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -452,7 +466,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                         className="bg-green-500 hover:bg-green-600 text-white w-full"
                       >
                         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                        Approve Admission
+                        {t('admissionDetailsModal.buttons.approveAdmission')}
                       </Button>
                     </div>
                   </div>
@@ -464,13 +478,13 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200">Assign Ward and Bed</h4>
+                  <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200">{t('admissionDetailsModal.sections.assignWardAndBed')}</h4>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="department" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                         <Building className="h-4 w-4 mr-2" />
-                        Department
+                        {t('admissionDetailsModal.labels.department')}
                       </Label>
                       <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                         <SelectTrigger className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
@@ -489,7 +503,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                     <div className="space-y-2">
                       <Label htmlFor="ward" className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                         <Bed className="h-4 w-4 mr-2" />
-                        Ward
+                        {t('admissionDetailsModal.labels.ward')}
                       </Label>
                       <Select value={selectedWard} onValueChange={setSelectedWard} disabled={!selectedDepartment}>
                         <SelectTrigger className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
@@ -498,7 +512,10 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                         <SelectContent>
                           {filteredWards.map((ward) => (
                             <SelectItem key={ward._id} value={ward._id}>
-                              {ward.name} (Ward {ward.wardNumber}) - {ward.totalBeds - ward.occupiedBeds} beds available
+                              {t('admissionDetailsModal.wardDisplayText')
+                                .replace('{name}', ward.name)
+                                .replace('{number}', ward.wardNumber.toString())
+                                .replace('{available}', (ward.totalBeds - ward.occupiedBeds).toString())}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -507,13 +524,13 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
 
                     <div className="space-y-2">
                       <Label htmlFor="bed" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        Bed Number
+                        {t('admissionDetailsModal.labels.bedNumber')}
                       </Label>
                       <Input
                         id="bed"
                         value={bedNumber}
                         onChange={(e) => setBedNumber(e.target.value)}
-                        placeholder="e.g., B001"
+                        placeholder={t('admissionDetailsModal.labels.bedNumberPlaceholder')}
                         className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
                       />
                     </div>
@@ -529,7 +546,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                     className="bg-purple-500 hover:bg-purple-600 text-white"
                   >
                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bed className="h-4 w-4 mr-2" />}
-                    Assign Ward & Bed
+                    {t('admissionDetailsModal.buttons.assignWardAndBed')}
                   </Button>
                 </div>
               </>
@@ -538,7 +555,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
 
           <DialogFooter className="px-4 md:px-6 py-3 md:py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
             <Button variant="ghost" onClick={() => setIsOpen(false)}>
-              Close
+              {t('admissionDetailsModal.buttons.close')}
             </Button>
             {canCancel && (
               <Button
@@ -548,7 +565,7 @@ const AdmissionDetailsModal: React.FC<AdmissionDetailsModalProps> = React.memo(
                 className="text-red-600 hover:text-red-700"
               >
                 <XCircle className="h-4 w-4 mr-2" />
-                Cancel Admission
+                {t('admissionDetailsModal.buttons.cancelAdmission')}
               </Button>
             )}
           </DialogFooter>

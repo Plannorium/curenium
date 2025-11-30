@@ -11,12 +11,24 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ServerCrash, Beaker, Calendar, FileText, CheckCircle, ArrowRight, Activity, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { ILabResult } from "@/models/LabResult";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface LabResultsDisplayProps {
   patientId: string;
 }
 
 const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [latestLabResult, setLatestLabResult] = useState<ILabResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +106,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
         <CardHeader>
           <CardTitle className="flex items-center text-xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             <Beaker className="mr-3 h-6 w-6 text-primary" />
-            Latest Lab Result
+            {t('labResults.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -110,7 +122,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
     return (
       <Alert variant="destructive" className="bg-red-50/80 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/50 backdrop-blur-lg">
         <ServerCrash className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('labResults.error')}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -121,11 +133,11 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 sm:pb-6">
         <CardTitle className="flex items-center text-xl sm:text-2xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           <Beaker className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-          <span className="text-lg sm:text-2xl">Latest Lab Result</span>
+          <span className="text-lg sm:text-2xl">{t('labResults.title')}</span>
         </CardTitle>
         <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
           <Link href={`/dashboard/ehr/patients/${patientId}/lab-results`}>
-            <span className="text-sm sm:text-base">View All</span>
+            <span className="text-sm sm:text-base">{t('labResults.viewAllResults')}</span>
             <ArrowRight className="ml-2 h-3 w-3 sm:h-4 sm:w-4" />
           </Link>
         </Button>
@@ -155,8 +167,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
               <div className="flex items-center space-x-2">
                 {getResultIcon(isValueNormal(latestLabResult.value, latestLabResult.referenceRange || ""))}
                 <Badge className={`text-sm font-medium ${getResultBadgeVariant(isValueNormal(latestLabResult.value, latestLabResult.referenceRange || ""))}`}>
-                  {isValueNormal(latestLabResult.value, latestLabResult.referenceRange || "") === "normal" ? "Normal" :
-                   isValueNormal(latestLabResult.value, latestLabResult.referenceRange || "") === "abnormal" ? "Abnormal" : "Unknown"}
+                  {t(`labResults.status.${isValueNormal(latestLabResult.value, latestLabResult.referenceRange || "")}`)}
                 </Badge>
               </div>
             </div>
@@ -168,7 +179,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
                   <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                     <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Result</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('labResults.result')}</span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {latestLabResult.value}
@@ -183,7 +194,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
                   <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                     <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Collected</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('labResults.collected')}</span>
                 </div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
                   {new Date(latestLabResult.collectedDate).toLocaleDateString()}
@@ -199,7 +210,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                       <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">Reference</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t('labResults.reference')}</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white">
                     {latestLabResult.referenceRange}
@@ -213,7 +224,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
                     <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                       <CheckCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">Reported</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t('labResults.reported')}</span>
                   </div>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white">
                     {new Date(latestLabResult.reportedDate).toLocaleDateString()}
@@ -229,7 +240,7 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
                   <div className="p-2 bg-gray-100 dark:bg-gray-900/30 rounded-lg">
                     <FileText className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Notes</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t('labResults.notes')}</span>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300">{latestLabResult.notes}</p>
               </div>
@@ -239,14 +250,14 @@ const LabResultsDisplay = ({ patientId }: LabResultsDisplayProps) => {
           <div className="text-center py-8 sm:py-12 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
             <Beaker className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500 mb-3 sm:mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              No Lab Results Yet
+              {t('labResults.noLabResultsYet')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base px-4">
-              Laboratory test results will appear here once they are available.
+              {t('labResults.labResultsDescription')}
             </p>
             <Button variant="outline" size="sm" asChild>
               <Link href={`/dashboard/ehr/patients/${patientId}/lab-results`}>
-                <span className="text-sm sm:text-base">View All Results</span>
+                <span className="text-sm sm:text-base">{t('labResults.viewAllResults')}</span>
                 <ArrowRight className="ml-2 h-3 w-3 sm:h-4 sm:w-4" />
               </Link>
             </Button>

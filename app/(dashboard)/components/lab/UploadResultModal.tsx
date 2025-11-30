@@ -6,6 +6,8 @@ import { UploadCloud, File, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 type LabOrderWithPatient = Omit<ILabOrder, 'patientId'> & {
   patientId: {
@@ -38,6 +40,16 @@ interface CloudinaryUploadResponse {
 }
 
 export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadResultModalProps) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,13 +177,13 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
             <UploadCloud className="h-6 w-6 mr-3 text-primary" />
-            {isEditing ? 'Edit Lab Result' : 'Upload Lab Result'}
+            {isEditing ? t('uploadResultModal.titles.edit') : t('uploadResultModal.titles.upload')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="px-6 pb-6 space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            For order: <span className="font-semibold text-primary">{order.testName}</span>
+            {t('uploadResultModal.labels.forOrder')} <span className="font-semibold text-primary">{order.testName}</span>
           </p>
           
           <div 
@@ -186,21 +198,21 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
             <div className="flex flex-col items-center justify-center space-y-2 text-gray-500 dark:text-gray-400">
               <UploadCloud className="h-10 w-10" />
               {isDragActive ? (
-                <p className="font-semibold">Drop the files here ...</p>
+                <p className="font-semibold">{t('uploadResultModal.placeholders.dragActive')}</p>
               ) : (
-                <p>Drag & drop a file here, or click to select</p>
+                <p>{t('uploadResultModal.placeholders.dragDrop')}</p>
               )}
-              <p className="text-xs">PDF, PNG, JPG, GIF up to 10MB</p>
+              <p className="text-xs">{t('uploadResultModal.fileTypes')}</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Notes (optional)
+              {t('uploadResultModal.labels.notes')}
             </label>
             <Textarea
               id="notes"
-              placeholder="Add any additional notes or details about the lab result..."
+              placeholder={t('uploadResultModal.placeholders.notes')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="min-h-[100px] bg-white/50 dark:bg-gray-900/50"
@@ -209,7 +221,7 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
 
           {files.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Files:</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('uploadResultModal.labels.selectedFiles')}</p>
               {files.map((file, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg">
                   <div className="flex items-center space-x-3">
@@ -226,7 +238,7 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
 
           {files.length === 0 && isEditing && order.results && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Current Results:</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('uploadResultModal.labels.currentResults')}</p>
               {(Array.isArray(order.results) ? order.results : [order.results]).map((result, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800/50 rounded-lg">
                   <div className="flex items-center space-x-3">
@@ -237,7 +249,7 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
                       rel="noopener noreferrer"
                       className="text-sm font-medium text-primary hover:underline truncate max-w-xs"
                     >
-                      {result.original_filename || 'View Result'}
+                      {result.original_filename || t('uploadResultModal.labels.viewResult')}
                     </a>
                   </div>
                 </div>
@@ -251,15 +263,15 @@ export const UploadResultModal = ({ order, onClose, onUploadComplete }: UploadRe
         </div>
 
         <DialogFooter className="p-6 pt-4 bg-gray-50/50 dark:bg-gray-900/50">
-          <Button variant="outline" onClick={onClose} disabled={uploading}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} disabled={uploading}>{t('uploadResultModal.buttons.cancel')}</Button>
           <Button onClick={handleSubmit} disabled={uploading || (files.length === 0 && !isEditing)} className="bg-primary hover:bg-primary/90 text-white dark:text-black">
             {uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {files.length > 0 ? 'Uploading...' : 'Updating...'}
+                {files.length > 0 ? t('uploadResultModal.buttons.uploading') : t('uploadResultModal.buttons.updating')}
               </>
             ) : (
-              files.length > 0 ? (isEditing ? 'Add Results' : 'Upload Results') : (isEditing ? 'Update Notes' : 'Upload Result')
+              files.length > 0 ? (isEditing ? t('uploadResultModal.buttons.addResults') : t('uploadResultModal.buttons.uploadResults')) : (isEditing ? t('uploadResultModal.buttons.updateNotes') : t('uploadResultModal.buttons.uploadResult'))
             )}
           </Button>
         </DialogFooter>

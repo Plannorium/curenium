@@ -206,9 +206,9 @@ const AdmissionsPage = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Clock className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
                 <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.pendingReview')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => a.status === 'requested').length}
@@ -220,9 +220,9 @@ const AdmissionsPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <CheckCircle className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
                 <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.approved')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => a.status === 'approved').length}
@@ -234,9 +234,9 @@ const AdmissionsPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Bed className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
                 <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.assigned')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => a.status === 'assigned').length}
@@ -248,9 +248,9 @@ const AdmissionsPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <AlertTriangle className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
                 <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.totalActive')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => ['requested', 'approved', 'assigned'].includes(a.status)).length}
@@ -292,9 +292,9 @@ const AdmissionsPage = () => {
                   <Card key={admission._id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div className="flex items-start space-x-3 md:space-x-4 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 md:h-12 md:w-12 shrink-0">
-                            <AvatarFallback className="text-xs md:text-sm">
+                        <div className="flex justify-start items-start space-x-3 md:space-x-4 flex-1 min-w-0">
+                          <Avatar className={`h-10 w-10 md:h-12 md:w-12 shrink-0 ${language === "ar" ? "ml-0" : ""}`}>
+                            <AvatarFallback className={`text-xs md:text-sm ${language === "ar" ? "m-0 mr-1" : ""}`}>
                               {admission.patient.firstName[0]}{admission.patient.lastName[0]}
                             </AvatarFallback>
                           </Avatar>

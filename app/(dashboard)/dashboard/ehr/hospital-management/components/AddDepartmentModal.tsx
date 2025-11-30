@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, Building, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface User {
   _id: string;
@@ -35,6 +37,16 @@ interface AddDepartmentModalProps {
 
 const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
   ({ onDepartmentAdded, children }) => {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -96,14 +108,14 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
           setNewSpecialty("");
           setPhone("");
           setEmail("");
-          toast.success('Department created successfully');
+          toast.success(t('hospitalManagementPage.modals.addDepartment.success'));
         } else {
           const error = await res.json() as { message?: string };
-          toast.error(error.message || 'Failed to create department');
+          toast.error(error.message || t('hospitalManagementPage.modals.addDepartment.failed'));
         }
       } catch (error) {
         console.error("Failed to create department:", error);
-        toast.error('An error occurred while creating the department');
+        toast.error(t('hospitalManagementPage.modals.addDepartment.error'));
       } finally {
         setIsSubmitting(false);
       }
@@ -138,7 +150,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Building className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Add New Department
+              {t('hospitalManagementPage.modals.addDepartment.title')}
             </DialogTitle>
           </DialogHeader>
 
@@ -149,7 +161,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <Building className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Department Name *
+                {t('hospitalManagementPage.modals.addDepartment.departmentName')}
               </Label>
               <Input
                 id="name"
@@ -166,7 +178,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
                 htmlFor="description"
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300"
               >
-                Description
+                {t('hospitalManagementPage.modals.addDepartment.description')}
               </Label>
               <Textarea
                 id="description"
@@ -182,11 +194,11 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
                 htmlFor="head"
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300"
               >
-                Head of Department
+                {t('hospitalManagementPage.modals.addDepartment.headOfDepartment')}
               </Label>
               <Select value={headOfDepartment} onValueChange={setHeadOfDepartment} disabled={isLoading}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select head of department" />
+                  <SelectValue placeholder={t('hospitalManagementPage.modals.addDepartment.selectHead')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-950 max-h-60">
                   {users.map((user) => (
@@ -200,7 +212,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
 
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Specialties
+                {t('hospitalManagementPage.modals.addDepartment.specialties')}
               </Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {specialties.map((specialty, index) => (
@@ -220,7 +232,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
                   value={newSpecialty}
                   onChange={(e) => setNewSpecialty(e.target.value)}
                   onKeyPress={handleSpecialtyKeyPress}
-                  placeholder="Enter specialty name"
+                  placeholder={t('hospitalManagementPage.modals.addDepartment.enterSpecialty')}
                   className="flex-1 bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
                 />
                 <Button
@@ -242,7 +254,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
                   htmlFor="phone"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Phone
+                  {t('hospitalManagementPage.modals.addDepartment.phone')}
                 </Label>
                 <Input
                   id="phone"
@@ -258,7 +270,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
                   htmlFor="email"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Email
+                  {t('hospitalManagementPage.modals.addDepartment.email')}
                 </Label>
                 <Input
                   id="email"
@@ -279,7 +291,7 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
               disabled={isSubmitting}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              Cancel
+              {t('hospitalManagementPage.modals.addDepartment.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -288,12 +300,12 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = React.memo(
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('hospitalManagementPage.modals.addDepartment.creating')}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Department
+                  {t('hospitalManagementPage.modals.addDepartment.createDepartment')}
                 </>
               )}
             </Button>

@@ -18,15 +18,28 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { settingsTranslations } from "@/lib/settings-translations";
 
 
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark"], { message: "Please select a theme." }),
   // font: z.enum(["inter", "manrope", "system"], { message: "Please select a font." }),
 });
+
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
 export function AppearanceForm() {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = settingsTranslations[language as keyof typeof settingsTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const { setFont: _setFont, setTheme, theme, font } = useTheme();
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
@@ -44,13 +57,13 @@ export function AppearanceForm() {
 
       if (response.ok) {
         const { font: _font } = (await response.json()) as { font?: string };
-        toast.success("Appearance settings updated successfully.");
+        toast.success(t('appearance.appearanceUpdated'));
         // setFont(data.font);
       } else {
-        toast.error("Failed to update appearance settings.");
+        toast.error(t('appearance.failedToUpdateAppearance'));
       }
     } catch (_error) {
-      toast.error("An error occurred while updating appearance settings.");
+      toast.error(t('appearance.errorUpdatingAppearance'));
     }
   }
 
@@ -128,9 +141,9 @@ export function AppearanceForm() {
           name="theme"
           render={({ field }) => (
             <FormItem className="space-y-1">
-              <FormLabel>Theme</FormLabel>
+              <FormLabel>{t('appearance.theme')}</FormLabel>
               <FormDescription>
-                Select the theme for the dashboard.
+                {t('appearance.themeDescription')}
               </FormDescription>
               <FormMessage />
               <RadioGroup
@@ -163,7 +176,7 @@ export function AppearanceForm() {
                       </div>
                     </div>
                     <span className="block w-full p-2 text-center font-normal">
-                      Light
+                      {t('appearance.light')}
                     </span>
                   </FormLabel>
                 </FormItem>
@@ -189,7 +202,7 @@ export function AppearanceForm() {
                       </div>
                     </div>
                     <span className="block w-full p-2 text-center font-normal">
-                      Dark
+                      {t('appearance.dark')}
                     </span>
                   </FormLabel>
                 </FormItem>
@@ -199,11 +212,11 @@ export function AppearanceForm() {
         />
 
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
         >
-          Update Preferences
+          {t('appearance.updatePreferences')}
         </Button>
       </form>
     </Form>

@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Loader } from "@/components/ui/Loader";
 import AddShiftModal from "@/app/(dashboard)/components/AddShiftModal";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // Types
 interface ShiftTracking {
@@ -80,6 +82,21 @@ interface ShiftTracking {
 
 const ShiftTrackingPage = () => {
   const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string, replacements?: Record<string, string>) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    if (value && replacements) {
+      return Object.keys(replacements).reduce((str, key) => {
+        return str.replace(new RegExp(`\\{${key}\\}`, 'g'), replacements[key]);
+      }, value);
+    }
+    return value || key;
+  };
+
   const [shifts, setShifts] = useState<ShiftTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("today");
@@ -100,11 +117,11 @@ const ShiftTrackingPage = () => {
         const data = await response.json() as ShiftTracking[];
         setShifts(data);
       } else {
-        toast.error('Failed to fetch shifts');
+        toast.error(t('shiftTrackingPage.errors.fetchFailed'));
       }
     } catch (error) {
       console.error('Failed to fetch shifts:', error);
-      toast.error('An error occurred while fetching shifts');
+      toast.error(t('shiftTrackingPage.errors.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -122,6 +139,15 @@ const ShiftTrackingPage = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    const key = `shiftTrackingPage.status.${status}`;
+    return t(key);
+  };
+
+  const getMissedLabel = (duration: number) => {
+    return t('shiftTrackingPage.status.missed', { duration: duration.toString() });
+  };
+
   const handleShiftAction = async (shiftId: string, action: string, data?: any) => {
     try {
       const response = await fetch(`/api/shift-tracking/${shiftId}`, {
@@ -133,15 +159,15 @@ const ShiftTrackingPage = () => {
       });
 
       if (response.ok) {
-        toast.success(`Shift ${action.replace('_', ' ')} successfully`);
+        toast.success(t('shiftTrackingPage.errors.actionSuccess', { action: action.replace('_', ' ') }));
         fetchShifts();
       } else {
         const error = await response.json() as { message?: string };
-        toast.error(error.message || `Failed to ${action} shift`);
+        toast.error(error.message || t('shiftTrackingPage.errors.actionFailed', { action: action.replace('_', ' ') }));
       }
     } catch (error) {
       console.error(`Failed to ${action} shift:`, error);
-      toast.error(`An error occurred while ${action}ing shift`);
+      toast.error(t('shiftTrackingPage.errors.actionError', { action: action.replace('_', ' ') }));
     }
   };
 
@@ -197,7 +223,7 @@ const ShiftTrackingPage = () => {
   };
 
   if (loading) {
-    return <Loader text="Loading shift data..." />;
+    return <Loader text={t('shiftTrackingPage.loading')} />;
   }
 
   return (
@@ -206,18 +232,18 @@ const ShiftTrackingPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            Shift Tracking
+            {t('shiftTrackingPage.title')}
           </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            Advanced shift management and time tracking
+            {t('shiftTrackingPage.subtitle')}
           </p>
         </div>
         {session?.user?.role === 'admin' && (
           <AddShiftModal onShiftAdded={fetchShifts}>
             <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden xs:inline">Schedule Shift</span>
-              <span className="xs:hidden">Add</span>
+              <span className="hidden xs:inline">{t('shiftTrackingPage.buttons.scheduleShift')}</span>
+              <span className="xs:hidden">{t('shiftTrackingPage.buttons.add')}</span>
             </Button>
           </AddShiftModal>
         )}
@@ -227,10 +253,10 @@ const ShiftTrackingPage = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Clock className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Active Shifts</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('shiftTrackingPage.stats.activeShifts')}</p>
                 <p className="text-2xl font-bold">
                   {shifts.filter(s => s.status === 'active').length}
                 </p>
@@ -241,10 +267,10 @@ const ShiftTrackingPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Pause className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">On Break</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('shiftTrackingPage.stats.onBreak')}</p>
                 <p className="text-2xl font-bold">
                   {shifts.filter(s => s.status === 'on_break').length}
                 </p>
@@ -255,10 +281,10 @@ const ShiftTrackingPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Activity className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Completed Today</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('shiftTrackingPage.stats.completedToday')}</p>
                 <p className="text-2xl font-bold">
                   {shifts.filter(s =>
                     s.status === 'completed' &&
@@ -272,10 +298,10 @@ const ShiftTrackingPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <User className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Staff</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('shiftTrackingPage.stats.totalStaff')}</p>
                 <p className="text-2xl font-bold">
                   {new Set(shifts.map(s => s.user._id)).size}
                 </p>
@@ -286,10 +312,10 @@ const ShiftTrackingPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <XCircle className="h-8 w-8 text-red-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Missed Shifts</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('shiftTrackingPage.stats.missedShifts')}</p>
                 <p className="text-2xl font-bold text-red-600">
                   {shifts.filter(s => s.isMissed).length}
                 </p>
@@ -302,20 +328,20 @@ const ShiftTrackingPage = () => {
       {/* Shifts List */}
       <Card>
         <CardHeader>
-          <CardTitle>Shifts</CardTitle>
+          <CardTitle>{t('shiftTrackingPage.cardTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1">
-              <TabsTrigger value="today" className="text-xs sm:text-sm">Today</TabsTrigger>
-              <TabsTrigger value="week" className="text-xs sm:text-sm hidden sm:inline-flex">Week</TabsTrigger>
-              <TabsTrigger value="active" className="text-xs sm:text-sm">Active</TabsTrigger>
+              <TabsTrigger value="today" className="text-xs sm:text-sm">{t('shiftTrackingPage.tabs.today')}</TabsTrigger>
+              <TabsTrigger value="week" className="text-xs sm:text-sm hidden sm:inline-flex">{t('shiftTrackingPage.tabs.week')}</TabsTrigger>
+              <TabsTrigger value="active" className="text-xs sm:text-sm">{t('shiftTrackingPage.tabs.active')}</TabsTrigger>
               <TabsTrigger value="missed" className="text-xs sm:text-sm text-red-600 data-[state=active]:text-red-600 data-[state=active]:bg-red-50">
-                <span className="hidden sm:inline">Missed</span>
+                <span className="hidden sm:inline">{t('shiftTrackingPage.tabs.missed')}</span>
                 <span className="sm:hidden">Miss</span>
               </TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs sm:text-sm hidden sm:inline-flex">Done</TabsTrigger>
-              <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs sm:text-sm hidden sm:inline-flex">{t('shiftTrackingPage.tabs.completed')}</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs sm:text-sm">{t('shiftTrackingPage.tabs.all')}</TabsTrigger>
             </TabsList>
 
             <div className="mt-6 space-y-4">
@@ -323,14 +349,14 @@ const ShiftTrackingPage = () => {
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {activeTab === 'missed' ? 'No missed shifts' : 'No shifts found'}
+                    {activeTab === 'missed' ? t('shiftTrackingPage.emptyState.noMissedShifts') : t('shiftTrackingPage.emptyState.noShiftsFound')}
                   </h3>
                   <p className="text-muted-foreground">
                     {activeTab === 'missed'
-                      ? 'Great! All scheduled shifts are on track.'
+                      ? t('shiftTrackingPage.emptyState.allOnTrack')
                       : activeTab === 'all'
-                        ? 'No shifts have been scheduled yet.'
-                        : `No ${activeTab} shifts.`
+                      ? t('shiftTrackingPage.emptyState.noShiftsScheduled')
+                      : t('shiftTrackingPage.emptyState.noTabShifts', { tab: activeTab })
                     }
                   </p>
                 </div>
@@ -354,11 +380,11 @@ const ShiftTrackingPage = () => {
                               </h3>
                               {shift.isMissed ? (
                                 <Badge className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 text-xs">
-                                  MISSED ({shift.missedDuration}min late)
+                                  {getMissedLabel(shift.missedDuration || 0)}
                                 </Badge>
                               ) : (
                                 <Badge className={`${getStatusColor(shift.status)} text-xs`}>
-                                  {shift.status.replace('_', ' ').toUpperCase()}
+                                  {getStatusLabel(shift.status)}
                                 </Badge>
                               )}
                               <Badge variant="outline" className="text-xs">
@@ -366,18 +392,18 @@ const ShiftTrackingPage = () => {
                               </Badge>
                               {shift.isFromBasicShifts && (
                                 <Badge variant="secondary" className="text-xs">
-                                  Basic
+                                  {t('shiftTrackingPage.badges.basic')}
                                 </Badge>
                               )}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
                               <div className="min-w-0">
-                                <span className="font-medium">Date:</span>
+                                <span className="font-medium">{t('shiftTrackingPage.labels.date')}</span>
                                 <div className="truncate">{new Date(shift.shiftDate).toLocaleDateString()}</div>
                               </div>
                               <div className="min-w-0">
-                                <span className="font-medium">Scheduled:</span>
+                                <span className="font-medium">{t('shiftTrackingPage.labels.scheduled')}</span>
                                 <div className="truncate">
                                   {new Date(shift.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                                   {new Date(shift.scheduledEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -385,25 +411,25 @@ const ShiftTrackingPage = () => {
                               </div>
                               {shift.actualStart && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Started:</span>
+                                  <span className="font-medium">{t('shiftTrackingPage.labels.started')}</span>
                                   <div className="truncate">{new Date(shift.actualStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                 </div>
                               )}
                               {shift.actualEnd && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Ended:</span>
+                                  <span className="font-medium">{t('shiftTrackingPage.labels.ended')}</span>
                                   <div className="truncate">{new Date(shift.actualEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                 </div>
                               )}
                               {shift.department && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Dept:</span>
+                                  <span className="font-medium">{t('shiftTrackingPage.labels.dept')}</span>
                                   <div className="truncate">{shift.department.name}</div>
                                 </div>
                               )}
                               {shift.ward && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Ward:</span>
+                                  <span className="font-medium">{t('shiftTrackingPage.labels.ward')}</span>
                                   <div className="truncate">{shift.ward.name} ({shift.ward.wardNumber})</div>
                                 </div>
                               )}
@@ -412,7 +438,7 @@ const ShiftTrackingPage = () => {
                             {/* Break Information */}
                             {shift.breaks.length > 0 && (
                               <div className="mb-4">
-                                <p className="text-sm font-medium mb-2">Breaks:</p>
+                                <p className="text-sm font-medium mb-2">{t('shiftTrackingPage.labels.breaks')}</p>
                                 <div className="flex flex-wrap gap-2">
                                   {shift.breaks.map((breakItem, index) => (
                                     <Badge key={index} variant="outline" className="text-xs">
@@ -426,11 +452,11 @@ const ShiftTrackingPage = () => {
                             {/* Performance Metrics */}
                             {(shift.tasksCompleted || shift.incidentsReported || shift.patientInteractions) && (
                               <div className="mb-4">
-                                <p className="text-sm font-medium mb-2">Performance:</p>
+                                <p className="text-sm font-medium mb-2">{t('shiftTrackingPage.labels.performance')}</p>
                                 <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                                  {shift.tasksCompleted && <span>Tasks: {shift.tasksCompleted}</span>}
-                                  {shift.incidentsReported && <span>Incidents: {shift.incidentsReported}</span>}
-                                  {shift.patientInteractions && <span>Interactions: {shift.patientInteractions}</span>}
+                                  {shift.tasksCompleted && <span>{t('shiftTrackingPage.labels.tasks')} {shift.tasksCompleted}</span>}
+                                  {shift.incidentsReported && <span>{t('shiftTrackingPage.labels.incidents')} {shift.incidentsReported}</span>}
+                                  {shift.patientInteractions && <span>{t('shiftTrackingPage.labels.interactions')} {shift.patientInteractions}</span>}
                                 </div>
                               </div>
                             )}
@@ -439,10 +465,10 @@ const ShiftTrackingPage = () => {
 
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-4">
                           <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                            {/* <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
                               <Eye className="h-4 w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">Details</span>
-                            </Button>
+                              <span className="hidden sm:inline">{t('shiftTrackingPage.buttons.details')}</span>
+                            </Button> */}
 
                             {/* Basic shift actions - available for both basic and advanced shifts */}
                             {canClockIn(shift) && (
@@ -453,8 +479,8 @@ const ShiftTrackingPage = () => {
                                 className="text-green-600 hover:text-green-700 flex-1 sm:flex-none"
                               >
                                 <Play className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Clock In</span>
-                                <span className="sm:hidden">In</span>
+                                <span className="hidden sm:inline">{t('shiftTrackingPage.buttons.clockIn')}</span>
+                                <span className="sm:hidden">{t('shiftTrackingPage.buttons.clockInShort')}</span>
                               </Button>
                             )}
 
@@ -466,8 +492,8 @@ const ShiftTrackingPage = () => {
                                 className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                               >
                                 <Square className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Clock Out</span>
-                                <span className="sm:hidden">Out</span>
+                                <span className="hidden sm:inline">{t('shiftTrackingPage.buttons.clockOut')}</span>
+                                <span className="sm:hidden">{t('shiftTrackingPage.buttons.clockOutShort')}</span>
                               </Button>
                             )}
 
@@ -483,7 +509,7 @@ const ShiftTrackingPage = () => {
                                 className="text-yellow-600 hover:text-yellow-700 flex-1 sm:flex-none"
                               >
                                 <Coffee className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Break</span>
+                                <span className="hidden sm:inline">{t('shiftTrackingPage.buttons.break')}</span>
                               </Button>
                             )}
 
@@ -495,8 +521,8 @@ const ShiftTrackingPage = () => {
                                 className="text-blue-600 hover:text-blue-700 flex-1 sm:flex-none"
                               >
                                 <Play className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">End Break</span>
-                                <span className="sm:hidden">End</span>
+                                <span className="hidden sm:inline">{t('shiftTrackingPage.buttons.endBreak')}</span>
+                                <span className="sm:hidden">{t('shiftTrackingPage.buttons.endBreakShort')}</span>
                               </Button>
                             )}
 
@@ -508,8 +534,8 @@ const ShiftTrackingPage = () => {
                                 className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                               >
                                 <XCircle className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Mark Absent</span>
-                                <span className="sm:hidden">Absent</span>
+                                <span className="hidden sm:inline">{t('shiftTrackingPage.buttons.markAbsent')}</span>
+                                <span className="sm:hidden">{t('shiftTrackingPage.buttons.markAbsentShort')}</span>
                               </Button>
                             )}
                           </div>

@@ -800,6 +800,100 @@ export const dashboardTranslations = {
       }
     },
 
+    vitals: {
+      title: "Latest Vitals",
+      heartRate: "Heart Rate",
+      bloodPressure: "Blood Pressure",
+      spo2: "SpO2",
+      temperature: "Temperature",
+      respiratoryRate: "Resp. Rate",
+      noVitalsRecorded: "No vitals recorded for this patient yet.",
+      recordVitals: "Record Vitals",
+      viewAll: "View All",
+      bloodPressureCategories: {
+        crisis: "Crisis",
+        highStage2: "High (Stage 2)",
+        highStage1: "High (Stage 1)",
+        elevated: "Elevated",
+        normal: "Normal",
+        nA: "N/A"
+      },
+      recordVitalsModal: {
+        title: "Record Vitals for {patientName}",
+        description: "Enter the patient's latest vital signs. All fields are required.",
+        fields: {
+          bpSystolic: "BP Systolic (mmHg)",
+          bpDiastolic: "BP Diastolic (mmHg)",
+          heartRate: "Heart Rate (bpm)",
+          temperature: "Temperature (°F)",
+          respiratoryRate: "Respiratory Rate (breaths/min)",
+          spo2: "SpO2 (%)",
+          height: "Height (in)",
+          weight: "Weight (lbs)",
+          notes: "Notes"
+        },
+        bmi: "Body Mass Index (BMI):",
+        markAsUrgent: "Mark as Urgent",
+        cancel: "Cancel",
+        saveVitals: "Save Vitals",
+        success: "Vitals recorded successfully!",
+        failed: "Failed to record vitals.",
+        error: "An unexpected error occurred."
+      }
+    },
+
+    labResults: {
+      title: "Latest Lab Result",
+      result: "Result",
+      collected: "Collected",
+      reference: "Reference",
+      reported: "Reported",
+      notes: "Notes",
+      noLabResultsYet: "No Lab Results Yet",
+      labResultsDescription: "Laboratory test results will appear here once they are available.",
+      viewAllResults: "View All Results",
+      status: {
+        normal: "Normal",
+        abnormal: "Abnormal",
+        unknown: "Unknown"
+      },
+      error: "Error",
+      failedToFetch: "Failed to fetch lab results"
+    },
+
+    labResultsPage: {
+      backToPatient: "Back to Patient",
+      title: "Lab Results History",
+      subtitle: "{count} test results • Track patient diagnostics over time",
+      exportCsv: "Export CSV",
+      filtersAndSearch: "Filters & Search",
+      searchPlaceholder: "Search by test name or result...",
+      filterByStatus: "Filter by status",
+      filterOptions: {
+        all: "All Results",
+        normal: "Normal",
+        abnormal: "Abnormal"
+      },
+      tableHeaders: {
+        testName: "Test Name",
+        result: "Result",
+        units: "Units",
+        refRange: "Ref Range",
+        status: "Status",
+        collectedAt: "Collected At"
+      },
+      status: {
+        normal: "Normal",
+        abnormal: "Abnormal",
+        unknown: "Unknown"
+      },
+      noResultsFound: "No lab results found matching your criteria.",
+      showingResults: "Showing {start} to {end} of {total} results",
+      previous: "Previous",
+      next: "Next",
+      pageInfo: "Page {current} of {total}"
+    },
+
     // Administration Details Modal
     administrationDetailsModal: {
       title: "Administration History",
@@ -920,6 +1014,406 @@ export const dashboardTranslations = {
       administeredBy: "Administered by",
       dose: "Dose",
       notes: "Notes",
+    },
+
+    pharmacy: {
+      title: "Pharmacy Dashboard",
+      stats: {
+        pendingDispensing: "Pending Dispensing",
+        dispensed: "Dispensed",
+        totalPrescriptions: "Total Prescriptions"
+      },
+      search: {
+        placeholder: "Search by patient or medication...",
+        filterByStatus: "Filter by status",
+        allStatuses: "All Statuses",
+        active: "Active",
+        completed: "Completed",
+        cancelled: "Cancelled"
+      },
+      tabs: {
+        pendingDispensing: "Pending Dispensing",
+        dispensed: "Dispensed"
+      },
+      table: {
+        headers: {
+          patient: "Patient",
+          medication: "Medication",
+          dose: "Dose",
+          frequency: "Frequency",
+          date: "Date",
+          status: "Status",
+          actions: "Actions"
+        },
+        status: {
+          dispensed: "Dispensed",
+          markAsDispensed: "Mark as Dispensed"
+        }
+      },
+      empty: {
+        noPrescriptions: "No prescriptions",
+        noPendingDispensing: "No prescriptions pending dispensing",
+        noDispensedFound: "No dispensed prescriptions found"
+      },
+      errors: {
+        loadingError: "Error loading prescriptions",
+        refreshFailed: "Failed to refresh prescriptions"
+      }
+    },
+
+    testDetailsModal: {
+      title: "Test Details",
+      sections: {
+        patientInformation: "Patient Information",
+        testInformation: "Test Information",
+        notes: "Notes",
+        results: "Results"
+      },
+      labels: {
+        name: "Name",
+        testName: "Test Name",
+        testsRequested: "Tests Requested",
+        status: "Status",
+        requestedOn: "Requested On",
+        submittedOn: "Submitted On"
+      },
+      fileTypes: {
+        pdf: "PDF Document",
+        png: "PNG Image",
+        jpg: "JPEG Image",
+        jpeg: "JPEG Image",
+        gif: "GIF Image",
+        unknown: "Unknown File"
+      },
+      buttons: {
+        close: "Close"
+      }
+    },
+
+    uploadResultModal: {
+      titles: {
+        edit: "Edit Lab Result",
+        upload: "Upload Lab Result"
+      },
+      labels: {
+        forOrder: "For order:",
+        notes: "Notes (optional)",
+        selectedFiles: "Selected Files:",
+        currentResults: "Current Results:",
+        viewResult: "View Result"
+      },
+      placeholders: {
+        notes: "Add any additional notes or details about the lab result...",
+        dragDrop: "Drag & drop a file here, or click to select",
+        dragActive: "Drop the files here ..."
+      },
+      fileTypes: "PDF, PNG, JPG, GIF up to 10MB",
+      buttons: {
+        cancel: "Cancel",
+        uploading: "Uploading...",
+        updating: "Updating...",
+        addResults: "Add Results",
+        uploadResults: "Upload Results",
+        updateNotes: "Update Notes",
+        uploadResult: "Upload Result"
+      }
+    },
+
+    dischargesPage: {
+      title: "Discharge Management",
+      subtitle: "Plan and manage patient discharges",
+      loading: "Loading discharges...",
+      errors: {
+        fetchFailed: "Failed to fetch discharges",
+        fetchError: "An error occurred while fetching discharges",
+        actionFailed: "Failed to {action} discharge",
+        actionError: "An error occurred while {action}ing discharge",
+        actionSuccess: "Discharge {action} successfully"
+      },
+      buttons: {
+        planDischarge: "Plan Discharge",
+        viewDetails: "View Details",
+        startProcess: "Start Process",
+        complete: "Complete",
+        cancel: "Cancel"
+      },
+      stats: {
+        planned: "Planned",
+        inProgress: "In Progress",
+        completed: "Completed",
+        cancelled: "Cancelled"
+      },
+      tabs: {
+        all: "All",
+        planned: "Planned",
+        inProgress: "In Progress",
+        completed: "Completed"
+      },
+      cardTitle: "Discharges",
+      emptyState: {
+        noDischarges: "No discharges found",
+        noPlansYet: "No discharge plans have been created yet.",
+        noTabDischarges: "No {tab} discharges."
+      },
+      status: {
+        planned: "PLANNED",
+        in_progress: "IN PROGRESS",
+        completed: "COMPLETED",
+        cancelled: "CANCELLED"
+      },
+      dischargeTypes: {
+        routine: "ROUTINE",
+        against_medical_advice: "AGAINST MEDICAL ADVICE",
+        transfer: "TRANSFER",
+        death: "DEATH"
+      },
+      labels: {
+        mrn: "MRN:",
+        doctor: "Doctor:",
+        matronNurse: "Matron Nurse:",
+        plannedDate: "Planned Date:",
+        actualDate: "Actual Date:",
+        initiated: "Initiated:",
+        reason: "Reason:"
+      }
+    },
+
+    shiftTrackingPage: {
+      title: "Shift Tracking",
+      subtitle: "Advanced shift management and time tracking",
+      loading: "Loading shift data...",
+      errors: {
+        fetchFailed: "Failed to fetch shifts",
+        fetchError: "An error occurred while fetching shifts",
+        actionFailed: "Failed to {action} shift",
+        actionError: "An error occurred while {action}ing shift",
+        actionSuccess: "Shift {action} successfully"
+      },
+      buttons: {
+        scheduleShift: "Schedule Shift",
+        add: "Add",
+        details: "Details",
+        clockIn: "Clock In",
+        clockInShort: "In",
+        clockOut: "Clock Out",
+        clockOutShort: "Out",
+        break: "Break",
+        endBreak: "End Break",
+        endBreakShort: "End",
+        markAbsent: "Mark Absent",
+        markAbsentShort: "Absent"
+      },
+      stats: {
+        activeShifts: "Active Shifts",
+        onBreak: "On Break",
+        completedToday: "Completed Today",
+        totalStaff: "Total Staff",
+        missedShifts: "Missed Shifts"
+      },
+      tabs: {
+        today: "Today",
+        week: "Week",
+        active: "Active",
+        missed: "Missed",
+        completed: "Done",
+        all: "All"
+      },
+      cardTitle: "Shifts",
+      emptyState: {
+        noMissedShifts: "No missed shifts",
+        noShiftsFound: "No shifts found",
+        allOnTrack: "Great! All scheduled shifts are on track.",
+        noShiftsScheduled: "No shifts have been scheduled yet.",
+        noTabShifts: "No {tab} shifts."
+      },
+      status: {
+        scheduled: "SCHEDULED",
+        active: "ACTIVE",
+        on_break: "ON BREAK",
+        completed: "COMPLETED",
+        absent: "ABSENT",
+        cancelled: "CANCELLED",
+        missed: "MISSED ({duration}min late)"
+      },
+      labels: {
+        date: "Date:",
+        scheduled: "Scheduled:",
+        started: "Started:",
+        ended: "Ended:",
+        dept: "Dept:",
+        ward: "Ward:",
+        breaks: "Breaks:",
+        performance: "Performance:",
+        tasks: "Tasks:",
+        incidents: "Incidents:",
+        interactions: "Interactions:"
+      },
+      badges: {
+        basic: "Basic"
+      }
+    },
+
+    hospitalManagementPage: {
+      title: "Hospital Management",
+      subtitle: "Manage departments, wards, and hospital infrastructure",
+      loading: "Loading hospital data...",
+      errors: {
+        fetchFailed: "Failed to load hospital data",
+        departmentDeactivated: "Department deactivated successfully",
+        departmentDeactivateFailed: "Failed to deactivate department",
+        departmentDeactivateError: "An error occurred while deactivating department",
+        wardDeactivated: "Ward deactivated successfully",
+        wardDeactivateFailed: "Failed to deactivate ward",
+        wardDeactivateError: "An error occurred while deactivating ward"
+      },
+      buttons: {
+        refresh: "Refresh",
+        addDepartment: "Add Department",
+        addWard: "Add Ward",
+        view: "View",
+        edit: "Edit",
+        deactivate: "Deactivate"
+      },
+      stats: {
+        departments: "Departments",
+        totalWards: "Total Wards",
+        totalBeds: "Total Beds",
+        availableBeds: "Available Beds"
+      },
+      tabs: {
+        departments: "Departments",
+        wards: "Wards"
+      },
+      sections: {
+        departments: "Departments",
+        wards: "Wards"
+      },
+      status: {
+        active: "Active",
+        inactive: "Inactive"
+      },
+      wardTypes: {
+        icu: "ICU",
+        emergency: "EMERGENCY",
+        maternity: "MATERNITY",
+        pediatric: "PEDIATRIC",
+        surgical: "SURGICAL"
+      },
+      labels: {
+        head: "Head:",
+        specialties: "Specialties:",
+        department: "Department:",
+        beds: "Beds:",
+        location: "Location:",
+        chargeNurse: "Charge Nurse:",
+        noDescription: "No description"
+      },
+      confirm: {
+        deactivateDepartment: "Are you sure you want to deactivate this department?",
+        deactivateWard: "Are you sure you want to deactivate this ward?"
+      },
+      modals: {
+        addDepartment: {
+          title: "Add New Department",
+          departmentName: "Department Name *",
+          description: "Description",
+          headOfDepartment: "Head of Department",
+          selectHead: "Select head of department",
+          specialties: "Specialties",
+          enterSpecialty: "Enter specialty name",
+          phone: "Phone",
+          email: "Email",
+          cancel: "Cancel",
+          creating: "Creating...",
+          createDepartment: "Create Department",
+          success: "Department created successfully",
+          failed: "Failed to create department",
+          error: "An error occurred while creating the department"
+        },
+        addWard: {
+          title: "Add New Ward",
+          wardName: "Ward Name *",
+          wardNumber: "Ward Number *",
+          department: "Department *",
+          selectDepartment: "Select department",
+          totalBeds: "Total Beds *",
+          wardType: "Ward Type *",
+          selectWardType: "Select ward type",
+          floor: "Floor",
+          building: "Building",
+          phone: "Phone",
+          extension: "Extension",
+          description: "Description",
+          descriptionPlaceholder: "Ward description and facilities...",
+          cancel: "Cancel",
+          creating: "Creating...",
+          createWard: "Create Ward",
+          success: "Ward created successfully",
+          failed: "Failed to create ward",
+          error: "An error occurred while creating the ward"
+        },
+        viewWard: {
+          title: "Ward Details",
+          totalBeds: "Total Beds",
+          available: "Available",
+          department: "Department",
+          location: "Location",
+          chargeNurse: "Charge Nurse",
+          assignedNurses: "Assigned Nurses ({count})",
+          contactInfo: "Contact Information",
+          phone: "Phone:",
+          extension: "Extension:",
+          facilities: "Facilities",
+          created: "Created",
+          close: "Close"
+        },
+        editWard: {
+          title: "Edit Ward",
+          wardName: "Ward Name *",
+          wardNumber: "Ward Number *",
+          department: "Department *",
+          selectDepartment: "Select department",
+          totalBeds: "Total Beds *",
+          wardType: "Ward Type *",
+          selectWardType: "Select ward type",
+          floor: "Floor",
+          building: "Building",
+          phone: "Phone",
+          extension: "Extension",
+          cancel: "Cancel",
+          updating: "Updating...",
+          updateWard: "Update Ward",
+          success: "Ward updated successfully",
+          failed: "Failed to update ward",
+          error: "An error occurred while updating the ward"
+        },
+        editDepartment: {
+          title: "Edit Department",
+          departmentName: "Department Name *",
+          description: "Description",
+          headOfDepartment: "Head of Department",
+          selectHead: "Select head of department",
+          specialties: "Specialties",
+          addSpecialty: "Add new specialty",
+          phone: "Phone",
+          email: "Email",
+          cancel: "Cancel",
+          updating: "Updating...",
+          updateDepartment: "Update Department",
+          success: "Department updated successfully",
+          failed: "Failed to update department",
+          error: "An error occurred while updating the department"
+        },
+        viewDepartment: {
+          title: "Department Details",
+          description: "Description",
+          headOfDepartment: "Head of Department",
+          specialties: "Specialties",
+          contactInfo: "Contact Information",
+          created: "Created",
+          close: "Close"
+        }
+      }
     },
 
     // Patients Page
@@ -1132,6 +1626,138 @@ export const dashboardTranslations = {
         actionSuccess: "Admission {action} successfully"
       },
       loading: "Loading admissions..."
+    },
+
+    labDashboard: {
+      title: "Lab Dashboard",
+      stats: {
+        pendingOrders: "Pending Orders",
+        completedOrders: "Completed Orders",
+        totalOrders: "Total Orders"
+      },
+      searchPlaceholder: "Search by patient or test...",
+      filter: {
+        allStatuses: "All Statuses",
+        pending: "Pending",
+        completed: "Completed",
+        cancelled: "Cancelled"
+      },
+      labels: {
+        testsRequested: "Tests Requested",
+        requestedOn: "Requested On",
+        submittedOn: "Submitted On",
+        notes: "Notes"
+      },
+      buttons: {
+        viewDetails: "View Details",
+        uploadResult: "Upload Result",
+        editResult: "Edit Result"
+      },
+      emptyState: {
+        noMatchingOrders: "No Matching Lab Orders",
+        adjustSearch: "Try adjusting your search or filter."
+      }
+    },
+
+    addAdmissionModal: {
+      title: "Request Patient Admission",
+      labels: {
+        selectPatient: "Select Patient",
+        loadingPatients: "Loading patients...",
+        selectPatientPlaceholder: "Select a patient",
+        reasonForAdmission: "Reason for Admission *",
+        reasonPlaceholder: "Describe the medical reason for admission...",
+        urgencyLevel: "Urgency Level *",
+        urgencyLevelPlaceholder: "Select urgency level",
+        department: "Department *",
+        loadingDepartments: "Loading departments...",
+        selectDepartment: "Select department",
+        ward: "Ward *",
+        selectDepartmentFirst: "Select department first",
+        loadingWards: "Loading wards...",
+        selectWard: "Select ward",
+        estimatedStay: "Estimated Stay (days)",
+        estimatedStayPlaceholder: "Optional: estimated length of stay",
+        specialRequirements: "Special Requirements",
+        doctorNotes: "Doctor Notes",
+        doctorNotesPlaceholder: "Additional notes or instructions..."
+      },
+      urgencyLevels: {
+        routine: "Routine",
+        urgent: "Urgent",
+        emergency: "Emergency"
+      },
+      specialRequirements: [
+        "Isolation",
+        "Intensive Care",
+        "Ventilator Support",
+        "Dialysis",
+        "Telemetry Monitoring",
+        "Private Room",
+        "Wheelchair Accessible",
+        "Bariatric Bed"
+      ],
+      wardDisplayText: "{name} (Ward {number}) - {available} beds available",
+      buttons: {
+        cancel: "Cancel",
+        submitting: "Submitting...",
+        requestAdmission: "Request Admission"
+      },
+      success: {
+        submitted: "Admission request submitted successfully"
+      },
+      errors: {
+        failedToSubmit: "Failed to submit admission request",
+        errorSubmitting: "An error occurred while submitting the admission request"
+      }
+    },
+
+    admissionDetailsModal: {
+      title: "Admission Details",
+      labels: {
+        mrn: "MRN:",
+        age: "Age:",
+        gender: "Gender:",
+        doctor: "Doctor:",
+        requested: "Requested:",
+        status: "Status:",
+        reasonForAdmission: "Reason for Admission",
+        estimatedStay: "Estimated Stay",
+        specialRequirements: "Special Requirements",
+        doctorNotes: "Doctor Notes",
+        matronNurseNotes: "Matron Nurse Notes",
+        wardAssignment: "Ward Assignment",
+        approvalNotes: "Approval Notes",
+        approvalNotesPlaceholder: "Add approval notes...",
+        departmentRequired: "Department *",
+        selectDepartment: "Select department",
+        wardRequired: "Ward *",
+        selectDepartmentFirst: "Select department first",
+        loadingWards: "Loading wards...",
+        selectWard: "Select ward",
+        department: "Department",
+        ward: "Ward",
+        bedNumber: "Bed Number",
+        bedNumberPlaceholder: "e.g., B001"
+      },
+      sections: {
+        approveAdmissionRequest: "Approve Admission Request",
+        assignWardAndBed: "Assign Ward and Bed"
+      },
+      buttons: {
+        approveAdmission: "Approve Admission",
+        assignWardAndBed: "Assign Ward & Bed",
+        close: "Close",
+        cancelAdmission: "Cancel Admission"
+      },
+      success: {
+        actionSuccess: "Admission {action} successfully"
+      },
+      errors: {
+        failedToAction: "Failed to {action} admission",
+        errorActioning: "An error occurred while {action}ing admission"
+      },
+      wardDisplayText: "{name} (Ward {number}) - {available} beds available"
     },
   },
 
@@ -2079,6 +2705,100 @@ export const dashboardTranslations = {
       }
     },
 
+    vitals: {
+      title: "آخر العلامات الحيوية",
+      heartRate: "معدل ضربات القلب",
+      bloodPressure: "ضغط الدم",
+      spo2: "تشبع الأكسجين",
+      temperature: "درجة الحرارة",
+      respiratoryRate: "معدل التنفس",
+      noVitalsRecorded: "لم يتم تسجيل علامات حيوية لهذا المريض بعد.",
+      recordVitals: "تسجيل العلامات الحيوية",
+      viewAll: "عرض الكل",
+      bloodPressureCategories: {
+        crisis: "أزمة",
+        highStage2: "مرتفع (المرحلة 2)",
+        highStage1: "مرتفع (المرحلة 1)",
+        elevated: "مرتفع قليلاً",
+        normal: "طبيعي",
+        nA: "غير متوفر"
+      },
+      recordVitalsModal: {
+        title: "تسجيل العلامات الحيوية لـ {patientName}",
+        description: "أدخل آخر علامات حيوية للمريض. جميع الحقول مطلوبة.",
+        fields: {
+          bpSystolic: "ضغط الدم الانقباضي (ملم زئبق)",
+          bpDiastolic: "ضغط الدم الانبساطي (ملم زئبق)",
+          heartRate: "معدل ضربات القلب (ضربة/دقيقة)",
+          temperature: "درجة الحرارة (°ف)",
+          respiratoryRate: "معدل التنفس (نفس/دقيقة)",
+          spo2: "تشبع الأكسجين (%)",
+          height: "الطول (بوصة)",
+          weight: "الوزن (رطل)",
+          notes: "ملاحظات"
+        },
+        bmi: "مؤشر كتلة الجسم (BMI):",
+        markAsUrgent: "وضع علامة كعاجل",
+        cancel: "إلغاء",
+        saveVitals: "حفظ العلامات الحيوية",
+        success: "تم تسجيل العلامات الحيوية بنجاح!",
+        failed: "فشل في تسجيل العلامات الحيوية.",
+        error: "حدث خطأ غير متوقع."
+      }
+    },
+
+    labResults: {
+      title: "آخر نتيجة مختبرية",
+      result: "النتيجة",
+      collected: "تم جمعها",
+      reference: "المرجع",
+      reported: "تم الإبلاغ",
+      notes: "ملاحظات",
+      noLabResultsYet: "لا توجد نتائج مختبرية بعد",
+      labResultsDescription: "ستظهر نتائج الفحوصات المخبرية هنا عند توفرها.",
+      viewAllResults: "عرض جميع النتائج",
+      status: {
+        normal: "طبيعي",
+        abnormal: "غير طبيعي",
+        unknown: "غير معروف"
+      },
+      error: "خطأ",
+      failedToFetch: "فشل في جلب نتائج المختبر"
+    },
+
+    labResultsPage: {
+      backToPatient: "العودة إلى المريض",
+      title: "تاريخ نتائج المختبر",
+      subtitle: "{count} نتائج فحص • تتبع تشخيص المريض مع مرور الوقت",
+      exportCsv: "تصدير CSV",
+      filtersAndSearch: "الفلاتر والبحث",
+      searchPlaceholder: "البحث بالاسم أو النتيجة...",
+      filterByStatus: "التصفية حسب الحالة",
+      filterOptions: {
+        all: "جميع النتائج",
+        normal: "طبيعي",
+        abnormal: "غير طبيعي"
+      },
+      tableHeaders: {
+        testName: "اسم الفحص",
+        result: "النتيجة",
+        units: "الوحدات",
+        refRange: "النطاق المرجعي",
+        status: "الحالة",
+        collectedAt: "تاريخ الجمع"
+      },
+      status: {
+        normal: "طبيعي",
+        abnormal: "غير طبيعي",
+        unknown: "غير معروف"
+      },
+      noResultsFound: "لم يتم العثور على نتائج مختبر مطابقة لمعاييرك.",
+      showingResults: "عرض {start} إلى {end} من {total} نتائج",
+      previous: "السابق",
+      next: "التالي",
+      pageInfo: "الصفحة {current} من {total}"
+    },
+
     // Patient Form
     patientForm: {
       personalInformation: "المعلومات الشخصية",
@@ -2159,6 +2879,424 @@ export const dashboardTranslations = {
       administeredBy: "تم الإعطاء بواسطة",
       dose: "الجرعة",
       notes: "الملاحظات",
+    },
+
+    pharmacy: {
+      title: "لوحة الصيدلية",
+      stats: {
+        pendingDispensing: "في انتظار التوزيع",
+        dispensed: "تم التوزيع",
+        totalPrescriptions: "إجمالي الوصفات"
+      },
+      search: {
+        placeholder: "البحث بالمريض أو الدواء...",
+        filterByStatus: "تصفية حسب الحالة",
+        allStatuses: "جميع الحالات",
+        active: "نشط",
+        completed: "مكتمل",
+        cancelled: "ملغي"
+      },
+      tabs: {
+        pendingDispensing: "في انتظار التوزيع",
+        dispensed: "تم التوزيع"
+      },
+      table: {
+        headers: {
+          patient: "المريض",
+          medication: "الدواء",
+          dose: "الجرعة",
+          frequency: "التكرار",
+          date: "التاريخ",
+          status: "الحالة",
+          actions: "الإجراءات"
+        },
+        status: {
+          dispensed: "تم التوزيع",
+          markAsDispensed: "وضع علامة تم التوزيع"
+        }
+      },
+      empty: {
+        noPrescriptions: "لا توجد وصفات",
+        noPendingDispensing: "لا توجد وصفات في انتظار التوزيع",
+        noDispensedFound: "لم يتم العثور على وصفات موزعة"
+      },
+      errors: {
+        loadingError: "خطأ في تحميل الوصفات",
+        refreshFailed: "فشل في تحديث الوصفات"
+      }
+    },
+
+    testDetailsModal: {
+      title: "تفاصيل الفحص",
+      sections: {
+        patientInformation: "معلومات المريض",
+        testInformation: "معلومات الفحص",
+        notes: "ملاحظات",
+        results: "النتائج"
+      },
+      labels: {
+        name: "الاسم",
+        testName: "اسم الفحص",
+        testsRequested: "الفحوصات المطلوبة",
+        status: "الحالة",
+        requestedOn: "مطلوب في",
+        submittedOn: "تم الإرسال في"
+      },
+      fileTypes: {
+        pdf: "ملف PDF",
+        png: "صورة PNG",
+        jpg: "صورة JPEG",
+        jpeg: "صورة JPEG",
+        gif: "صورة GIF",
+        unknown: "ملف غير معروف"
+      },
+      buttons: {
+        close: "إغلاق"
+      }
+    },
+
+    uploadResultModal: {
+      titles: {
+        edit: "تعديل نتيجة المختبر",
+        upload: "تحميل نتيجة المختبر"
+      },
+      labels: {
+        forOrder: "للطلب:",
+        notes: "ملاحظات (اختياري)",
+        selectedFiles: "الملفات المحددة:",
+        currentResults: "النتائج الحالية:",
+        viewResult: "عرض النتيجة"
+      },
+      placeholders: {
+        notes: "أضف أي ملاحظات إضافية أو تفاصيل حول نتيجة المختبر...",
+        dragDrop: "اسحب وأفلت ملف هنا، أو انقر للاختيار",
+        dragActive: "أفلت الملفات هنا ..."
+      },
+      fileTypes: "PDF، PNG، JPG، GIF حتى 10 ميغابايت",
+      buttons: {
+        cancel: "إلغاء",
+        uploading: "جارٍ التحميل...",
+        updating: "جارٍ التحديث...",
+        addResults: "إضافة نتائج",
+        uploadResults: "تحميل النتائج",
+        updateNotes: "تحديث الملاحظات",
+        uploadResult: "تحميل النتيجة"
+      }
+    },
+
+    dischargesPage: {
+      title: "إدارة الخروج",
+      subtitle: "تخطيط وإدارة خروج المرضى",
+      loading: "جارٍ تحميل عمليات الخروج...",
+      errors: {
+        fetchFailed: "فشل في جلب عمليات الخروج",
+        fetchError: "حدث خطأ أثناء جلب عمليات الخروج",
+        actionFailed: "فشل في {action} عملية الخروج",
+        actionError: "حدث خطأ أثناء {action} عملية الخروج",
+        actionSuccess: "تم {action} عملية الخروج بنجاح"
+      },
+      buttons: {
+        planDischarge: "تخطيط خروج",
+        viewDetails: "عرض التفاصيل",
+        startProcess: "بدء العملية",
+        complete: "إكمال",
+        cancel: "إلغاء"
+      },
+      stats: {
+        planned: "مخطط",
+        inProgress: "قيد التنفيذ",
+        completed: "مكتمل",
+        cancelled: "ملغي"
+      },
+      tabs: {
+        all: "الكل",
+        planned: "مخطط",
+        inProgress: "قيد التنفيذ",
+        completed: "مكتمل"
+      },
+      cardTitle: "عمليات الخروج",
+      emptyState: {
+        noDischarges: "لم يتم العثور على عمليات خروج",
+        noPlansYet: "لم يتم إنشاء خطط خروج بعد.",
+        noTabDischarges: "لا توجد عمليات خروج {tab}."
+      },
+      status: {
+        planned: "مخطط",
+        in_progress: "قيد التنفيذ",
+        completed: "مكتمل",
+        cancelled: "ملغي"
+      },
+      dischargeTypes: {
+        routine: "روتيني",
+        against_medical_advice: "ضد النصيحة الطبية",
+        transfer: "نقل",
+        death: "وفاة"
+      },
+      labels: {
+        mrn: "رقم السجل الطبي:",
+        doctor: "الطبيب:",
+        matronNurse: "الممرضة الرئيسية:",
+        plannedDate: "التاريخ المخطط:",
+        actualDate: "التاريخ الفعلي:",
+        initiated: "بدأ في:",
+        reason: "السبب:"
+      }
+    },
+
+    shiftTrackingPage: {
+      title: "تتبع المناوبات",
+      subtitle: "إدارة متقدمة للمناوبات وتتبع الوقت",
+      loading: "جارٍ تحميل بيانات المناوبات...",
+      errors: {
+        fetchFailed: "فشل في جلب المناوبات",
+        fetchError: "حدث خطأ أثناء جلب المناوبات",
+        actionFailed: "فشل في {action} المناوبة",
+        actionError: "حدث خطأ أثناء {action} المناوبة",
+        actionSuccess: "تم {action} المناوبة بنجاح"
+      },
+      buttons: {
+        scheduleShift: "جدولة مناوبة",
+        add: "إضافة",
+        details: "التفاصيل",
+        clockIn: "تسجيل الدخول",
+        clockInShort: "دخول",
+        clockOut: "تسجيل الخروج",
+        clockOutShort: "خروج",
+        break: "استراحة",
+        endBreak: "إنهاء الاستراحة",
+        endBreakShort: "إنهاء",
+        markAbsent: "وضع علامة غائب",
+        markAbsentShort: "غائب"
+      },
+      stats: {
+        activeShifts: "المناوبات النشطة",
+        onBreak: "في استراحة",
+        completedToday: "مكتمل اليوم",
+        totalStaff: "إجمالي الموظفين",
+        missedShifts: "المناوبات المفقودة"
+      },
+      tabs: {
+        today: "اليوم",
+        week: "الأسبوع",
+        active: "نشط",
+        missed: "مفقود",
+        completed: "مكتمل",
+        all: "الكل"
+      },
+      cardTitle: "المناوبات",
+      emptyState: {
+        noMissedShifts: "لا توجد مناوبات مفقودة",
+        noShiftsFound: "لم يتم العثور على مناوبات",
+        allOnTrack: "ممتاز! جميع المناوبات المجدولة على المسار الصحيح.",
+        noShiftsScheduled: "لم يتم جدولة أي مناوبات بعد.",
+        noTabShifts: "لا توجد مناوبات {tab}."
+      },
+      status: {
+        scheduled: "مجدول",
+        active: "نشط",
+        on_break: "في استراحة",
+        completed: "مكتمل",
+        absent: "غائب",
+        cancelled: "ملغي",
+        missed: "مفقود ({duration} دقيقة متأخر)"
+      },
+      labels: {
+        date: "التاريخ:",
+        scheduled: "المجدول:",
+        started: "بدأ:",
+        ended: "انتهى:",
+        dept: "القسم:",
+        ward: "الجناح:",
+        breaks: "الاستراحات:",
+        performance: "الأداء:",
+        tasks: "المهام:",
+        incidents: "الحوادث:",
+        interactions: "التفاعلات:"
+      },
+      badges: {
+        basic: "أساسي"
+      }
+    },
+
+    hospitalManagementPage: {
+      title: "إدارة المستشفى",
+      subtitle: "إدارة الأقسام والأجنحة والبنية التحتية للمستشفى",
+      loading: "جارٍ تحميل بيانات المستشفى...",
+      errors: {
+        fetchFailed: "فشل في تحميل بيانات المستشفى",
+        departmentDeactivated: "تم إلغاء تنشيط القسم بنجاح",
+        departmentDeactivateFailed: "فشل في إلغاء تنشيط القسم",
+        departmentDeactivateError: "حدث خطأ أثناء إلغاء تنشيط القسم",
+        wardDeactivated: "تم إلغاء تنشيط الجناح بنجاح",
+        wardDeactivateFailed: "فشل في إلغاء تنشيط الجناح",
+        wardDeactivateError: "حدث خطأ أثناء إلغاء تنشيط الجناح"
+      },
+      buttons: {
+        refresh: "تحديث",
+        addDepartment: "إضافة قسم",
+        addWard: "إضافة جناح",
+        view: "عرض",
+        edit: "تعديل",
+        deactivate: "إلغاء التنشيط"
+      },
+      stats: {
+        departments: "الأقسام",
+        totalWards: "إجمالي الأجنحة",
+        totalBeds: "إجمالي الأسرة",
+        availableBeds: "الأسرة المتاحة"
+      },
+      tabs: {
+        departments: "الأقسام",
+        wards: "الأجنحة"
+      },
+      sections: {
+        departments: "الأقسام",
+        wards: "الأجنحة"
+      },
+      status: {
+        active: "نشط",
+        inactive: "غير نشط"
+      },
+      wardTypes: {
+        icu: "العناية المركزة",
+        emergency: "الطوارئ",
+        maternity: "الولادة",
+        pediatric: "الأطفال",
+        surgical: "الجراحة"
+      },
+      labels: {
+        head: "الرئيس:",
+        specialties: "التخصصات:",
+        department: "القسم:",
+        beds: "الأسرة:",
+        location: "الموقع:",
+        chargeNurse: "الممرضة المسؤولة:",
+        noDescription: "لا يوجد وصف"
+      },
+      confirm: {
+        deactivateDepartment: "هل أنت متأكد من أنك تريد إلغاء تنشيط هذا القسم؟",
+        deactivateWard: "هل أنت متأكد من أنك تريد إلغاء تنشيط هذا الجناح؟"
+      },
+      modals: {
+        addDepartment: {
+          title: "إضافة قسم جديد",
+          departmentName: "اسم القسم *",
+          description: "الوصف",
+          headOfDepartment: "رئيس القسم",
+          selectHead: "اختر رئيس القسم",
+          specialties: "التخصصات",
+          enterSpecialty: "أدخل اسم التخصص",
+          phone: "الهاتف",
+          email: "البريد الإلكتروني",
+          cancel: "إلغاء",
+          creating: "جارٍ الإنشاء...",
+          createDepartment: "إنشاء قسم",
+          success: "تم إنشاء القسم بنجاح",
+          failed: "فشل في إنشاء القسم",
+          error: "حدث خطأ أثناء إنشاء القسم"
+        },
+        addWard: {
+          title: "إضافة جناح جديد",
+          wardName: "اسم الجناح *",
+          wardNumber: "رقم الجناح *",
+          department: "القسم *",
+          selectDepartment: "اختر القسم",
+          totalBeds: "إجمالي الأسرة *",
+          wardType: "نوع الجناح *",
+          selectWardType: "اختر نوع الجناح",
+          floor: "الطابق",
+          building: "المبنى",
+          phone: "الهاتف",
+          extension: "الامتداد",
+          description: "الوصف",
+          descriptionPlaceholder: "وصف الجناح والمرافق...",
+          cancel: "إلغاء",
+          creating: "جارٍ الإنشاء...",
+          createWard: "إنشاء جناح",
+          success: "تم إنشاء الجناح بنجاح",
+          failed: "فشل في إنشاء الجناح",
+          error: "حدث خطأ أثناء إنشاء الجناح"
+        },
+        viewWard: {
+          title: "تفاصيل الجناح",
+          totalBeds: "إجمالي الأسرة",
+          available: "متاح",
+          department: "القسم",
+          location: "الموقع",
+          chargeNurse: "الممرضة المسؤولة",
+          assignedNurses: "الممرضات المعينات ({count})",
+          contactInfo: "معلومات الاتصال",
+          phone: "الهاتف:",
+          extension: "الامتداد:",
+          facilities: "المرافق",
+          created: "تم الإنشاء",
+          close: "إغلاق"
+        },
+        editWard: {
+          title: "تعديل الجناح",
+          wardName: "اسم الجناح *",
+          wardNumber: "رقم الجناح *",
+          department: "القسم *",
+          selectDepartment: "اختر القسم",
+          totalBeds: "إجمالي الأسرة *",
+          wardType: "نوع الجناح *",
+          selectWardType: "اختر نوع الجناح",
+          floor: "الطابق",
+          building: "المبنى",
+          phone: "الهاتف",
+          extension: "الامتداد",
+          cancel: "إلغاء",
+          updating: "جارٍ التحديث...",
+          updateWard: "تحديث الجناح",
+          success: "تم تحديث الجناح بنجاح",
+          failed: "فشل في تحديث الجناح",
+          error: "حدث خطأ أثناء تحديث الجناح"
+        },
+        editDepartment: {
+          title: "تعديل القسم",
+          departmentName: "اسم القسم *",
+          description: "الوصف",
+          headOfDepartment: "رئيس القسم",
+          selectHead: "اختر رئيس القسم",
+          specialties: "التخصصات",
+          addSpecialty: "إضافة تخصص جديد",
+          phone: "الهاتف",
+          email: "البريد الإلكتروني",
+          cancel: "إلغاء",
+          updating: "جارٍ التحديث...",
+          updateDepartment: "تحديث القسم",
+          success: "تم تحديث القسم بنجاح",
+          failed: "فشل في تحديث القسم",
+          error: "حدث خطأ أثناء تحديث القسم"
+        },
+        viewDepartment: {
+          title: "تفاصيل القسم",
+          description: "الوصف",
+          headOfDepartment: "رئيس القسم",
+          specialties: "التخصصات",
+          contactInfo: "معلومات الاتصال",
+          created: "تم الإنشاء",
+          close: "إغلاق"
+        }
+      }
+    },
+
+    dispensePrescriptionModal: {
+      title: "توزيع الوصفة",
+      labels: {
+        patient: "المريض:",
+        medications: "الأدوية:",
+        dose: "الجرعة:",
+        frequency: "التكرار:"
+      },
+      placeholder: "إضافة ملاحظات التوزيع...",
+      buttons: {
+        cancel: "إلغاء",
+        dispensing: "جارٍ التوزيع...",
+        markAsDispensed: "وضع علامة تم التوزيع"
+      },
+      success: "تم وضع علامة تم توزيع الوصفة بنجاح!",
+      error: "فشل في توزيع الوصفة"
     },
 
     auditLogDisplay: {
@@ -2257,6 +3395,137 @@ export const dashboardTranslations = {
         actionSuccess: "تم {action} القبول بنجاح"
       },
       loading: "جارٍ تحميل القبولات..."
+    },
+
+    labDashboard: {
+      title: "لوحة المختبر",
+      stats: {
+        pendingOrders: "الطلبات المعلقة",
+        completedOrders: "الطلبات المكتملة",
+        totalOrders: "إجمالي الطلبات"
+      },
+      searchPlaceholder: "البحث بالمريض أو الفحص...",
+      filter: {
+        allStatuses: "جميع الحالات",
+        pending: "معلق",
+        completed: "مكتمل",
+        cancelled: "ملغي"
+      },
+      labels: {
+        testsRequested: "الفحوصات المطلوبة",
+        requestedOn: "مطلوب في",
+        submittedOn: "تم الإرسال في",
+        notes: "ملاحظات"
+      },
+      buttons: {
+        viewDetails: "عرض التفاصيل",
+        uploadResult: "تحميل النتيجة",
+        editResult: "تعديل النتيجة"
+      },
+      emptyState: {
+        noMatchingOrders: "لا توجد طلبات مختبر مطابقة",
+        adjustSearch: "جرب تعديل البحث أو المرشح."
+      }
+    },
+
+    addAdmissionModal: {
+      title: "طلب قبول المريض",
+      labels: {
+        selectPatient: "اختيار المريض",
+        loadingPatients: "جارٍ تحميل المرضى...",
+        selectPatientPlaceholder: "اختر مريضاً",
+        reasonForAdmission: "سبب القبول *",
+        reasonPlaceholder: "وصف السبب الطبي للقبول...",
+        urgencyLevel: "مستوى الإلحاح *",
+        department: "القسم *",
+        loadingDepartments: "جارٍ تحميل الأقسام...",
+        selectDepartment: "اختر القسم",
+        ward: "الجناح *",
+        selectDepartmentFirst: "اختر القسم أولاً",
+        loadingWards: "جارٍ تحميل الأجنحة...",
+        selectWard: "اختر الجناح",
+        estimatedStay: "الإقامة المقدرة (أيام)",
+        estimatedStayPlaceholder: "اختياري: طول الإقامة المقدر",
+        specialRequirements: "المتطلبات الخاصة",
+        doctorNotes: "ملاحظات الطبيب",
+        doctorNotesPlaceholder: "ملاحظات أو تعليمات إضافية..."
+      },
+      urgencyLevels: {
+        routine: "روتيني",
+        urgent: "عاجل",
+        emergency: "طوارئ"
+      },
+      specialRequirements: [
+        "عزل",
+        "عناية مركزة",
+        "دعم التنفس الاصطناعي",
+        "غسيل كلوي",
+        "مراقبة التليمتري",
+        "غرفة خاصة",
+        "متاح للكراسي المتحركة",
+        "سرير بارتيك"
+      ],
+      wardDisplayText: "{name} (الجناح {number}) - {available} أسرة متاحة",
+      buttons: {
+        cancel: "إلغاء",
+        submitting: "جارٍ الإرسال...",
+        requestAdmission: "طلب القبول"
+      },
+      success: {
+        submitted: "تم إرسال طلب القبول بنجاح"
+      },
+      errors: {
+        failedToSubmit: "فشل في إرسال طلب القبول",
+        errorSubmitting: "حدث خطأ أثناء إرسال طلب القبول"
+      }
+    },
+
+    admissionDetailsModal: {
+      title: "تفاصيل القبول",
+      labels: {
+        mrn: "رقم السجل الطبي:",
+        age: "العمر:",
+        gender: "الجنس:",
+        doctor: "الطبيب:",
+        requested: "مطلوب:",
+        status: "الحالة:",
+        reasonForAdmission: "سبب القبول",
+        estimatedStay: "الإقامة المقدرة",
+        specialRequirements: "المتطلبات الخاصة",
+        doctorNotes: "ملاحظات الطبيب",
+        matronNurseNotes: "ملاحظات الممرضة الرئيسية",
+        wardAssignment: "تعيين الجناح",
+        approvalNotes: "ملاحظات الاعتماد",
+        approvalNotesPlaceholder: "أضف ملاحظات الاعتماد...",
+        departmentRequired: "القسم *",
+        selectDepartment: "اختر القسم",
+        wardRequired: "الجناح *",
+        selectDepartmentFirst: "اختر القسم أولاً",
+        loadingWards: "جارٍ تحميل الأجنحة...",
+        selectWard: "اختر الجناح",
+        department: "القسم",
+        ward: "الجناح",
+        bedNumber: "رقم السرير",
+        bedNumberPlaceholder: "مثال: B001"
+      },
+      sections: {
+        approveAdmissionRequest: "اعتماد طلب القبول",
+        assignWardAndBed: "تعيين الجناح والسرير"
+      },
+      buttons: {
+        approveAdmission: "اعتماد القبول",
+        assignWardAndBed: "تعيين الجناح والسرير",
+        close: "إغلاق",
+        cancelAdmission: "إلغاء القبول"
+      },
+      success: {
+        actionSuccess: "تم {action} القبول بنجاح"
+      },
+      errors: {
+        failedToAction: "فشل في {action} القبول",
+        errorActioning: "حدث خطأ أثناء {action} القبول"
+      },
+      wardDisplayText: "{name} (الجناح {number}) - {available} أسرة متاحة"
     },
   },
 };

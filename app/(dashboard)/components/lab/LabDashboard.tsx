@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardLoader } from '@/components/ui/Loader';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 type LabOrderWithPatient = Omit<ILabOrder, 'patientId'> & {
   patientId: {
@@ -20,6 +22,16 @@ type LabOrderWithPatient = Omit<ILabOrder, 'patientId'> & {
 };
 
 const LabDashboard = () => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [labOrders, setLabOrders] = useState<LabOrderWithPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,13 +108,13 @@ const LabDashboard = () => {
   return (
     <div className="space-y-6 p-4 md:p-6 bg-gray-50/50 dark:bg-gray-900/50 min-h-screen">
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
-        <h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">Lab Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">{t('labDashboard.title')}</h1>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Pending Orders" value={labOrders.filter(o => o.status === 'Pending').length} icon={Clock} />
-        <StatCard title="Completed Orders" value={labOrders.filter(o => o.status === 'Completed').length} icon={CheckCircle} />
-        <StatCard title="Total Orders" value={labOrders.length} icon={Beaker} />
+        <StatCard title={t('labDashboard.stats.pendingOrders')} value={labOrders.filter(o => o.status === 'Pending').length} icon={Clock} />
+        <StatCard title={t('labDashboard.stats.completedOrders')} value={labOrders.filter(o => o.status === 'Completed').length} icon={CheckCircle} />
+        <StatCard title={t('labDashboard.stats.totalOrders')} value={labOrders.length} icon={Beaker} />
       </div>
 
       <Card className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg border-gray-200/50 dark:border-gray-800/50 shadow-xl">
@@ -111,7 +123,7 @@ const LabDashboard = () => {
             <div className="relative flex-1 w-full md:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search by patient or test..." 
+                placeholder={t('labDashboard.searchPlaceholder')}
                 className="pl-10 w-full" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -120,13 +132,13 @@ const LabDashboard = () => {
             {isClient && (
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t('labDashboard.filter.allStatuses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="all">{t('labDashboard.filter.allStatuses')}</SelectItem>
+                <SelectItem value="pending">{t('labDashboard.filter.pending')}</SelectItem>
+                <SelectItem value="completed">{t('labDashboard.filter.completed')}</SelectItem>
+                <SelectItem value="cancelled">{t('labDashboard.filter.cancelled')}</SelectItem>
               </SelectContent>
             </Select>
             )}
@@ -159,8 +171,8 @@ const LabDashboard = () => {
                     <CardContent className="grow">
                       <div>
                         <div className="font-semibold flex items-center mb-2 text-md">
-                          <FileText className="mr-2 h-5 w-5 text-primary" /> 
-                          <span>Tests Requested</span>
+                          <FileText className="mr-2 h-5 w-5 text-primary" />
+                          <span>{t('labDashboard.labels.testsRequested')}</span>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{order.tests.join(', ')}</p>
                       </div>
@@ -174,34 +186,34 @@ const LabDashboard = () => {
                       )}
                       <div>
                         <div className="font-semibold flex items-center mt-4 mb-2 text-md">
-                          <Clock className="mr-2 h-5 w-5 text-primary" /> 
-                          <span>Requested On</span>
+                          <Clock className="mr-2 h-5 w-5 text-primary" />
+                          <span>{t('labDashboard.labels.requestedOn')}</span>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{new Date(order.createdAt).toLocaleString()}</p>
                       </div>
                       {order.status === 'Completed' && order.updatedAt && (
                         <div>
                           <div className="font-semibold flex items-center mt-4 mb-2 text-md">
-                            <CheckCircle className="mr-2 h-5 w-5 text-green-500" /> 
-                            <span>Submitted On</span>
+                            <CheckCircle className="mr-2 h-5 w-5 text-green-500" />
+                            <span>{t('labDashboard.labels.submittedOn')}</span>
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-300 pl-4 sm:pl-7">{new Date(order.updatedAt).toLocaleString()}</p>
                         </div>
                       )}
                       <Button onClick={() => setDetailsOrder(order)} className="w-full mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white shadow-md hover:shadow-lg transition-all duration-300">
                         <Eye className="mr-2 h-4 w-4" />
-                        View Details
+                        {t('labDashboard.buttons.viewDetails')}
                       </Button>
                       {order.status === 'Pending' && (
                         <Button onClick={() => setSelectedOrder(order)} className="w-full mt-4 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                           <Upload className="mr-2 h-4 w-4" />
-                          Upload Result
+                          {t('labDashboard.buttons.uploadResult')}
                         </Button>
                       )}
                       {order.status === 'Completed' && (
                         <Button onClick={() => setSelectedOrder(order)} className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit Result
+                          {t('labDashboard.buttons.editResult')}
                         </Button>
                       )}
                     </CardContent>
@@ -212,8 +224,8 @@ const LabDashboard = () => {
           ) : (
             <div className="text-center py-16">
               <Search className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-lg font-medium">No Matching Lab Orders</h3>
-              <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter.</p>
+              <h3 className="mt-2 text-lg font-medium">{t('labDashboard.emptyState.noMatchingOrders')}</h3>
+              <p className="mt-1 text-sm text-gray-500">{t('labDashboard.emptyState.adjustSearch')}</p>
             </div>
           )}
         </CardContent>

@@ -7,7 +7,7 @@ import LabTechnicianDashboard from "./components/lab/LabTechnicianDashboard";
 const ConditionalLabDashboard = () => {
     const { data: session } = useSession();
 
-    if (session?.user?.role === 'lab_technician') {
+    if (session?.user?.role === 'lab_technician' || session?.user?.role === 'admin') {
         return <LabTechnicianDashboard />;
     }
 

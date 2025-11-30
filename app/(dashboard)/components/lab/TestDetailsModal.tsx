@@ -1,6 +1,8 @@
 import { ILabOrder } from '@/models/LabOrder';
 import { Button } from '@/components/ui/button';
 import { X, User, Beaker, Calendar, CheckCircle, FileText, Download, File, Image, FileText as DocFile } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface TestDetailsModalProps {
   order: ILabOrder;
@@ -8,7 +10,17 @@ interface TestDetailsModalProps {
 }
 
 export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
-  const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | undefined }) => (
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
+  const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string | undefined, value: string | undefined }) => (
     <div className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
       <Icon className="h-6 w-6 text-primary shrink-0 mt-1" />
       <div>
@@ -33,19 +45,12 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
   };
 
   const getFileTypeLabel = (format: string) => {
-    switch (format?.toLowerCase()) {
-      case 'pdf':
-        return 'PDF Document';
-      case 'png':
-        return 'PNG Image';
-      case 'jpg':
-      case 'jpeg':
-        return 'JPEG Image';
-      case 'gif':
-        return 'GIF Image';
-      default:
-        return `${format?.toUpperCase() || 'Unknown'} File`;
+    const key = `testDetailsModal.fileTypes.${format?.toLowerCase() || 'unknown'}`;
+    const translated = t(key);
+    if (translated !== key) {
+      return translated;
     }
+    return `${format?.toUpperCase() || 'Unknown'} File`;
   };
 
   return (
@@ -56,7 +61,7 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
               <Beaker className="text-blue-600 dark:text-blue-400 h-5 w-5 sm:h-6 sm:w-6"/>
             </div>
-            <span className="truncate">Test Details</span>
+            <span className="truncate">{t('testDetailsModal.title')}</span>
           </h2>
           <Button onClick={onClose} variant="ghost" size="icon" className="shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -64,22 +69,22 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
         </div>
         <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-primary flex items-center"><User className="mr-2"/>Patient Information</h3>
-            <DetailItem icon={User} label="Name" value={`${order.patientId.firstName} ${order.patientId.lastName}`} />
+            <h3 className="font-semibold text-lg text-primary flex items-center"><User className="mr-2"/>{t('testDetailsModal.sections.patientInformation')}</h3>
+            <DetailItem icon={User} label={t('testDetailsModal.labels.name')} value={`${order.patientId.firstName} ${order.patientId.lastName}`} />
           </div>
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-primary flex items-center"><Beaker className="mr-2"/>Test Information</h3>
-            <DetailItem icon={Beaker} label="Test Name" value={order.testName} />
-            <DetailItem icon={Beaker} label="Tests Requested" value={order.tests.join(', ')} />
-            <DetailItem icon={CheckCircle} label="Status" value={order.status} />
-            <DetailItem icon={Calendar} label="Requested On" value={new Date(order.createdAt).toLocaleString()} />
+            <h3 className="font-semibold text-lg text-primary flex items-center"><Beaker className="mr-2"/>{t('testDetailsModal.sections.testInformation')}</h3>
+            <DetailItem icon={Beaker} label={t('testDetailsModal.labels.testName')} value={order.testName} />
+            <DetailItem icon={Beaker} label={t('testDetailsModal.labels.testsRequested')} value={order.tests.join(', ')} />
+            <DetailItem icon={CheckCircle} label={t('testDetailsModal.labels.status')} value={order.status} />
+            <DetailItem icon={Calendar} label={t('testDetailsModal.labels.requestedOn')} value={new Date(order.createdAt).toLocaleString()} />
             {order.status === 'Completed' && order.updatedAt && (
-              <DetailItem icon={Calendar} label="Submitted On" value={new Date(order.updatedAt).toLocaleString()} />
+              <DetailItem icon={Calendar} label={t('testDetailsModal.labels.submittedOn')} value={new Date(order.updatedAt).toLocaleString()} />
             )}
           </div>
           {order.notes && (
             <div className="md:col-span-2 space-y-4">
-              <h3 className="font-semibold text-lg text-primary flex items-center"><FileText className="mr-2"/>Notes</h3>
+              <h3 className="font-semibold text-lg text-primary flex items-center"><FileText className="mr-2"/>{t('testDetailsModal.sections.notes')}</h3>
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <p className="text-gray-800 dark:text-gray-200">{order.notes}</p>
               </div>
@@ -89,7 +94,7 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
             <div className="col-span-1 lg:col-span-2">
               <h3 className="font-semibold text-base sm:text-lg text-primary mb-3 sm:mb-4 flex items-center">
                 <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5"/>
-                Results
+                {t('testDetailsModal.sections.results')}
               </h3>
               <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2">
                 {Array.isArray(order.results) ? order.results.map((result, index) => {
@@ -143,7 +148,7 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
         </div>
         <div className="p-4 sm:p-6 bg-linear-to-r from-gray-50/95 to-white/95 dark:from-gray-800/95 dark:to-gray-900/95 backdrop-blur-xl rounded-b-2xl flex justify-end border-t border-gray-200/50 dark:border-gray-700/50">
           <Button onClick={onClose} variant="outline" className="w-full sm:w-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
-            Close
+            {t('testDetailsModal.buttons.close')}
           </Button>
         </div>
       </div>

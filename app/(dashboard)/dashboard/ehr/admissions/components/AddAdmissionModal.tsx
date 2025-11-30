@@ -23,6 +23,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Calendar, User, AlertTriangle, Clock, FileText, Loader2, Building, Bed } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Patient {
   _id: string;
@@ -52,19 +54,20 @@ interface AddAdmissionModalProps {
   children: React.ReactNode;
 }
 
-const specialRequirements = [
-  'Isolation',
-  'Intensive Care',
-  'Ventilator Support',
-  'Dialysis',
-  'Telemetry Monitoring',
-  'Private Room',
-  'Wheelchair Accessible',
-  'Bariatric Bed'
-];
+// specialRequirements moved to translations
 
 const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
   ({ onAdmissionAdded, children }) => {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+
     const [isOpen, setIsOpen] = useState(false);
     const [patients, setPatients] = useState<Patient[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -179,14 +182,14 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
           setEstimatedStay("");
           setSelectedRequirements([]);
           setDoctorNotes("");
-          toast.success('Admission request submitted successfully');
+          toast.success(t('addAdmissionModal.success.submitted'));
         } else {
           const error = await res.json() as { message?: string };
-          toast.error(error.message || 'Failed to submit admission request');
+          toast.error(error.message || t('addAdmissionModal.errors.failedToSubmit'));
         }
       } catch (error) {
         console.error("Failed to submit admission:", error);
-        toast.error('An error occurred while submitting the admission request');
+        toast.error(t('addAdmissionModal.errors.errorSubmitting'));
       } finally {
         setIsSubmitting(false);
       }
@@ -211,7 +214,7 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              <span className="text-sm md:text-base">Request Patient Admission</span>
+              <span className="text-sm md:text-base">{t('addAdmissionModal.title')}</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -222,13 +225,13 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <User className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Select Patient
+                {t('addAdmissionModal.labels.selectPatient')}
               </Label>
               <Select value={selectedPatient} onValueChange={setSelectedPatient} disabled={isLoading}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
                   <SelectValue
                     placeholder={
-                      isLoading ? "Loading patients..." : "Select a patient"
+                      isLoading ? t('addAdmissionModal.labels.loadingPatients') : t('addAdmissionModal.labels.selectPatientPlaceholder')
                     }
                   />
                 </SelectTrigger>
@@ -260,13 +263,13 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Reason for Admission *
+                {t('addAdmissionModal.labels.reasonForAdmission')}
               </Label>
               <Textarea
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Describe the medical reason for admission..."
+                placeholder={t('addAdmissionModal.labels.reasonPlaceholder')}
                 className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60 min-h-20"
                 required
               />
@@ -278,29 +281,29 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <AlertTriangle className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Urgency Level *
+                {t('addAdmissionModal.labels.urgencyLevel')}
               </Label>
               <Select value={urgency} onValueChange={(value: 'routine' | 'urgent' | 'emergency') => setUrgency(value)}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select urgency level" />
+                  <SelectValue placeholder={t('addAdmissionModal.labels.urgencyLevelPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-950">
                   <SelectItem value="routine">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Routine
+                      {t('addAdmissionModal.urgencyLevels.routine')}
                     </div>
                   </SelectItem>
                   <SelectItem value="urgent">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      Urgent
+                      {t('addAdmissionModal.urgencyLevels.urgent')}
                     </div>
                   </SelectItem>
                   <SelectItem value="emergency">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      Emergency
+                      {t('addAdmissionModal.urgencyLevels.emergency')}
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -314,7 +317,7 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
                 >
                   <Building className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  Department *
+                  {t('addAdmissionModal.labels.department')}
                 </Label>
                 <Select value={selectedDepartment} onValueChange={(value) => {
                   setSelectedDepartment(value);
@@ -354,7 +357,10 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                   <SelectContent className="bg-white dark:bg-gray-950">
                     {filteredWards.map((ward) => (
                       <SelectItem key={ward._id} value={ward._id}>
-                        {ward.name} (Ward {ward.wardNumber}) - {ward.totalBeds - ward.occupiedBeds} beds available
+                        {t('addAdmissionModal.wardDisplayText')
+                          .replace('{name}', ward.name)
+                          .replace('{number}', ward.wardNumber.toString())
+                          .replace('{available}', (ward.totalBeds - ward.occupiedBeds).toString())}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -368,7 +374,7 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <Clock className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Estimated Stay (days)
+                {t('addAdmissionModal.labels.estimatedStay')}
               </Label>
               <Input
                 id="estimatedStay"
@@ -377,17 +383,17 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                 max="365"
                 value={estimatedStay}
                 onChange={(e) => setEstimatedStay(e.target.value)}
-                placeholder="Optional: estimated length of stay"
+                placeholder={t('addAdmissionModal.labels.estimatedStayPlaceholder')}
                 className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
               />
             </div>
 
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Special Requirements
+                {t('addAdmissionModal.labels.specialRequirements')}
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {specialRequirements.map((requirement) => (
+                {t('addAdmissionModal.specialRequirements').map((requirement: string) => (
                   <div key={requirement} className="flex items-center space-x-2">
                     <Checkbox
                       id={requirement}
@@ -411,13 +417,13 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
               >
                 <FileText className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                Doctor Notes
+                {t('addAdmissionModal.labels.doctorNotes')}
               </Label>
               <Textarea
                 id="doctorNotes"
                 value={doctorNotes}
                 onChange={(e) => setDoctorNotes(e.target.value)}
-                placeholder="Additional notes or instructions..."
+                placeholder={t('addAdmissionModal.labels.doctorNotesPlaceholder')}
                 className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60 min-h-16"
               />
             </div>
@@ -430,7 +436,7 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
               disabled={isSubmitting}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              Cancel
+              {t('addAdmissionModal.buttons.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -439,12 +445,12 @@ const AddAdmissionModal: React.FC<AddAdmissionModalProps> = React.memo(
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('addAdmissionModal.buttons.submitting')}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  Request Admission
+                  {t('addAdmissionModal.buttons.requestAdmission')}
                 </>
               )}
             </Button>

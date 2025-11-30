@@ -29,8 +29,20 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 const HistoricalLabResultsPage = () => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const params = useParams();
   const patientId = params?.id as string;
   const [labResults, setLabResults] = useState<ILabResult[]>([]);
@@ -184,7 +196,7 @@ const HistoricalLabResultsPage = () => {
     return (
       <Alert variant="destructive">
         <ServerCrash className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('labResults.error')}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -203,15 +215,15 @@ const HistoricalLabResultsPage = () => {
             <Link href={`/dashboard/ehr/patients/${patientId}`}>
               <Button variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Patient
+                {t('labResultsPage.backToPatient')}
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-                Lab Results History
+                {t('labResultsPage.title')}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {filteredAndSortedResults.length} test results • Track patient diagnostics over time
+                {t('labResultsPage.subtitle').replace('{count}', filteredAndSortedResults.length.toString())}
               </p>
             </div>
           </div>
@@ -221,7 +233,7 @@ const HistoricalLabResultsPage = () => {
             className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 shadow-lg hover:shadow-xl transition-all duration-300"
           >
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            {t('labResultsPage.exportCsv')}
           </Button>
         </motion.div>
 
@@ -229,7 +241,7 @@ const HistoricalLabResultsPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filters & Search
+            {t('labResultsPage.filtersAndSearch')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -237,7 +249,7 @@ const HistoricalLabResultsPage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by test name or result..."
+                placeholder={t('labResultsPage.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -245,12 +257,12 @@ const HistoricalLabResultsPage = () => {
             </div>
             <Select value={statusFilter} onValueChange={(value: "all" | "normal" | "abnormal") => setStatusFilter(value)}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t('labResultsPage.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Results</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="abnormal">Abnormal</SelectItem>
+                <SelectItem value="all">{t('labResultsPage.filterOptions.all')}</SelectItem>
+                <SelectItem value="normal">{t('labResultsPage.filterOptions.normal')}</SelectItem>
+                <SelectItem value="abnormal">{t('labResultsPage.filterOptions.abnormal')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -264,20 +276,20 @@ const HistoricalLabResultsPage = () => {
               <TableRow>
                 <TableHead>
                   <Button variant="ghost" onClick={() => handleSort("testName")} className="flex items-center gap-1 p-0 h-auto font-semibold">
-                    Test Name
+                    {t('labResultsPage.tableHeaders.testName')}
                     {sortField === "testName" && (
                       sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                     )}
                     {sortField !== "testName" && <ArrowUpDown className="h-4 w-4 opacity-50" />}
                   </Button>
                 </TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead>Units</TableHead>
-                <TableHead>Ref Range</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('labResultsPage.tableHeaders.result')}</TableHead>
+                <TableHead>{t('labResultsPage.tableHeaders.units')}</TableHead>
+                <TableHead>{t('labResultsPage.tableHeaders.refRange')}</TableHead>
+                <TableHead>{t('labResultsPage.tableHeaders.status')}</TableHead>
                 <TableHead>
                   <Button variant="ghost" onClick={() => handleSort("collectedDate")} className="flex items-center gap-1 p-0 h-auto font-semibold">
-                    Collected At
+                    {t('labResultsPage.tableHeaders.collectedAt')}
                     {sortField === "collectedDate" && (
                       sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                     )}
@@ -300,10 +312,10 @@ const HistoricalLabResultsPage = () => {
                         <Badge
                           variant={status === "normal" ? "default" : status === "abnormal" ? "destructive" : "secondary"}
                           className={status === "normal" ? "bg-green-100 text-green-800 hover:bg-green-200" :
-                                   status === "abnormal" ? "bg-red-100 text-red-800 hover:bg-red-200" :
-                                   "bg-gray-100 text-gray-800 hover:bg-gray-200"}
+                                    status === "abnormal" ? "bg-red-100 text-red-800 hover:bg-red-200" :
+                                    "bg-gray-100 text-gray-800 hover:bg-gray-200"}
                         >
-                          {status === "normal" ? "Normal" : status === "abnormal" ? "Abnormal" : "Unknown"}
+                          {t(`labResultsPage.status.${status}`)}
                         </Badge>
                       </TableCell>
                       <TableCell>{new Date(result.collectedDate).toLocaleString()}</TableCell>
@@ -313,7 +325,7 @@ const HistoricalLabResultsPage = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
-                    No lab results found matching your criteria.
+                    {t('labResultsPage.noResultsFound')}
                   </TableCell>
                 </TableRow>
               )}
@@ -323,7 +335,10 @@ const HistoricalLabResultsPage = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedResults.length)} of {filteredAndSortedResults.length} results
+                {t('labResultsPage.showingResults')
+                  .replace('{start}', (((currentPage - 1) * itemsPerPage) + 1).toString())
+                  .replace('{end}', Math.min(currentPage * itemsPerPage, filteredAndSortedResults.length).toString())
+                  .replace('{total}', filteredAndSortedResults.length.toString())}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -332,10 +347,12 @@ const HistoricalLabResultsPage = () => {
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('labResultsPage.previous')}
                 </Button>
                 <span className="text-sm">
-                  Page {currentPage} of {totalPages}
+                  {t('labResultsPage.pageInfo')
+                    .replace('{current}', currentPage.toString())
+                    .replace('{total}', totalPages.toString())}
                 </span>
                 <Button
                   variant="outline"
@@ -343,7 +360,7 @@ const HistoricalLabResultsPage = () => {
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  {t('labResultsPage.next')}
                 </Button>
               </div>
             </div>

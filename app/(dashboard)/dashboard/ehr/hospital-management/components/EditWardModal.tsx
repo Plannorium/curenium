@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Bed, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Department {
   _id: string;
@@ -78,6 +80,16 @@ const wardTypes = [
 
 const EditWardModal: React.FC<EditWardModalProps> = React.memo(
   ({ ward, onWardUpdated, children }) => {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
     const [wardNumber, setWardNumber] = useState("");
@@ -164,14 +176,14 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
         if (res.ok) {
           onWardUpdated();
           setIsOpen(false);
-          toast.success('Ward updated successfully');
+          toast.success(t('hospitalManagementPage.modals.editWard.success'));
         } else {
           const error = await res.json() as { message?: string };
-          toast.error(error.message || 'Failed to update ward');
+          toast.error(error.message || t('hospitalManagementPage.modals.editWard.failed'));
         }
       } catch (error) {
         console.error("Failed to update ward:", error);
-        toast.error('An error occurred while updating the ward');
+        toast.error(t('hospitalManagementPage.modals.editWard.error'));
       } finally {
         setIsSubmitting(false);
       }
@@ -190,7 +202,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Bed className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Edit Ward
+              {t('hospitalManagementPage.modals.editWard.title')}
             </DialogTitle>
           </DialogHeader>
 
@@ -202,7 +214,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
                 >
                   <Bed className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  Ward Name *
+                  {t('hospitalManagementPage.modals.editWard.wardName')}
                 </Label>
                 <Input
                   id="name"
@@ -219,7 +231,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="wardNumber"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Ward Number *
+                  {t('hospitalManagementPage.modals.editWard.wardNumber')}
                 </Label>
                 <Input
                   id="wardNumber"
@@ -237,11 +249,11 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                 htmlFor="department"
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300"
               >
-                Department *
+                {t('hospitalManagementPage.modals.editWard.department')}
               </Label>
               <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select department" />
+                  <SelectValue placeholder={t('hospitalManagementPage.modals.editWard.selectDepartment')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-950 max-h-60">
                   {departments.map((dept) => (
@@ -259,7 +271,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="totalBeds"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Total Beds *
+                  {t('hospitalManagementPage.modals.editWard.totalBeds')}
                 </Label>
                 <Input
                   id="totalBeds"
@@ -279,11 +291,11 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="wardType"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Ward Type *
+                  {t('hospitalManagementPage.modals.editWard.wardType')}
                 </Label>
                 <Select value={wardType} onValueChange={(value: any) => setWardType(value)}>
                   <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                    <SelectValue placeholder="Select ward type" />
+                    <SelectValue placeholder={t('hospitalManagementPage.modals.editWard.selectWardType')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-950">
                     {wardTypes.map((type) => (
@@ -302,7 +314,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="floor"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Floor
+                  {t('hospitalManagementPage.modals.editWard.floor')}
                 </Label>
                 <Input
                   id="floor"
@@ -318,7 +330,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="building"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Building
+                  {t('hospitalManagementPage.modals.editWard.building')}
                 </Label>
                 <Input
                   id="building"
@@ -336,7 +348,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="phone"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Phone
+                  {t('hospitalManagementPage.modals.editWard.phone')}
                 </Label>
                 <Input
                   id="phone"
@@ -352,7 +364,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                   htmlFor="extension"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Extension
+                  {t('hospitalManagementPage.modals.editWard.extension')}
                 </Label>
                 <Input
                   id="extension"
@@ -372,7 +384,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
               disabled={isSubmitting}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              Cancel
+              {t('hospitalManagementPage.modals.editWard.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -381,11 +393,11 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Updating...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('hospitalManagementPage.modals.editWard.updating')}
                 </>
               ) : (
                 <>
-                  Update Ward
+                  {t('hospitalManagementPage.modals.editWard.updateWard')}
                 </>
               )}
             </Button>

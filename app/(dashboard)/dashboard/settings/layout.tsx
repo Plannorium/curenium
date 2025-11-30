@@ -1,45 +1,58 @@
+"use client"
 
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "./components/sidebar-nav";
-
-const sidebarNavItems = [
-    {
-        title: "Profile",
-        href: "/dashboard/settings",
-    },
-    {
-        title: "Account",
-        href: "/dashboard/settings/account",
-    },
-    {
-        title: "Appearance",
-        href: "/dashboard/settings/appearance",
-    },
-    {
-        title: "Notifications",
-        href: "/dashboard/settings/notifications",
-    },
-    {
-        title: "Display",
-        href: "/dashboard/settings/display",
-    },
-    {
-        title: "Organization",
-        href: "/dashboard/settings/organization",
-    },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
+import { settingsTranslations } from "@/lib/settings-translations";
 
 interface SettingsLayoutProps {
     children: React.ReactNode;
 }
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+        const keys = key.split('.');
+        let value: any = settingsTranslations[language as keyof typeof settingsTranslations];
+        for (const k of keys) {
+            value = value?.[k];
+        }
+        return value || key;
+    };
+
+    const sidebarNavItems = [
+        {
+            title: t('settings.sidebar.profile'),
+            href: "/dashboard/settings",
+        },
+        {
+            title: t('settings.sidebar.account'),
+            href: "/dashboard/settings/account",
+        },
+        {
+            title: t('settings.sidebar.appearance'),
+            href: "/dashboard/settings/appearance",
+        },
+        {
+            title: t('settings.sidebar.notifications'),
+            href: "/dashboard/settings/notifications",
+        },
+        {
+            title: t('settings.sidebar.display'),
+            href: "/dashboard/settings/display",
+        },
+        {
+            title: t('settings.sidebar.organization'),
+            href: "/dashboard/settings/organization",
+        },
+    ];
+
     return (
         <div className="space-y-6 p-3 pl-5 pb-9 lg:pl-10 lg:p-10 lg:pb-16 md:block">
             <div className="space-y-0.5">
-                <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
+                <h2 className="text-2xl font-bold tracking-tight">{t('settings.title')}</h2>
                 <p className="text-muted-foreground">
-                    Manage your account settings and set e-mail preferences.
+                    {t('settings.subtitle')}
                 </p>
             </div>
             <Separator className="my-6" />

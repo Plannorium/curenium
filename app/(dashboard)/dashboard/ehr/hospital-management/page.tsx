@@ -24,6 +24,8 @@ import EditDepartmentModal from "./components/EditDepartmentModal";
 import EditWardModal from "./components/EditWardModal";
 import ViewDepartmentModal from "./components/ViewDepartmentModal";
 import ViewWardModal from "./components/ViewWardModal";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // Types
 interface Department {
@@ -67,6 +69,16 @@ interface Ward {
 }
 
 const HospitalManagement = () => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,14 +107,14 @@ const HospitalManagement = () => {
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      toast.error('Failed to load hospital data');
+      toast.error(t('hospitalManagementPage.errors.fetchFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteDepartment = async (id: string) => {
-    if (!confirm('Are you sure you want to deactivate this department?')) return;
+    if (!confirm(t('hospitalManagementPage.confirm.deactivateDepartment'))) return;
 
     try {
       const response = await fetch(`/api/departments/${id}`, {
@@ -110,20 +122,20 @@ const HospitalManagement = () => {
       });
 
       if (response.ok) {
-        toast.success('Department deactivated successfully');
+        toast.success(t('hospitalManagementPage.errors.departmentDeactivated'));
         fetchData();
       } else {
         const error = await response.json() as { message?: string };
-        toast.error(error.message || 'Failed to deactivate department');
+        toast.error(error.message || t('hospitalManagementPage.errors.departmentDeactivateFailed'));
       }
     } catch (error) {
       console.error('Failed to delete department:', error);
-      toast.error('An error occurred while deactivating department');
+      toast.error(t('hospitalManagementPage.errors.departmentDeactivateError'));
     }
   };
 
   const handleDeleteWard = async (id: string) => {
-    if (!confirm('Are you sure you want to deactivate this ward?')) return;
+    if (!confirm(t('hospitalManagementPage.confirm.deactivateWard'))) return;
 
     try {
       const response = await fetch(`/api/wards/${id}`, {
@@ -131,15 +143,15 @@ const HospitalManagement = () => {
       });
 
       if (response.ok) {
-        toast.success('Ward deactivated successfully');
+        toast.success(t('hospitalManagementPage.errors.wardDeactivated'));
         fetchData();
       } else {
         const error = await response.json() as { message?: string };
-        toast.error(error.message || 'Failed to deactivate ward');
+        toast.error(error.message || t('hospitalManagementPage.errors.wardDeactivateFailed'));
       }
     } catch (error) {
       console.error('Failed to delete ward:', error);
-      toast.error('An error occurred while deactivating ward');
+      toast.error(t('hospitalManagementPage.errors.wardDeactivateError'));
     }
   };
 
@@ -154,8 +166,17 @@ const HospitalManagement = () => {
     }
   };
 
+  const getStatusLabel = (isActive: boolean) => {
+    return isActive ? t('hospitalManagementPage.status.active') : t('hospitalManagementPage.status.inactive');
+  };
+
+  const getWardTypeLabel = (type: string) => {
+    const key = `hospitalManagementPage.wardTypes.${type}`;
+    return t(key);
+  };
+
   if (loading) {
-    return <Loader text="Loading hospital data..." />;
+    return <Loader text={t('hospitalManagementPage.loading')} />;
   }
 
   return (
@@ -164,10 +185,10 @@ const HospitalManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Hospital Management
+            {t('hospitalManagementPage.title')}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Manage departments, wards, and hospital infrastructure
+            {t('hospitalManagementPage.subtitle')}
           </p>
         </div>
         <div className="flex items-center space-x-4">
@@ -177,7 +198,7 @@ const HospitalManagement = () => {
             size="sm"
           >
             <Settings className="h-4 w-4 mr-2" />
-            Refresh
+            {t('hospitalManagementPage.buttons.refresh')}
           </Button>
         </div>
       </div>
@@ -186,10 +207,10 @@ const HospitalManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Building2 className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Departments</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('hospitalManagementPage.stats.departments')}</p>
                 <p className="text-2xl font-bold">{departments.length}</p>
               </div>
             </div>
@@ -198,10 +219,10 @@ const HospitalManagement = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Bed className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Wards</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('hospitalManagementPage.stats.totalWards')}</p>
                 <p className="text-2xl font-bold">{wards.length}</p>
               </div>
             </div>
@@ -210,10 +231,10 @@ const HospitalManagement = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Users className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Beds</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('hospitalManagementPage.stats.totalBeds')}</p>
                 <p className="text-2xl font-bold">{wards.reduce((sum, ward) => sum + ward.totalBeds, 0)}</p>
               </div>
             </div>
@@ -222,10 +243,10 @@ const HospitalManagement = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <AlertCircle className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Available Beds</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('hospitalManagementPage.stats.availableBeds')}</p>
                 <p className="text-2xl font-bold">{wards.reduce((sum, ward) => sum + ward.availableBeds, 0)}</p>
               </div>
             </div>
@@ -236,18 +257,18 @@ const HospitalManagement = () => {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="departments">Departments</TabsTrigger>
-          <TabsTrigger value="wards">Wards</TabsTrigger>
+          <TabsTrigger value="departments">{t('hospitalManagementPage.tabs.departments')}</TabsTrigger>
+          <TabsTrigger value="wards">{t('hospitalManagementPage.tabs.wards')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="departments" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Departments</h2>
+            <h2 className="text-xl font-semibold">{t('hospitalManagementPage.sections.departments')}</h2>
             <AddDepartmentModal onDepartmentAdded={fetchData}>
               <Button>
                 <Plus className="h-4 w-4 lg:mr-2" />
                 <span className="hidden lg:block">
-                Add Department
+                {t('hospitalManagementPage.buttons.addDepartment')}
                 </span>
               </Button>
             </AddDepartmentModal>
@@ -260,24 +281,24 @@ const HospitalManagement = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{dept.name}</CardTitle>
                     <Badge variant={dept.isActive ? "default" : "secondary"}>
-                      {dept.isActive ? "Active" : "Inactive"}
+                      {getStatusLabel(dept.isActive)}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {dept.description || "No description"}
+                    {dept.description || t('hospitalManagementPage.labels.noDescription')}
                   </p>
 
                   {dept.headOfDepartment && (
                     <div className="mb-4">
-                      <p className="text-sm font-medium">Head: {dept.headOfDepartment.fullName}</p>
+                      <p className="text-sm font-medium">{t('hospitalManagementPage.labels.head')} {dept.headOfDepartment.fullName}</p>
                     </div>
                   )}
 
                   {dept.specialties && dept.specialties.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-sm font-medium mb-2">Specialties:</p>
+                      <p className="text-sm font-medium mb-2">{t('hospitalManagementPage.labels.specialties')}</p>
                       <div className="flex flex-wrap gap-1">
                         {dept.specialties.map((specialty, index) => (
                           <Badge key={index} variant="outline" className="text-xs">
@@ -292,13 +313,13 @@ const HospitalManagement = () => {
                     <ViewDepartmentModal department={dept}>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4 mr-1" />
-                        View
+                        {t('hospitalManagementPage.buttons.view')}
                       </Button>
                     </ViewDepartmentModal>
                     <EditDepartmentModal department={dept} onDepartmentUpdated={fetchData}>
                       <Button variant="outline" size="sm">
                         <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                        {t('hospitalManagementPage.buttons.edit')}
                       </Button>
                     </EditDepartmentModal>
                     <Button
@@ -308,7 +329,7 @@ const HospitalManagement = () => {
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
-                      Deactivate
+                      {t('hospitalManagementPage.buttons.deactivate')}
                     </Button>
                   </div>
                 </CardContent>
@@ -319,12 +340,12 @@ const HospitalManagement = () => {
 
         <TabsContent value="wards" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Wards</h2>
+            <h2 className="text-xl font-semibold">{t('hospitalManagementPage.sections.wards')}</h2>
             <AddWardModal onWardAdded={fetchData}>
               <Button>
                 <Plus className="h-4 w-4 block:mr-2" />
                 <span className="hidden lg:block">
-                Add Ward
+                {t('hospitalManagementPage.buttons.addWard')}
                 </span>
               </Button>
             </AddWardModal>
@@ -337,7 +358,7 @@ const HospitalManagement = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{ward.name}</CardTitle>
                     <Badge className={getWardTypeColor(ward.wardType)}>
-                      {ward.wardType.toUpperCase()}
+                      {getWardTypeLabel(ward.wardType)}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">Ward #{ward.wardNumber}</p>
@@ -345,12 +366,12 @@ const HospitalManagement = () => {
                 <CardContent>
                   <div className="space-y-3 mb-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Department:</span>
+                      <span className="text-sm font-medium">{t('hospitalManagementPage.labels.department')}</span>
                       <span className="text-sm">{ward.department.name}</span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Beds:</span>
+                      <span className="text-sm font-medium">{t('hospitalManagementPage.labels.beds')}</span>
                       <span className="text-sm">
                         {ward.occupiedBeds}/{ward.totalBeds} ({ward.availableBeds} available)
                       </span>
@@ -358,7 +379,7 @@ const HospitalManagement = () => {
 
                     {(ward.floor || ward.building) && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Location:</span>
+                        <span className="text-sm font-medium">{t('hospitalManagementPage.labels.location')}</span>
                         <span className="text-sm">
                           {ward.building && `Building ${ward.building}`}
                           {ward.building && ward.floor && ', '}
@@ -369,7 +390,7 @@ const HospitalManagement = () => {
 
                     {ward.chargeNurse && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Charge Nurse:</span>
+                        <span className="text-sm font-medium">{t('hospitalManagementPage.labels.chargeNurse')}</span>
                         <span className="text-sm">{ward.chargeNurse.fullName}</span>
                       </div>
                     )}
@@ -379,13 +400,13 @@ const HospitalManagement = () => {
                     <ViewWardModal ward={ward}>
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4 mr-1" />
-                        View
+                        {t('hospitalManagementPage.buttons.view')}
                       </Button>
                     </ViewWardModal>
                     <EditWardModal ward={ward} onWardUpdated={fetchData}>
                       <Button variant="outline" size="sm">
                         <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                        {t('hospitalManagementPage.buttons.edit')}
                       </Button>
                     </EditWardModal>
                     <Button
@@ -395,7 +416,7 @@ const HospitalManagement = () => {
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
-                      Deactivate
+                      {t('hospitalManagementPage.buttons.deactivate')}
                     </Button>
                   </div>
                 </CardContent>
