@@ -44,6 +44,8 @@ import LabOrdersDisplay from "../../../components/patients/LabOrdersDisplay";
 import InsuranceDisplay from "../../../components/patients/InsuranceDisplay";
 import AuditLogDisplay from "../../../components/patients/AuditLogDisplay";
 import { AddPrescriptionModal } from "../../../components/patients/AddPrescriptionModal";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // Types
 interface Patient {
@@ -63,12 +65,12 @@ interface Patient {
 }
 
 // Workflow steps
-const WORKFLOW_STEPS = [
-  { id: 'assessment', label: 'Patient Assessment', icon: Stethoscope, color: 'bg-blue-500' },
-  { id: 'diagnosis', label: 'Diagnosis & Treatment', icon: Brain, color: 'bg-purple-500' },
-  { id: 'prescription', label: 'Prescription Management', icon: Pill, color: 'bg-green-500' },
-  { id: 'documentation', label: 'Documentation', icon: FileText, color: 'bg-orange-500' },
-  { id: 'followup', label: 'Follow-up & Scheduling', icon: Calendar, color: 'bg-pink-500' }
+const getWorkflowSteps = (t: (key: string) => string) => [
+  { id: 'assessment', label: t('doctorDashboard.patientAssessment'), icon: Stethoscope, color: 'bg-blue-500' },
+  { id: 'diagnosis', label: t('doctorDashboard.diagnosisAndTreatment'), icon: Brain, color: 'bg-purple-500' },
+  { id: 'prescription', label: t('doctorDashboard.prescriptionManagement'), icon: Pill, color: 'bg-green-500' },
+  { id: 'documentation', label: t('doctorDashboard.documentationAndConsent'), icon: FileText, color: 'bg-orange-500' },
+  { id: 'followup', label: t('doctorDashboard.followupAndScheduling'), icon: Calendar, color: 'bg-pink-500' }
 ];
 
 interface Diagnosis {
@@ -91,12 +93,22 @@ interface UserData {
 }
 
 const DoctorDashboard = () => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [currentStep, setCurrentStep] = useState<'select-patient' | 'workflow'>('select-patient');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeWorkflowStep, setActiveWorkflowStep] = useState(WORKFLOW_STEPS[0].id);
+  const [activeWorkflowStep, setActiveWorkflowStep] = useState('assessment');
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<Diagnosis | null>(null);
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
@@ -188,7 +200,7 @@ const DoctorDashboard = () => {
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
     setCurrentStep('workflow');
-    setActiveWorkflowStep(WORKFLOW_STEPS[0].id);
+    setActiveWorkflowStep('assessment');
     fetchDiagnoses(patient._id);
   };
 
@@ -216,10 +228,10 @@ const DoctorDashboard = () => {
         </motion.div>
         <div>
           <h1 className="text-4xl font-bold bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-            Physician Dashboard
+            {t('doctorDashboard.title')}
           </h1>
           <p className="text-xl text-muted-foreground mt-2">
-            Select a patient to begin your medical workflow
+            {t('doctorDashboard.subtitle')}
           </p>
         </div>
       </div>
@@ -236,7 +248,7 @@ const DoctorDashboard = () => {
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search patients by name or MRN..."
+                placeholder={t('doctorDashboard.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 text-lg border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-primary/50 rounded-xl"
@@ -293,7 +305,7 @@ const DoctorDashboard = () => {
                         {patient.firstName} {patient.lastName}
                       </h3>
                       {patient.mrn && (
-                        <p className="text-sm text-muted-foreground">MRN: {patient.mrn}</p>
+                        <p className="text-sm text-muted-foreground">{t('doctorDashboard.mrn')}: {patient.mrn}</p>
                       )}
                       {patient.dob && (
                         <p className="text-sm text-muted-foreground">
@@ -311,20 +323,20 @@ const DoctorDashboard = () => {
           <div className="col-span-full text-center py-16">
             <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No patients found
+              {t('doctorDashboard.noPatientsFound')}
             </h3>
             <p className="text-muted-foreground">
-              Try adjusting your search terms or check the spelling
+              {t('doctorDashboard.noPatientsFoundDesc')}
             </p>
           </div>
         ) : (
           <div className="col-span-full text-center py-16">
             <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Search for patients
+              {t('doctorDashboard.searchForPatients')}
             </h3>
             <p className="text-muted-foreground">
-              Enter a patient name or MRN in the search box above to get started
+              {t('doctorDashboard.searchForPatientsDesc')}
             </p>
           </div>
         )}
@@ -349,7 +361,7 @@ const DoctorDashboard = () => {
           >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:block">
-              Back to Patients
+              {t('doctorDashboard.backToPatients')}
             </span>
           </Button>
           <div className="lg:hidden">
@@ -372,14 +384,14 @@ const DoctorDashboard = () => {
                 {selectedPatient?.firstName} {selectedPatient?.lastName}
               </h2>
               <p className="text-sm text-muted-foreground truncate">
-                {selectedPatient?.mrn && `MRN: ${selectedPatient.mrn}`}
+                {selectedPatient?.mrn && `${t('doctorDashboard.mrn')}: ${selectedPatient.mrn}`}
               </p>
             </div>
           </div>
           <div className="hidden lg:flex items-center space-x-2 mb-5">
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
               <Heart className="h-3 w-3 mr-1" />
-              Active Patient
+              {t('doctorDashboard.activePatient')}
             </Badge>
           </div>
         </div>
@@ -390,13 +402,13 @@ const DoctorDashboard = () => {
         <CardHeader>
           <CardTitle className="flex items-center text-xl">
             <Sparkles className="h-5 w-5 mr-2 text-primary" />
-            Medical Workflow
+            {t('doctorDashboard.medicalWorkflow')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeWorkflowStep} onValueChange={setActiveWorkflowStep} className="w-full">
             <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-6 mb-8 h-auto p-1">
-              {WORKFLOW_STEPS.map((step, index) => (
+              {getWorkflowSteps(t).map((step, index) => (
                 <TabsTrigger
                   key={step.id}
                   value={step.id}
@@ -444,10 +456,10 @@ const DoctorDashboard = () => {
             <div className="flex justify-between items-center">
               <div className="text-center flex-1">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Patient Assessment
+                  {t('doctorDashboard.patientAssessment')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Review patient history and current status
+                  {t('doctorDashboard.patientAssessmentDesc')}
                 </p>
               </div>
               <Button
@@ -465,27 +477,27 @@ const DoctorDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
                   <User className="h-5 w-5 mr-2 text-primary" />
-                  Patient Overview
+                  {t('doctorDashboard.patientOverview')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Full Name</Label>
+                      <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.fullName')}</Label>
                       <p className="text-lg font-medium text-gray-900 dark:text-white">
                         {selectedPatient.firstName} {selectedPatient.lastName}
                       </p>
                     </div>
                     {selectedPatient.mrn && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">MRN</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.mrn')}</Label>
                         <p className="text-gray-900 dark:text-white font-mono">{selectedPatient.mrn}</p>
                       </div>
                     )}
                     {selectedPatient.dob && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Date of Birth</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.dateOfBirth')}</Label>
                         <p className="text-gray-900 dark:text-white">
                           {new Date(selectedPatient.dob).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -503,19 +515,19 @@ const DoctorDashboard = () => {
                   <div className="space-y-4">
                     {selectedPatient.contact?.email && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Email</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.email')}</Label>
                         <p className="text-gray-900 dark:text-white">{selectedPatient.contact.email}</p>
                       </div>
                     )}
                     {selectedPatient.contact?.phone && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Phone</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.phone')}</Label>
                         <p className="text-gray-900 dark:text-white">{selectedPatient.contact.phone}</p>
                       </div>
                     )}
                     {selectedPatient.gender && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Gender</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.gender')}</Label>
                         <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.gender}</p>
                       </div>
                     )}
@@ -525,7 +537,7 @@ const DoctorDashboard = () => {
                     {/* Admission Info */}
                     {selectedPatient.admissionDate && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Admission Date</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.admissionDate')}</Label>
                         <p className="text-gray-900 dark:text-white">
                           {new Date(selectedPatient.admissionDate).toLocaleDateString()}
                         </p>
@@ -533,7 +545,7 @@ const DoctorDashboard = () => {
                     )}
                     {selectedPatient.admissionType && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Admission Type</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.admissionType')}</Label>
                         <Badge variant="outline" className="capitalize">
                           {selectedPatient.admissionType}
                         </Badge>
@@ -541,7 +553,7 @@ const DoctorDashboard = () => {
                     )}
                     {selectedPatient.department && (
                       <div>
-                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Department</Label>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.department')}</Label>
                         <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.department}</p>
                       </div>
                     )}
@@ -558,10 +570,10 @@ const DoctorDashboard = () => {
             <div className="flex justify-between items-center">
               <div className="text-center flex-1">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Diagnosis & Treatment
+                  {t('doctorDashboard.diagnosisAndTreatment')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Create and view patient diagnoses
+                  {t('doctorDashboard.diagnosisAndTreatmentDesc')}
                 </p>
               </div>
               <Button
@@ -585,7 +597,7 @@ const DoctorDashboard = () => {
               >
                 <Button className="bg-linear-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                   <Plus className="h-5 w-5 mr-2" />
-                  Create Diagnosis
+                  {t('doctorDashboard.createDiagnosis')}
                 </Button>
               </CreateDiagnosis>
             </div>
@@ -593,7 +605,7 @@ const DoctorDashboard = () => {
             {/* Diagnosis History */}
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Diagnosis History
+                {t('doctorDashboard.diagnosisHistory')}
               </h4>
               {diagnoses.length > 0 ? (
                 <div className="grid gap-4">
@@ -653,7 +665,7 @@ const DoctorDashboard = () => {
                 <div className="text-center py-8">
                   <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    No diagnoses recorded yet
+                    {t('doctorDashboard.noDiagnosesRecorded')}
                   </p>
                 </div>
               )}
@@ -667,10 +679,10 @@ const DoctorDashboard = () => {
             <div className="flex justify-between items-center">
               <div className="text-center flex-1">
                 <h3 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Prescription Management
+                  {t('doctorDashboard.prescriptionManagement')}
                 </h3>
                 <p className="text-muted-foreground hidden lg:block">
-                  Manage patient prescriptions and medications
+                  {t('doctorDashboard.prescriptionManagementDesc')}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -680,7 +692,7 @@ const DoctorDashboard = () => {
                 >
                   <Plus className="h-3 w-3 lg:mr-2" />
                   <span className="hidden md:block">
-                  Add Prescription
+                  {t('doctorDashboard.addPrescription')}
                   </span>
                 </Button>
                 <Button
@@ -703,10 +715,10 @@ const DoctorDashboard = () => {
             <div className="flex justify-between items-center">
               <div className="text-center flex-1">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Documentation & Consent
+                  {t('doctorDashboard.documentationAndConsent')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Complete patient documentation and manage consent forms
+                  {t('doctorDashboard.documentationAndConsentDesc')}
                 </p>
               </div>
               <Button
@@ -743,10 +755,10 @@ const DoctorDashboard = () => {
             <div className="flex justify-between items-center">
               <div className="text-center flex-1">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Follow-up & Scheduling
+                  {t('doctorDashboard.followupAndScheduling')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Schedule follow-ups and manage appointments
+                  {t('doctorDashboard.followupAndSchedulingDesc')}
                 </p>
               </div>
               <Button
@@ -785,7 +797,7 @@ const DoctorDashboard = () => {
                   <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-                  Diagnosis Details
+                  {t('doctorDashboard.diagnosisDetails')}
                 </DialogTitle>
               </div>
             </DialogHeader>
@@ -794,12 +806,12 @@ const DoctorDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">ICD-10 Code</Label>
+                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.icd10Code')}</Label>
                     <p className="text-lg font-mono text-gray-900 dark:text-white">{selectedDiagnosis.diagnosisCode}</p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Severity</Label>
+                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.severity')}</Label>
                     <Badge className={`mt-1 ${
                       selectedDiagnosis.severity === 'mild' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
                       selectedDiagnosis.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
@@ -811,7 +823,7 @@ const DoctorDashboard = () => {
 
                   {selectedDiagnosis.onsetDate && (
                     <div>
-                      <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Onset Date</Label>
+                      <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.onsetDate')}</Label>
                       <p className="text-gray-900 dark:text-white">
                         {new Date(selectedDiagnosis.onsetDate).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -825,7 +837,7 @@ const DoctorDashboard = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Documented By</Label>
+                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.documentedBy')}</Label>
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={selectedDiagnosis.documentedBy.image} />
@@ -840,7 +852,7 @@ const DoctorDashboard = () => {
                   </div>
 
                   <div>
-                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Documented At</Label>
+                    <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.documentedAt')}</Label>
                     <p className="text-gray-900 dark:text-white">
                       {new Date(selectedDiagnosis.documentedAt).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -855,7 +867,7 @@ const DoctorDashboard = () => {
               </div>
 
               <div>
-                <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">Description</Label>
+                <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.description')}</Label>
                 <p className="text-gray-900 dark:text-white mt-1 leading-relaxed">
                   {selectedDiagnosis.description}
                 </p>

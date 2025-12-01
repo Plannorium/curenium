@@ -8,13 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { z } from 'zod';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
-const soapNoteSchema = z.object({
-  subjective: z.string().min(1, "Subjective section cannot be empty"),
-  objective: z.string().min(1, "Objective section cannot be empty"),
-  assessment: z.string().min(1, "Assessment section cannot be empty"),
-  plan: z.string().min(1, "Plan section cannot be empty"),
+const soapNoteSchema = (t: (key: string) => string) => z.object({
+  subjective: z.string().min(1, t('addSOAPNoteModal.subjectiveRequired')),
+  objective: z.string().min(1, t('addSOAPNoteModal.objectiveRequired')),
+  assessment: z.string().min(1, t('addSOAPNoteModal.assessmentRequired')),
+  plan: z.string().min(1, t('addSOAPNoteModal.planRequired')),
   visibility: z.enum(['team', 'private', 'public']),
 });
 
@@ -27,12 +29,23 @@ interface AddSOAPNoteModalProps {
 
 export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: AddSOAPNoteModalProps) {
   const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [subjective, setSubjective] = useState('');
   const [objective, setObjective] = useState('');
   const [assessment, setAssessment] = useState('');
   const [plan, setPlan] = useState('');
   const [visibility, setVisibility] = useState<'team' | 'private' | 'public'>('team');
   const [errors, setErrors] = useState<z.ZodError | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fieldErrors: {
     subjective?: string[];
@@ -51,7 +64,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
       visibility,
     };
 
-    const result = soapNoteSchema.safeParse(noteData);
+    const result = soapNoteSchema(t).safeParse(noteData);
 
     if (!result.success) {
       setErrors(result.error);
@@ -59,6 +72,7 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
     }
 
     setErrors(null);
+    setIsSubmitting(true);
 
     try {
       const response = await fetch(`/api/patients/${patientId}/soap-notes`, {
@@ -73,15 +87,17 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
       });
 
       if (response.ok) {
-        toast.success('SOAP note added successfully');
+        toast.success(t('addSOAPNoteModal.soapNoteAdded'));
         onNoteAdded();
         onClose();
       } else {
         const errorData = await response.json() as { message?: string };
-        toast.error(errorData.message || 'Failed to add SOAP note');
+        toast.error(errorData.message || t('addSOAPNoteModal.failedToAddSOAPNote'));
       }
     } catch (error) {
-      toast.error('An error occurred while adding the SOAP note');
+      toast.error(t('addSOAPNoteModal.errorAddingSOAPNote'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -94,21 +110,21 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
               <FileText className="h-5 w-5 text-white" />
             </div>
             <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              Add SOAP Note
+              {t('addSOAPNoteModal.title')}
             </DialogTitle>
           </div>
-          <p className="text-sm text-muted-foreground">Comprehensive patient documentation using SOAP format</p>
+          <p className="text-sm text-muted-foreground">{t('addSOAPNoteModal.subtitle')}</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <label htmlFor="subjective" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                Subjective
+                {t('addSOAPNoteModal.subjective')}
               </label>
               <Textarea
                 id="subjective"
-                placeholder="Patient's subjective report..."
+                placeholder={t('addSOAPNoteModal.subjectivePlaceholder')}
                 value={subjective}
                 onChange={(e) => setSubjective(e.target.value)}
                 rows={4}
@@ -119,11 +135,11 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
             <div className="space-y-3">
               <label htmlFor="objective" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                Objective
+                {t('addSOAPNoteModal.objective')}
               </label>
               <Textarea
                 id="objective"
-                placeholder="Objective findings..."
+                placeholder={t('addSOAPNoteModal.objectivePlaceholder')}
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 rows={4}
@@ -134,11 +150,11 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
             <div className="space-y-3">
               <label htmlFor="assessment" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                Assessment
+                {t('addSOAPNoteModal.assessment')}
               </label>
               <Textarea
                 id="assessment"
-                placeholder="Your assessment..."
+                placeholder={t('addSOAPNoteModal.assessmentPlaceholder')}
                 value={assessment}
                 onChange={(e) => setAssessment(e.target.value)}
                 rows={4}
@@ -149,11 +165,11 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
             <div className="space-y-3">
               <label htmlFor="plan" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-3 h-3 bg-pink-500 rounded-full mr-2"></div>
-                Plan
+                {t('addSOAPNoteModal.plan')}
               </label>
               <Textarea
                 id="plan"
-                placeholder="Your plan for the patient..."
+                placeholder={t('addSOAPNoteModal.planPlaceholder')}
                 value={plan}
                 onChange={(e) => setPlan(e.target.value)}
                 rows={4}
@@ -165,16 +181,16 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
           <div className="space-y-3">
             <label htmlFor="visibility" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
               <div className="w-4 h-4 mr-2 bg-linear-to-br from-gray-400 to-gray-600 rounded"></div>
-              Visibility
+              {t('addSOAPNoteModal.visibility')}
             </label>
             <Select onValueChange={(value: 'team' | 'private' | 'public') => setVisibility(value)} defaultValue={visibility}>
               <SelectTrigger id="visibility" className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-purple-400 dark:focus:border-purple-500 rounded-xl h-11">
-                <SelectValue placeholder="Select visibility" />
+                <SelectValue placeholder={t('addSOAPNoteModal.selectVisibility')} />
               </SelectTrigger>
               <SelectContent className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-xl">
-                <SelectItem value="team" className="hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg mx-1">Team</SelectItem>
-                <SelectItem value="private" className="hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-lg mx-1">Private</SelectItem>
-                <SelectItem value="public" className="hover:bg-green-50 dark:hover:bg-green-950/30 rounded-lg mx-1">Public</SelectItem>
+                <SelectItem value="team" className="hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg mx-1">{t('addSOAPNoteModal.team')}</SelectItem>
+                <SelectItem value="private" className="hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-lg mx-1">{t('addSOAPNoteModal.private')}</SelectItem>
+                <SelectItem value="public" className="hover:bg-green-50 dark:hover:bg-green-950/30 rounded-lg mx-1">{t('addSOAPNoteModal.public')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -185,13 +201,21 @@ export function AddSOAPNoteModal({ patientId, isOpen, onClose, onNoteAdded }: Ad
               onClick={onClose}
               className="hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-xl transition-all duration-200"
             >
-              Cancel
+              {t('addSOAPNoteModal.cancel')}
             </Button>
             <Button
               type="submit"
-              className="bg-linear-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
+              disabled={isSubmitting}
+              className="bg-linear-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save SOAP Note
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('addSOAPNoteModal.saving')}
+                </>
+              ) : (
+                t('addSOAPNoteModal.saveSOAPNote')
+              )}
             </Button>
           </DialogFooter>
         </form>

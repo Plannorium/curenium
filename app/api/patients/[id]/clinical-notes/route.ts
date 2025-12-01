@@ -11,7 +11,7 @@ interface ClinicalNoteData {
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || !session.user || session.user.role !== 'doctor') {
+  if (!session || !session.user || !['doctor', 'nurse', 'admin', 'matron_nurse'].includes(session.user.role as string)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 

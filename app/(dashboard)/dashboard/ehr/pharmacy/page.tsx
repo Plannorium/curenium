@@ -19,8 +19,19 @@ import { DispensePrescriptionModal } from "../../../components/pharmacy/Dispense
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 const PharmacyDashboard = () => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +136,7 @@ const PharmacyDashboard = () => {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Error Loading Prescriptions</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('pharmacy.errors.loadingError')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mt-2">{error}</p>
         </div>
       </div>
@@ -136,26 +147,26 @@ const PharmacyDashboard = () => {
     <div className="space-y-6 p-4 md:p-6 bg-gray-50/50 dark:bg-gray-900/50 min-h-screen">
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0">
         <h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          Pharmacy Dashboard
+          {t('pharmacy.title')}
         </h1>
       </header>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Pending Dispensing"
+          title={t('pharmacy.stats.pendingDispensing')}
           value={stats.pending}
           icon={Clock}
           color="bg-orange-500"
         />
         <StatCard
-          title="Dispensed"
+          title={t('pharmacy.stats.dispensed')}
           value={stats.dispensed}
           icon={CheckCircle}
           color="bg-green-500"
         />
         <StatCard
-          title="Total Prescriptions"
+          title={t('pharmacy.stats.totalPrescriptions')}
           value={stats.total}
           icon={FileText}
           color="bg-purple-500"
@@ -169,7 +180,7 @@ const PharmacyDashboard = () => {
             <div className="relative flex-1 w-full md:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by patient or medication..."
+                placeholder={t('pharmacy.search.placeholder')}
                 className="pl-10 w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -193,11 +204,11 @@ const PharmacyDashboard = () => {
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="pending" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Pending Dispensing ({prescriptions.filter(p => !p.dispensed).length})
+                {t('pharmacy.tabs.pendingDispensing')} ({prescriptions.filter(p => !p.dispensed).length})
               </TabsTrigger>
               <TabsTrigger value="dispensed" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
-                Dispensed ({prescriptions.filter(p => p.dispensed).length})
+                {t('pharmacy.tabs.dispensed')} ({prescriptions.filter(p => p.dispensed).length})
               </TabsTrigger>
             </TabsList>
 
@@ -205,7 +216,8 @@ const PharmacyDashboard = () => {
               <PrescriptionTable
                 prescriptions={filteredPrescriptions.filter(p => !p.dispensed)}
                 onViewDetails={handleOpenModal}
-                emptyMessage="No prescriptions pending dispensing"
+                emptyMessage={t('pharmacy.empty.noPendingDispensing')}
+                t={t}
               />
             </TabsContent>
 
@@ -213,7 +225,8 @@ const PharmacyDashboard = () => {
               <PrescriptionTable
                 prescriptions={filteredPrescriptions.filter(p => p.dispensed)}
                 onViewDetails={handleOpenModal}
-                emptyMessage="No dispensed prescriptions found"
+                emptyMessage={t('pharmacy.empty.noDispensedFound')}
+                t={t}
               />
             </TabsContent>
           </Tabs>
@@ -228,7 +241,7 @@ const PharmacyDashboard = () => {
           try {
             await fetchPrescriptions();
           } catch (error) {
-            toast.error("Failed to refresh prescriptions");
+            toast.error(t('pharmacy.errors.refreshFailed'));
           } finally {
             handleCloseModal();
           }
@@ -241,17 +254,19 @@ const PharmacyDashboard = () => {
 const PrescriptionTable = ({
   prescriptions,
   onViewDetails,
-  emptyMessage
+  emptyMessage,
+  t
 }: {
   prescriptions: Prescription[];
   onViewDetails: (prescription: Prescription) => void;
   emptyMessage: string;
+  t: (key: string) => string;
 }) => {
   if (prescriptions.length === 0) {
     return (
       <div className="text-center py-16">
         <Pill className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">No Prescriptions</h3>
+        <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">{t('pharmacy.empty.noPrescriptions')}</h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{emptyMessage}</p>
       </div>
     );
@@ -262,13 +277,13 @@ const PrescriptionTable = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[200px]">Patient</TableHead>
-            <TableHead className="w-[200px]">Medication</TableHead>
-            <TableHead className="w-[120px]">Dose</TableHead>
-            <TableHead className="w-[120px]">Frequency</TableHead>
-            <TableHead className="w-[120px]">Date</TableHead>
-            <TableHead className="w-[120px]">Status</TableHead>
-            <TableHead className="w-[150px]">Actions</TableHead>
+            <TableHead className="w-[200px]">{t('pharmacy.table.headers.patient')}</TableHead>
+            <TableHead className="w-[200px]">{t('pharmacy.table.headers.medication')}</TableHead>
+            <TableHead className="w-[120px]">{t('pharmacy.table.headers.dose')}</TableHead>
+            <TableHead className="w-[120px]">{t('pharmacy.table.headers.frequency')}</TableHead>
+            <TableHead className="w-[120px]">{t('pharmacy.table.headers.date')}</TableHead>
+            <TableHead className="w-[120px]">{t('pharmacy.table.headers.status')}</TableHead>
+            <TableHead className="w-[150px]">{t('pharmacy.table.headers.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -290,7 +305,7 @@ const PrescriptionTable = ({
                 {p.dispensed ? (
                   <div className="flex items-center text-green-600 dark:text-green-400">
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Dispensed</span>
+                    <span className="text-sm font-medium">{t('pharmacy.table.status.dispensed')}</span>
                   </div>
                 ) : (
                   <Button
@@ -300,7 +315,7 @@ const PrescriptionTable = ({
                     className="hover:bg-primary/10 hover:border-primary/50"
                   >
                     <FileText className="h-4 w-4 mr-2" />
-                    Mark as Dispensed
+                    {t('pharmacy.table.status.markAsDispensed')}
                   </Button>
                 )}
               </TableCell>

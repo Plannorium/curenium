@@ -1,23 +1,45 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Card, CardContent, CardHeader, CardTitle
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ServerCrash, Beaker, Calendar, CheckCircle, PlusCircle, Eye, Clock, User, FileText, ArrowRight } from "lucide-react";
+import {
+  ServerCrash,
+  Beaker,
+  Calendar,
+  CheckCircle,
+  PlusCircle,
+  Eye,
+  Clock,
+  User,
+  FileText,
+  ArrowRight,
+} from "lucide-react";
 import { AddLabOrderModal } from "./AddLabOrderModal";
 import { ILabOrder } from "@/models/LabOrder";
-import Link from 'next/link';
+import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 interface LabOrdersDisplayProps {
   patientId: string;
 }
 
 const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split(".");
+    let value: any =
+      dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [labOrders, setLabOrders] = useState<ILabOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,28 +66,28 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'in-progress':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'pending':
+      case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'in-progress':
+      case "in-progress":
         return <Beaker className="h-4 w-4 text-blue-500" />;
-      case 'cancelled':
+      case "cancelled":
         return <ServerCrash className="h-4 w-4 text-red-500" />;
       default:
         return <FileText className="h-4 w-4 text-gray-500" />;
@@ -78,7 +100,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
         <CardHeader>
           <CardTitle className="flex items-center text-xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             <Beaker className="mr-3 h-6 w-6 text-primary" />
-            Lab Orders
+            {t("labOrdersDisplay.title")}{" "}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -92,9 +114,12 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="bg-red-50/80 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/50 backdrop-blur-lg">
+      <Alert
+        variant="destructive"
+        className="bg-red-50/80 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/50 backdrop-blur-lg"
+      >
         <ServerCrash className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('coomon.error')}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -105,7 +130,9 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 sm:pb-6">
         <CardTitle className="flex items-center text-xl sm:text-2xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           <Beaker className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-          <span className="text-lg sm:text-2xl">Lab Orders</span>
+          <span className="text-lg sm:text-2xl">
+            {t("labOrdersDisplay.title")}
+          </span>
         </CardTitle>
         <div className="flex gap-x-2">
           <Button
@@ -114,7 +141,9 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
             className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
           >
             <PlusCircle className="md:mr-1.5 h-3 w-3" />
-            <span className="text-sm hidden md:block">New Order</span>
+            <span className="text-sm hidden md:block">
+              {t("labOrdersDisplay.newOrder")}
+            </span>
           </Button>
           <Link href="/dashboard/ehr/lab" passHref>
             <Button
@@ -123,7 +152,9 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
               className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
             >
               <Beaker className="md:mr-2 h-3 w-3" />
-              <span className="text-sm hidden md:block">Lab Dashboard</span>
+              <span className="text-sm hidden md:block">
+                {t("labOrdersDisplay.labDashboard")}
+              </span>
             </Button>
           </Link>
         </div>
@@ -132,7 +163,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
         {labOrders.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <AnimatePresence>
-              {labOrders.slice(0,2).map((order, index) => (
+              {labOrders.slice(0, 2).map((order, index) => (
                 <motion.div
                   key={order._id?.toString() || Math.random()}
                   initial={{ opacity: 0, y: 20 }}
@@ -149,7 +180,8 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
                           </div>
                           <div>
                             <h4 className="font-semibold text-lg text-gray-900 dark:text-white">
-                              Lab Order #{order._id?.toString().slice(-6) || 'N/A'}
+                              {t("labOrdersDisplay.labOrderPrefix")}
+                              {order._id?.toString().slice(-6) || "N/A"}
                             </h4>
                             <p className="text-sm text-muted-foreground">
                               {new Date(order.createdAt).toLocaleDateString()}
@@ -158,7 +190,9 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
                         </div>
                         <div className="flex items-center space-x-2">
                           {getStatusIcon(order.status)}
-                          <Badge className={`text-xs font-medium ${getStatusBadgeVariant(order.status)}`}>
+                          <Badge
+                            className={`text-xs font-medium ${getStatusBadgeVariant(order.status)}`}
+                          >
                             {order.status}
                           </Badge>
                         </div>
@@ -168,28 +202,29 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center text-muted-foreground">
                             <Beaker className="h-4 w-4 mr-2" />
-                            Tests Requested
+                            {t("labOrdersDisplay.testsRequested")}
                           </div>
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {order.tests.length} test{order.tests.length !== 1 ? 's' : ''}
+                            {order.tests.length} test
+                            {order.tests.length !== 1 ? "s" : ""}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center text-muted-foreground">
                             <Calendar className="h-4 w-4 mr-2" />
-                            Ordered On
+                            {t("labOrdersDisplay.orderedOn")}
                           </div>
                           <span className="font-medium text-gray-900 dark:text-white">
                             {new Date(order.createdAt).toLocaleDateString()}
                           </span>
                         </div>
 
-                        {order.status === 'Completed' && order.updatedAt && (
+                        {order.status === "Completed" && order.updatedAt && (
                           <div className="flex items-center justify-between text-sm">
                             <div className="flex items-center text-muted-foreground">
                               <CheckCircle className="h-4 w-4 mr-2" />
-                              Completed On
+                              {t("labOrdersDisplay.completedOn")}
                             </div>
                             <span className="font-medium text-gray-900 dark:text-white">
                               {new Date(order.updatedAt).toLocaleDateString()}
@@ -200,8 +235,9 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
 
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
                         <div className="text-xs text-muted-foreground">
-                          {order.tests.slice(0, 2).join(', ')}
-                          {order.tests.length > 2 && ` +${order.tests.length - 2} more`}
+                          {order.tests.slice(0, 2).join(", ")}
+                          {order.tests.length > 2 &&
+                            ` +${order.tests.length - 2} more`}
                         </div>
                         <Button
                           asChild
@@ -210,7 +246,7 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
                         >
                           <Link href="/dashboard/ehr/lab">
                             <Eye className="mr-2 h-4 w-4" />
-                            View
+                            {t("labOrdersDisplay.view")}
                           </Link>
                         </Button>
                       </div>
@@ -224,10 +260,10 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
           <div className="text-center py-8 sm:py-12 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
             <Beaker className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500 mb-3 sm:mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              No Lab Orders Yet
+              {t("labOrdersDisplay.noLabOrdersYet")}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base px-4">
-              Request laboratory tests and track their status here.
+              {t("labOrdersDisplay.labOrdersDescription")}
             </p>
             <Button
               onClick={() => setIsModalOpen(true)}
@@ -235,7 +271,9 @@ const LabOrdersDisplay = ({ patientId }: LabOrdersDisplayProps) => {
               className="bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-sm sm:text-base">Request First Lab Order</span>
+              <span className="text-sm sm:text-base">
+                {t("labOrdersDisplay.requestFirstLabOrder")}
+              </span>
             </Button>
           </div>
         )}

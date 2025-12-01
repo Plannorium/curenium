@@ -43,6 +43,8 @@ import {
 import { ChevronsUpDown, User as UserIcon } from "lucide-react";
 import { useDebounce } from "use-debounce";
 import { Appointment } from '@/types/appointment';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 
 interface BookAppointmentModalProps {
@@ -54,6 +56,16 @@ interface BookAppointmentModalProps {
 const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, onAppointmentBooked, children }) => {
   const { data: session } = useSession();
   const { calendarType, setCalendarType } = useCalendar();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reason, setReason] = useState('');
@@ -73,21 +85,21 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
   const appointmentTypes = {
-    'General Consultation': 'doctor',
-    'Follow-up': 'doctor',
-    'Specialist Consultation': 'doctor',
-    'Therapy Session': 'therapist',
-    'Routine Test': 'lab_technician',
-    'Emergency': '',
-    'Other': ''
+    [t('appointments.generalConsultation')]: 'doctor',
+    [t('appointments.followup')]: 'doctor',
+    [t('appointments.specialistConsultation')]: 'doctor',
+    [t('appointments.therapySession')]: 'therapist',
+    [t('appointments.routineTest')]: 'lab_technician',
+    [t('appointments.emergency')]: '',
+    [t('appointments.other')]: ''
   };
 
   const personnelTypes = {
-    'doctor': 'Doctor',
-    'nurse': 'Nurse',
-    'therapist': 'Therapist',
-    'lab_technician': 'Lab Technician',
-    'admin': 'Admin'
+    'doctor': t('appointments.doctor'),
+    'nurse': t('appointments.nurse'),
+    'therapist': t('appointments.therapist'),
+    'lab_technician': t('appointments.labTechnician'),
+    'admin': t('appointments.admin')
   }
 
   useEffect(() => {
@@ -169,22 +181,22 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
     const finalPatientId = patientId || selectedPatient?._id;
 
     if (!finalPatientId) {
-      toast.error("Please select a patient.");
+      toast.error(t('appointments.selectPatientError'));
       setIsSubmitting(false);
       return;
     }
     if (!date) {
-      toast.error("Please select an appointment date.");
+      toast.error(t('appointments.selectDateError'));
       setIsSubmitting(false);
       return;
     }
     if (!time) {
-      toast.error("Please select an appointment time.");
+      toast.error(t('appointments.selectTimeError'));
       setIsSubmitting(false);
       return;
     }
     if (!selectedPersonnel) {
-      toast.error("Please select a health professional.");
+      toast.error(t('appointments.selectPersonnelError'));
       setIsSubmitting(false);
       return;
     }
@@ -208,13 +220,13 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
       if (res.ok) {
         onAppointmentBooked();
         setIsOpen(false);
-        toast.success('Appointment booked successfully!');
+        toast.success(t('appointments.bookingSuccess'));
       } else {
-        toast.error('Failed to book appointment.');
+        toast.error(t('appointments.bookingFailed'));
       }
     } catch (error) {
       console.error('Failed:', error);
-      toast.error('Unexpected server error.');
+      toast.error(t('appointments.serverError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -228,18 +240,18 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-900/50 shadow-2xl outline-none">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3 mb-2">
             <div className="p-2 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
               <CalendarPlus className="h-5 w-5 text-white" />
             </div>
             <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              Book New Appointment
+              {t('appointments.bookNewAppointment')}
             </DialogTitle>
           </div>
           <DialogDescription className="text-muted-foreground">
-            Schedule a new appointment for the patient
+            {t('appointments.scheduleAppointment')}
           </DialogDescription>
         </DialogHeader>
 
@@ -249,7 +261,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
               <div className="space-y-3">
                 <Label htmlFor="patient-search" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                   <UserIcon className="h-4 w-4 mr-2 text-blue-500" />
-                  Find Patient
+                  {t('appointments.findPatient')}
                 </Label>
                 <Popover open={open} onOpenChange={setOpen}>
                   <PopoverTrigger asChild>
@@ -261,20 +273,20 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                     >
                       {selectedPatient
                         ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
-                        : "Select patient..."}
+                        : t('appointments.selectPatient')}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-xl">
                     <Command>
                       <CommandInput
-                        placeholder="Search patient..."
+                        placeholder={t('appointments.searchPatients')}
                         value={searchTerm}
                         onValueChange={setSearchTerm}
                         className="border-b border-gray-200/50 dark:border-gray-700/50"
                       />
                       <CommandList>
-                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">No patient found.</CommandEmpty>
+                        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">{t('appointments.noPatientFound')}</CommandEmpty>
                         <CommandGroup>
                           {patients.map((p) => (
                             <CommandItem
@@ -303,11 +315,11 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
             <div className="space-y-3">
               <Label htmlFor="appointment-type" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-4 h-4 mr-2 bg-linear-to-br from-blue-400 to-blue-600 rounded"></div>
-                Appointment Type
+                {t('appointments.appointmentType')}
               </Label>
               <Select onValueChange={setAppointmentType} defaultValue="Consultation">
                 <SelectTrigger id="appointment-type" className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl h-11">
-                  <SelectValue placeholder="Select a type" />
+                  <SelectValue placeholder={t('appointments.selectType')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-xl">
                   {Object.keys(appointmentTypes).map((type) => (
@@ -322,7 +334,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
             <div className="space-y-3">
               <Label htmlFor="purpose-of-visit" className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                 <div className="w-4 h-4 mr-2 bg-linear-to-br from-green-400 to-green-600 rounded"></div>
-                Purpose of Visit
+                {t('appointments.purposeOfVisit')}
               </Label>
               <Input
                 id="purpose-of-visit"
@@ -335,7 +347,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                     setReason(e.target.value);
                   }
                 }}
-                placeholder={appointmentType === 'Other' ? "Please specify the reason" : "Purpose of visit"}
+                placeholder={appointmentType === 'Other' ? t('appointments.specifyReason') : t('appointments.purposeOfVisit')}
                 required
                 className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-green-400 dark:focus:border-green-500 rounded-xl h-11"
               />
@@ -343,7 +355,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
 
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date">{t('appointments.date')}</Label>
                 <HijriCalendar
                   selectedDate={date}
                   onDateSelect={setDate}
@@ -354,10 +366,10 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">{t('appointments.time')}</Label>
                 <Select onValueChange={setTime} value={time} disabled={!date || !selectedPersonnel || availableTimes.length === 0}>
                   <SelectTrigger id="time">
-                    <SelectValue placeholder="Select an available time" />
+                    <SelectValue placeholder={t('appointments.selectDate')} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableTimes.length > 0 ? (
@@ -368,7 +380,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                       ))
                     ) : (
                       <SelectItem value="no-slots" disabled>
-                        {date && selectedPersonnel ? 'No available slots' : 'Select date and personnel first'}
+                        {date && selectedPersonnel ? t('appointments.noSlots') : t('appointments.selectDateAndPersonnel')}
                       </SelectItem>
                     )}
                   </SelectContent>
@@ -378,10 +390,10 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="personnel-type">Personnel Type</Label>
+                <Label htmlFor="personnel-type">{t('appointments.personnelType')}</Label>
                 <Select onValueChange={setPersonnelType} defaultValue={personnelType}>
                   <SelectTrigger id="personnel-type">
-                    <SelectValue placeholder="Select a type" />
+                    <SelectValue placeholder={t('appointments.selectPersonnelType')} />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(personnelTypes).map(([value, label]) => (
@@ -391,7 +403,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="personnel">Health Personnel</Label>
+                <Label htmlFor="personnel">{t('appointments.healthPersonnel')}</Label>
                 <Select
                   onValueChange={(value) =>
                     setSelectedPersonnel(
@@ -401,7 +413,7 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
                   disabled={!personnel.length}
                 >
                   <SelectTrigger id="personnel">
-                    <SelectValue placeholder="Select a professional" />
+                    <SelectValue placeholder={t('appointments.selectProfessional')} />
                   </SelectTrigger>
                   <SelectContent>
                     {personnel.map((p) => (
@@ -422,10 +434,10 @@ const BookAppointmentModal: React.FC<BookAppointmentModalProps> = ({ patientId, 
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                  Booking...
+                  {t('appointments.booking')}
                 </div>
               ) : (
-                'Book Appointment'
+                t('appointments.bookAppointmentBtn')
               )}
             </Button>
           </form>

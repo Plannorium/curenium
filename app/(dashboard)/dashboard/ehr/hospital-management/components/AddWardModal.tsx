@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, Bed, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Department {
   _id: string;
@@ -50,6 +52,16 @@ const wardTypes = [
 
 const AddWardModal: React.FC<AddWardModalProps> = React.memo(
   ({ onWardAdded, children }) => {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+
     const [isOpen, setIsOpen] = useState(false);
     const [name, setName] = useState("");
     const [wardNumber, setWardNumber] = useState("");
@@ -133,14 +145,14 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
           setBuilding("");
           setPhone("");
           setExtension("");
-          toast.success('Ward created successfully');
+          toast.success(t('hospitalManagementPage.modals.addWard.success'));
         } else {
           const error = await res.json() as { message?: string };
-          toast.error(error.message || 'Failed to create ward');
+          toast.error(error.message || t('hospitalManagementPage.modals.addWard.failed'));
         }
       } catch (error) {
         console.error("Failed to create ward:", error);
-        toast.error('An error occurred while creating the ward');
+        toast.error(t('hospitalManagementPage.modals.addWard.error'));
       } finally {
         setIsSubmitting(false);
       }
@@ -157,7 +169,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Bed className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Add New Ward
+              {t('hospitalManagementPage.modals.addWard.title')}
             </DialogTitle>
           </DialogHeader>
 
@@ -169,7 +181,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center"
                 >
                   <Bed className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                  Ward Name *
+                  {t('hospitalManagementPage.modals.addWard.wardName')}
                 </Label>
                 <Input
                   id="name"
@@ -186,7 +198,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="wardNumber"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Ward Number *
+                  {t('hospitalManagementPage.modals.addWard.wardNumber')}
                 </Label>
                 <Input
                   id="wardNumber"
@@ -204,11 +216,11 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                 htmlFor="department"
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300"
               >
-                Department *
+                {t('hospitalManagementPage.modals.addWard.department')}
               </Label>
               <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
                 <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                  <SelectValue placeholder="Select department" />
+                  <SelectValue placeholder={t('hospitalManagementPage.modals.addWard.selectDepartment')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-gray-950 max-h-60">
                   {departments.map((dept) => (
@@ -226,7 +238,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="totalBeds"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Total Beds *
+                  {t('hospitalManagementPage.modals.addWard.totalBeds')}
                 </Label>
                 <Input
                   id="totalBeds"
@@ -246,11 +258,11 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="wardType"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Ward Type *
+                  {t('hospitalManagementPage.modals.addWard.wardType')}
                 </Label>
                 <Select value={wardType} onValueChange={(value: any) => setWardType(value)}>
                   <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                    <SelectValue placeholder="Select ward type" />
+                    <SelectValue placeholder={t('hospitalManagementPage.modals.addWard.selectWardType')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-950">
                     {wardTypes.map((type) => (
@@ -269,7 +281,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="floor"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Floor
+                  {t('hospitalManagementPage.modals.addWard.floor')}
                 </Label>
                 <Input
                   id="floor"
@@ -285,7 +297,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="building"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Building
+                  {t('hospitalManagementPage.modals.addWard.building')}
                 </Label>
                 <Input
                   id="building"
@@ -303,7 +315,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="phone"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Phone
+                  {t('hospitalManagementPage.modals.addWard.phone')}
                 </Label>
                 <Input
                   id="phone"
@@ -319,7 +331,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                   htmlFor="extension"
                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
-                  Extension
+                  {t('hospitalManagementPage.modals.addWard.extension')}
                 </Label>
                 <Input
                   id="extension"
@@ -336,13 +348,13 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
                 htmlFor="description"
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300"
               >
-                Description
+                {t('hospitalManagementPage.modals.addWard.description')}
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ward description and facilities..."
+                placeholder={t('hospitalManagementPage.modals.addWard.descriptionPlaceholder')}
                 className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60 min-h-16"
               />
             </div>
@@ -355,7 +367,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
               disabled={isSubmitting}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              Cancel
+              {t('hospitalManagementPage.modals.addWard.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -364,12 +376,12 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t('hospitalManagementPage.modals.addWard.creating')}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Ward
+                  {t('hospitalManagementPage.modals.addWard.createWard')}
                 </>
               )}
             </Button>

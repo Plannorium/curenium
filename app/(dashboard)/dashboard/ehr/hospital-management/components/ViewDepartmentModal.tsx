@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Building, User, Phone, Mail, Calendar } from "lucide-react";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Department {
   _id: string;
@@ -39,6 +41,16 @@ interface ViewDepartmentModalProps {
 
 const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
   ({ department, children }) => {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+
     const [isOpen, setIsOpen] = useState(false);
 
     if (!department) return null;
@@ -52,7 +64,7 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Building className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Department Details
+              {t('hospitalManagementPage.modals.viewDepartment.title')}
             </DialogTitle>
           </DialogHeader>
 
@@ -62,14 +74,14 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
                 {department.name}
               </h3>
               <Badge variant={department.isActive ? "default" : "secondary"}>
-                {department.isActive ? "Active" : "Inactive"}
+                {department.isActive ? t('hospitalManagementPage.modals.viewDepartment.active') : t('hospitalManagementPage.modals.viewDepartment.inactive')}
               </Badge>
             </div>
 
             {department.description && (
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Description
+                  {t('hospitalManagementPage.modals.viewDepartment.description')}
                 </Label>
                 <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                   {department.description}
@@ -81,7 +93,7 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                   <User className="h-4 w-4 mr-2" />
-                  Head of Department
+                  {t('hospitalManagementPage.modals.viewDepartment.headOfDepartment')}
                 </Label>
                 <div className="bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -97,7 +109,7 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
             {department.specialties && department.specialties.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Specialties
+                  {t('hospitalManagementPage.modals.viewDepartment.specialties')}
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {department.specialties.map((specialty, index) => (
@@ -112,7 +124,7 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
             {(department.contactInfo?.phone || department.contactInfo?.email) && (
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Contact Information
+                  {t('hospitalManagementPage.modals.viewDepartment.contactInfo')}
                 </Label>
                 <div className="space-y-2">
                   {department.contactInfo.phone && (
@@ -136,7 +148,7 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                Created
+                {t('hospitalManagementPage.modals.viewDepartment.created')}
               </Label>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {new Date(department.createdAt).toLocaleDateString('en-US', {
@@ -152,7 +164,7 @@ const ViewDepartmentModal: React.FC<ViewDepartmentModalProps> = React.memo(
 
           <DialogFooter className="px-4 md:px-6 py-3 md:py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
             <Button variant="ghost" onClick={() => setIsOpen(false)}>
-              Close
+              {t('hospitalManagementPage.modals.viewDepartment.close')}
             </Button>
           </DialogFooter>
         </DialogContent>

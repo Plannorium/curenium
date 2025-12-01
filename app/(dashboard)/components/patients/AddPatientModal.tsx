@@ -70,9 +70,9 @@ const AddPatientModal: React.FC<AddPatientModalProps> = ({ onPatientAdded, child
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg w-full max-w-md md:max-w-lg lg:max-w-2xl p-0 border-2 border-gray-200/50 dark:border-gray-800/50 shadow-2xl rounded-2xl overflow-y-auto max-h-[90vh]">
-        <DialogHeader className="p-4 md:p-6 pb-4 border-b border-gray-200/50 dark:border-gray-800/50">
+        <DialogHeader className="p-4 md:p-7 pb-4 border-b border-gray-200/50 dark:border-gray-800/50">
           <DialogTitle className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-50 flex items-center">
-            <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg mr-3 md:mr-4">
+            <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg ${language === 'ar' ? 'ml-3 md:ml-4' : 'mr-3 md:mr-4'}`}>
               <Plus className="h-5 w-5 md:h-6 md:w-6 text-white" />
             </div>
             {t('addPatientModal.title')}

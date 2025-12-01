@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, FileText } from "lucide-react";
 import { Prescription } from "@/types/prescription";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface AdministrationDetailsModalProps {
   isOpen: boolean;
@@ -16,6 +18,16 @@ export const AdministrationDetailsModal = ({
   onClose,
   prescription,
 }: AdministrationDetailsModalProps) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   if (!prescription) return null;
 
   return (
@@ -24,7 +36,7 @@ export const AdministrationDetailsModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <FileText className="h-5 w-5" />
-            <span>Administration History</span>
+            <span>{t('administrationDetailsModal.title')}</span>
           </DialogTitle>
           <div className="text-sm text-muted-foreground">
             Prescription: {prescription.medications?.join(', ') || prescription.medication || 'N/A'}
@@ -82,7 +94,7 @@ export const AdministrationDetailsModal = ({
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Administered By:</span>
+                          <span className="text-sm text-muted-foreground">{t('administrationDetailsModal.administeredBy')}</span>
                         </div>
                         <p className="font-medium">
                           {(admin.administeredBy as any)?.fullName || 'Unknown'}
@@ -93,7 +105,7 @@ export const AdministrationDetailsModal = ({
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">Dose Administered:</span>
+                            <span className="text-sm text-muted-foreground">{t('administrationDetailsModal.doseAdministered')}</span>
                           </div>
                           <p className="font-medium">{admin.doseAdministered}</p>
                         </div>
@@ -104,7 +116,7 @@ export const AdministrationDetailsModal = ({
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center space-x-2 mb-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Notes:</span>
+                          <span className="text-sm text-muted-foreground">{t('administrationDetailsModal.notes')}</span>
                         </div>
                         <p className="text-sm bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
                           {admin.notes}
@@ -118,10 +130,10 @@ export const AdministrationDetailsModal = ({
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No Administrations Yet
+                {t('administrationDetailsModal.noAdministrations')}
               </h3>
               <p className="text-muted-foreground">
-                This prescription has not been administered yet.
+                {t('administrationDetailsModal.noAdministrationsMessage')}
               </p>
             </div>
           )}

@@ -7,8 +7,17 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { settingsTranslations } from "@/lib/settings-translations";
 
-export const ProfileImage = () => {
+export const ProfileImage = ({ language }: { language: 'en' | 'ar' }) => {
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = settingsTranslations[language];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const { data: session, update } = useSession();
   const { watch, setValue } = useFormContext();
   const imageUrl = watch('imageUrl');
@@ -45,13 +54,13 @@ export const ProfileImage = () => {
         const { imageUrl } = await res.json() as { imageUrl: string };
         setValue('imageUrl', imageUrl, { shouldDirty: true });
         await update({ image: imageUrl });
-        toast.success('Profile image updated successfully.');
+        toast.success(t('profile.profileImage.toast.success'));
       } else {
-        toast.error('Failed to upload image.');
+        toast.error(t('profile.profileImage.toast.error'));
       }
     } catch (error) {
       console.error('Failed to upload image:', error);
-      toast.error('An error occurred while uploading the image.');
+      toast.error(t('profile.profileImage.toast.errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -59,10 +68,10 @@ export const ProfileImage = () => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Profile Image</h3>
+      <h3 className="text-lg font-medium">{t('profile.profileImage.title')}</h3>
       <div className="flex items-center space-x-4">
         <Avatar className="h-20 w-20">
-          <AvatarImage src={imageUrl || undefined} alt="User profile image" />
+          <AvatarImage src={imageUrl || undefined} alt={t('profile.profileImage.alt')} />
           <AvatarFallback>{session?.user?.name?.[0]}</AvatarFallback>
         </Avatar>
         <input
@@ -74,7 +83,7 @@ export const ProfileImage = () => {
         />
         <label htmlFor="profile-image-upload" className="cursor-pointer">
           <Button asChild variant="outline">
-            <span>Change</span>
+            <span>{t('profile.profileImage.change')}</span>
           </Button>
         </label>
         {file && (
@@ -82,10 +91,10 @@ export const ProfileImage = () => {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
+                {t('profile.uploading')}
               </>
             ) : (
-              'Save'
+              t('profile.save')
             )}
           </Button>
         )}

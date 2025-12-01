@@ -19,6 +19,8 @@ import {
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Loader } from "@/components/ui/Loader";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // Types
 interface Discharge {
@@ -55,6 +57,21 @@ interface Discharge {
 
 const DischargesPage = () => {
   const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string, replacements?: Record<string, string>) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    if (value && replacements) {
+      return Object.keys(replacements).reduce((str, key) => {
+        return str.replace(new RegExp(`\\{${key}\\}`, 'g'), replacements[key]);
+      }, value);
+    }
+    return value || key;
+  };
+
   const [discharges, setDischarges] = useState<Discharge[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -71,11 +88,11 @@ const DischargesPage = () => {
         const data = await response.json() as Discharge[];
         setDischarges(data);
       } else {
-        toast.error('Failed to fetch discharges');
+        toast.error(t('dischargesPage.errors.fetchFailed'));
       }
     } catch (error) {
       console.error('Failed to fetch discharges:', error);
-      toast.error('An error occurred while fetching discharges');
+      toast.error(t('dischargesPage.errors.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -101,6 +118,16 @@ const DischargesPage = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    const key = `dischargesPage.status.${status}`;
+    return t(key);
+  };
+
+  const getDischargeTypeLabel = (type: string) => {
+    const key = `dischargesPage.dischargeTypes.${type}`;
+    return t(key);
+  };
+
   const handleDischargeAction = async (dischargeId: string, action: string, data?: any) => {
     try {
       const response = await fetch(`/api/discharges/${dischargeId}`, {
@@ -112,15 +139,15 @@ const DischargesPage = () => {
       });
 
       if (response.ok) {
-        toast.success(`Discharge ${action} successfully`);
+        toast.success(t('dischargesPage.errors.actionSuccess', { action }));
         fetchDischarges();
       } else {
         const error = await response.json() as { message?: string };
-        toast.error(error.message || `Failed to ${action} discharge`);
+        toast.error(error.message || t('dischargesPage.errors.actionFailed', { action }));
       }
     } catch (error) {
       console.error(`Failed to ${action} discharge:`, error);
-      toast.error(`An error occurred while ${action}ing discharge`);
+      toast.error(t('dischargesPage.errors.actionError', { action }));
     }
   };
 
@@ -144,7 +171,7 @@ const DischargesPage = () => {
   };
 
   if (loading) {
-    return <Loader text="Loading discharges..." />;
+    return <Loader text={t('dischargesPage.loading')} />;
   }
 
   return (
@@ -153,16 +180,16 @@ const DischargesPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Discharge Management
+            {t('dischargesPage.title')}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Plan and manage patient discharges
+            {t('dischargesPage.subtitle')}
           </p>
         </div>
         {session?.user?.role === 'matron_nurse' && (
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Plan Discharge
+            {t('dischargesPage.buttons.planDischarge')}
           </Button>
         )}
       </div>
@@ -171,10 +198,10 @@ const DischargesPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-4">
               <Calendar className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Planned</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('dischargesPage.stats.planned')}</p>
                 <p className="text-2xl font-bold">
                   {discharges.filter(d => d.status === 'planned').length}
                 </p>
@@ -185,10 +212,10 @@ const DischargesPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-4">
               <Clock className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('dischargesPage.stats.inProgress')}</p>
                 <p className="text-2xl font-bold">
                   {discharges.filter(d => d.status === 'in_progress').length}
                 </p>
@@ -199,10 +226,10 @@ const DischargesPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-4">
               <CheckCircle className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('dischargesPage.stats.completed')}</p>
                 <p className="text-2xl font-bold">
                   {discharges.filter(d => d.status === 'completed').length}
                 </p>
@@ -213,10 +240,10 @@ const DischargesPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-4">
               <XCircle className="h-8 w-8 text-red-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Cancelled</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('dischargesPage.stats.cancelled')}</p>
                 <p className="text-2xl font-bold">
                   {discharges.filter(d => d.status === 'cancelled').length}
                 </p>
@@ -229,15 +256,15 @@ const DischargesPage = () => {
       {/* Discharges List */}
       <Card>
         <CardHeader>
-          <CardTitle>Discharges</CardTitle>
+          <CardTitle>{t('dischargesPage.cardTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="upcoming">Planned</TabsTrigger>
-              <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsTrigger value="all">{t('dischargesPage.tabs.all')}</TabsTrigger>
+              <TabsTrigger value="upcoming">{t('dischargesPage.tabs.planned')}</TabsTrigger>
+              <TabsTrigger value="in_progress">{t('dischargesPage.tabs.inProgress')}</TabsTrigger>
+              <TabsTrigger value="completed">{t('dischargesPage.tabs.completed')}</TabsTrigger>
             </TabsList>
 
             <div className="mt-6 space-y-4">
@@ -245,10 +272,10 @@ const DischargesPage = () => {
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    No discharges found
+                    {t('dischargesPage.emptyState.noDischarges')}
                   </h3>
                   <p className="text-muted-foreground">
-                    {activeTab === 'all' ? 'No discharge plans have been created yet.' : `No ${activeTab.replace('_', ' ')} discharges.`}
+                    {activeTab === 'all' ? t('dischargesPage.emptyState.noPlansYet') : t('dischargesPage.emptyState.noTabDischarges', { tab: activeTab.replace('_', ' ') })}
                   </p>
                 </div>
               ) : (
@@ -269,39 +296,39 @@ const DischargesPage = () => {
                                 {discharge.patient.firstName} {discharge.patient.lastName}
                               </h3>
                               <Badge className={getDischargeTypeColor(discharge.dischargeType)}>
-                                {discharge.dischargeType.replace('_', ' ').toUpperCase()}
+                                {getDischargeTypeLabel(discharge.dischargeType)}
                               </Badge>
                               <Badge className={getStatusColor(discharge.status)}>
-                                {discharge.status.replace('_', ' ').toUpperCase()}
+                                {getStatusLabel(discharge.status)}
                               </Badge>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4">
                               <div>
-                                <span className="font-medium">MRN:</span> {discharge.patient.mrn || 'N/A'}
+                                <span className="font-medium">{t('dischargesPage.labels.mrn')}</span> {discharge.patient.mrn || 'N/A'}
                               </div>
                               <div>
-                                <span className="font-medium">Doctor:</span> {discharge.doctor.fullName}
+                                <span className="font-medium">{t('dischargesPage.labels.doctor')}</span> {discharge.doctor.fullName}
                               </div>
                               <div>
-                                <span className="font-medium">Matron Nurse:</span> {discharge.matronNurse.fullName}
+                                <span className="font-medium">{t('dischargesPage.labels.matronNurse')}</span> {discharge.matronNurse.fullName}
                               </div>
                               <div>
-                                <span className="font-medium">Planned Date:</span> {new Date(discharge.plannedDate).toLocaleDateString()}
+                                <span className="font-medium">{t('dischargesPage.labels.plannedDate')}</span> {new Date(discharge.plannedDate).toLocaleDateString()}
                               </div>
                               {discharge.actualDischargeDate && (
                                 <div>
-                                  <span className="font-medium">Actual Date:</span> {new Date(discharge.actualDischargeDate).toLocaleDateString()}
+                                  <span className="font-medium">{t('dischargesPage.labels.actualDate')}</span> {new Date(discharge.actualDischargeDate).toLocaleDateString()}
                                 </div>
                               )}
                               <div>
-                                <span className="font-medium">Initiated:</span> {new Date(discharge.initiatedAt).toLocaleDateString()}
+                                <span className="font-medium">{t('dischargesPage.labels.initiated')}</span> {new Date(discharge.initiatedAt).toLocaleDateString()}
                               </div>
                             </div>
 
                             <div className="mb-4">
                               <p className="text-sm">
-                                <span className="font-medium">Reason:</span> {discharge.dischargeReason}
+                                <span className="font-medium">{t('dischargesPage.labels.reason')}</span> {discharge.dischargeReason}
                               </p>
                             </div>
                           </div>
@@ -310,7 +337,7 @@ const DischargesPage = () => {
                         <div className="flex items-center space-x-2 ml-4">
                           <Button variant="outline" size="sm">
                             <Eye className="h-4 w-4 mr-1" />
-                            View Details
+                            {t('dischargesPage.buttons.viewDetails')}
                           </Button>
 
                           {discharge.status === 'planned' && session?.user?.role === 'matron_nurse' && discharge.matronNurse._id === session.user.id && (
@@ -319,7 +346,7 @@ const DischargesPage = () => {
                               size="sm"
                               onClick={() => handleDischargeAction(discharge._id, 'update', { status: 'in_progress' })}
                             >
-                              Start Process
+                              {t('dischargesPage.buttons.startProcess')}
                             </Button>
                           )}
 
@@ -331,7 +358,7 @@ const DischargesPage = () => {
                               className="text-green-600 hover:text-green-700"
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              Complete
+                              {t('dischargesPage.buttons.complete')}
                             </Button>
                           )}
 
@@ -343,7 +370,7 @@ const DischargesPage = () => {
                               className="text-red-600 hover:text-red-700"
                             >
                               <XCircle className="h-4 w-4 mr-1" />
-                              Cancel
+                              {t('dischargesPage.buttons.cancel')}
                             </Button>
                           )}
                         </div>

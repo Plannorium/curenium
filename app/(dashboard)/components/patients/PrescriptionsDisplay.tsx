@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Card, CardContent, CardHeader, CardTitle
@@ -12,12 +12,15 @@ import { ServerCrash, Pill, Calendar, Repeat, CheckCircle, PlusCircle, ArrowRigh
 import { useSession } from "next-auth/react";
 import { AddPrescriptionModal } from "./AddPrescriptionModal";
 import { AdministerPrescriptionModal } from './AdministerPrescriptionModal';
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 interface PrescriptionsDisplayProps {
   patientId: string;
 }
 
 const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
+  const { language } = useLanguage();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +30,17 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   const [expandedTimelines, setExpandedTimelines] = useState<Set<string>>(new Set());
   const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
   const { data: session } = useSession();
+
+  const t = useMemo(() => {
+    return (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+  }, [language]);
 
   const fetchPrescriptions = async () => {
     try {
@@ -85,16 +99,16 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
     // Try to determine type from medication name pattern
     const medName = prescription.medication || '';
     if (medName.includes('treatment:') || medName.includes('therapy:')) {
-      return { type: 'Therapy/Treatment', icon: Syringe, color: 'text-purple-600' };
+      return { type: t('prescriptionsDisplay.therapyTreatment'), icon: Syringe, color: 'text-purple-600' };
     }
     if (medName.includes('procedure:')) {
-      return { type: 'Procedure', icon: Stethoscope, color: 'text-blue-600' };
+      return { type: t('prescriptionsDisplay.procedure'), icon: Stethoscope, color: 'text-blue-600' };
     }
     if (medName.includes('device:') || medName.includes('Medical Device')) {
-      return { type: 'Medical Device', icon: Activity, color: 'text-green-600' };
+      return { type: t('prescriptionsDisplay.medicalDevice'), icon: Activity, color: 'text-green-600' };
     }
     // Default to medication
-    return { type: 'Medication', icon: Pill, color: 'text-primary' };
+    return { type: t('prescriptionsDisplay.medication'), icon: Pill, color: 'text-primary' };
   };
 
   if (loading) {
@@ -103,7 +117,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
         <CardHeader>
           <CardTitle className="flex items-center text-xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             <Pill className="mr-3 h-6 w-6 text-primary" />
-            Prescriptions
+            {t('prescriptionsDisplay.prescriptions')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -119,7 +133,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
     return (
       <Alert variant="destructive" className="bg-red-50/80 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/50 backdrop-blur-lg">
         <ServerCrash className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('common.error')}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -131,7 +145,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <CardTitle className="flex items-center text-xl sm:text-2xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             <Pill className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            <span className="text-lg sm:text-2xl">Prescriptions</span>
+            <span className="text-lg sm:text-2xl">{t('prescriptionsDisplay.prescriptions')}</span>
           </CardTitle>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             {session?.user?.role === 'doctor' && (
@@ -141,7 +155,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
               className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline text-sm sm:text-base">Add Prescription</span>
+              <span className="hidden sm:inline text-sm sm:text-base">{t('prescriptionsDisplay.addPrescription')}</span>
             </Button>
             )}
             <Link href={`/dashboard/ehr/patients/${patientId}/prescriptions`} passHref>
@@ -150,7 +164,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                 variant="outline"
                 className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
               >
-                <span className="hidden sm:inline text-sm sm:text-base">Full View</span>
+                <span className="hidden sm:inline text-sm sm:text-base">{t('prescriptionsDisplay.fullView')}</span>
                 <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 sm:ml-2" />
               </Button>
             </Link>
@@ -184,7 +198,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
                               : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
                           }`}>
-                            {prescription.status}
+                            {t(`prescriptionsDisplay.status.${prescription.status}`)}
                           </span>
                         </div>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{typeInfo.type}</p>
@@ -201,7 +215,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                           className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto cursor-pointer"
                         >
                           <Syringe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">Administer</span>
+                          <span className="text-xs sm:text-sm">{t('prescriptionsDisplay.administer')}</span>
                         </Button>
                       )}
                     </div>
@@ -218,12 +232,12 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                       {expandedDetails.has(prescription._id) ? (
                         <>
                           <ChevronUp className="h-4 w-4 mr-2" />
-                          <span className="text-sm">Hide Details</span>
+                          <span className="text-sm">{t('prescriptionsDisplay.hideDetails')}</span>
                         </>
                       ) : (
                         <>
                           <ChevronDown className="h-4 w-4 mr-2" />
-                          <span className="text-sm">Show Details</span>
+                          <span className="text-sm">{t('prescriptionsDisplay.showDetails')}</span>
                         </>
                       )}
                     </Button>
@@ -235,24 +249,24 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                       {/* Professional Details Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
                         {prescription.dose && prescription.dose !== 'Not specified' && prescription.dose !== 'N/A' && (
-                          <InfoItem icon={Package} label="Strength/Dose" value={prescription.dose} />
+                          <InfoItem icon={Package} label={t('prescriptionsDisplay.strengthDose')} value={prescription.dose} />
                         )}
-                        <InfoItem icon={Repeat} label="Frequency" value={prescription.frequency} />
+                        <InfoItem icon={Repeat} label={t('prescriptionsDisplay.frequency')} value={prescription.frequency} />
                         {prescription.route && prescription.route !== 'As applicable' && (
-                          <InfoItem icon={ArrowRight} label="Route" value={prescription.route} />
+                          <InfoItem icon={ArrowRight} label={t('prescriptionsDisplay.route')} value={prescription.route} />
                         )}
                         {prescription.durationDays && (
-                          <InfoItem icon={Clock} label="Duration" value={`${prescription.durationDays} days`} />
+                          <InfoItem icon={Clock} label={t('prescriptionsDisplay.duration')} value={`${prescription.durationDays} ${t('prescriptionsDisplay.days')}`} />
                         )}
                         {prescription.refills && (
-                          <InfoItem icon={Repeat} label="Refills" value={prescription.refills.toString()} />
+                          <InfoItem icon={Repeat} label={t('prescriptionsDisplay.refills')} value={prescription.refills.toString()} />
                         )}
-                        <InfoItem icon={Calendar} label="Prescribed" value={new Date(prescription.createdAt).toLocaleDateString()} />
+                        <InfoItem icon={Calendar} label={t('prescriptionsDisplay.prescribed')} value={new Date(prescription.createdAt).toLocaleDateString()} />
                         {prescription.startDate && (
-                          <InfoItem icon={Calendar} label="Start Date" value={new Date(prescription.startDate).toLocaleDateString()} />
+                          <InfoItem icon={Calendar} label={t('prescriptionsDisplay.startDate')} value={new Date(prescription.startDate).toLocaleDateString()} />
                         )}
                         {prescription.endDate && (
-                          <InfoItem icon={Calendar} label="End Date" value={new Date(prescription.endDate).toLocaleDateString()} />
+                          <InfoItem icon={Calendar} label={t('prescriptionsDisplay.endDate')} value={new Date(prescription.endDate).toLocaleDateString()} />
                         )}
                       </div>
 
@@ -262,7 +276,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
                             <h4 className="font-semibold flex items-center text-blue-800 dark:text-blue-300 mb-2 text-sm sm:text-base">
                               <FileText className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                              Instructions
+                              {t('prescriptionsDisplay.instructions')}
                             </h4>
                             <p className="text-blue-700 dark:text-blue-200 text-xs sm:text-sm leading-relaxed">{prescription.instructions}</p>
                           </div>
@@ -272,7 +286,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4">
                             <h4 className="font-semibold flex items-center text-amber-800 dark:text-amber-300 mb-2 text-sm sm:text-base">
                               <AlertCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                              Reason for Prescription
+                              {t('prescriptionsDisplay.reasonForPrescription')}
                             </h4>
                             <p className="text-amber-700 dark:text-amber-200 text-xs sm:text-sm leading-relaxed">{prescription.reasonForPrescription}</p>
                           </div>
@@ -282,7 +296,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                           <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
                             <h4 className="font-semibold flex items-center text-gray-800 dark:text-gray-300 mb-2 text-sm sm:text-base">
                               <Info className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                              Additional Notes
+                              {t('prescriptionsDisplay.additionalNotes')}
                             </h4>
                             <p className="text-gray-700 dark:text-gray-200 text-xs sm:text-sm leading-relaxed">{prescription.notes}</p>
                           </div>
@@ -300,7 +314,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                       >
                         <div className="flex items-center">
                           <User className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary"/>
-                          <span className="text-sm sm:text-base">Administration Timeline</span>
+                          <span className="text-sm sm:text-base">{t('prescriptionsDisplay.administrationTimeline')}</span>
                         </div>
                         {expandedTimelines.has(prescription._id) ? (
                           <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -320,7 +334,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                                       ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
                                       : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
                                   }`}>
-                                    {admin.status.replace('_', ' ')}
+                                    {t(`prescriptionsDisplay.administrationStatus.${admin.status}`)}
                                   </span>
                                   <div className="text-left sm:text-right text-xs text-gray-500 dark:text-gray-400">
                                     <div>{new Date(admin.administeredAt).toLocaleDateString()}</div>
@@ -328,10 +342,10 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
                                   </div>
                                 </div>
                                 <p className="mt-2 text-gray-700 dark:text-gray-300 text-sm">
-                                  Administered by: <span className="font-medium text-gray-900 dark:text-gray-100">{(admin.administeredBy as any)?.fullName || 'N/A'}</span>
+                                  {t('prescriptionsDisplay.administeredBy')}: <span className="font-medium text-gray-900 dark:text-gray-100">{(admin.administeredBy as any)?.fullName || 'N/A'}</span>
                                 </p>
-                                {admin.doseAdministered && <p className="text-sm text-gray-600 dark:text-gray-400">Dose: {admin.doseAdministered}</p>}
-                                {admin.notes && <p className="text-sm text-gray-600 dark:text-gray-400">Notes: {admin.notes}</p>}
+                                {admin.doseAdministered && <p className="text-sm text-gray-600 dark:text-gray-400">{t('prescriptionsDisplay.dose')}: {admin.doseAdministered}</p>}
+                                {admin.notes && <p className="text-sm text-gray-600 dark:text-gray-400">{t('prescriptionsDisplay.notes')}: {admin.notes}</p>}
                               </div>
                             </div>
                           ))}
@@ -347,10 +361,10 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
           <div className="text-center py-6 sm:py-8 md:py-12 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 px-4">
             <Pill className="mx-auto h-6 w-6 sm:h-8 sm:w-8 md:h-12 md:w-12 text-gray-400 dark:text-gray-500 mb-2 sm:mb-3 md:mb-4" />
             <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              No Prescriptions Yet
+              {t('prescriptionsDisplay.noPrescriptionsYet')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-3 sm:mb-4 md:mb-6 max-w-md mx-auto text-xs sm:text-sm md:text-base leading-relaxed">
-              Prescriptions and medications will be displayed here once they are prescribed.
+              {t('prescriptionsDisplay.noPrescriptionsDescription')}
             </p>
             {session?.user?.role === 'doctor' && (
             <Button
@@ -359,7 +373,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
               className="bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
             >
               <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-sm sm:text-base">Add First Prescription</span>
+              <span className="text-sm sm:text-base">{t('prescriptionsDisplay.addFirstPrescription')}</span>
             </Button>
             )}
           </div>

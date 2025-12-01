@@ -22,6 +22,8 @@ import { toast } from "sonner"
 import Link from 'next/link'
 import { cn } from "@/lib/utils"
 import { ProfileImage } from "./components/ProfileImage";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { settingsTranslations } from "@/lib/settings-translations";
 
 const profileFormSchema = z.object({
   username: z
@@ -58,6 +60,16 @@ const defaultValues: Partial<ProfileFormValues> = {
 }
 
 export default function ProfileForm() {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = settingsTranslations[language as keyof typeof settingsTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
@@ -89,12 +101,12 @@ export default function ProfileForm() {
           }
         } catch (error) {
           console.error("Failed to fetch profile", error);
-          toast.error("Could not load your profile data.");
+          toast.error(t('profile.couldNotLoadProfile'));
         }
       };
       fetchProfile();
     }
-  }, [session, form]);
+  }, [session]);
 
   async function onSubmit(data: ProfileFormValues) {
     try {
@@ -107,31 +119,30 @@ export default function ProfileForm() {
       });
 
       if (response.ok) {
-        toast.success("Profile updated successfully.");
+        toast.success(t('profile.profileUpdated'));
       } else {
-        toast.error("Failed to update profile.");
+        toast.error(t('profile.failedToUpdateProfile'));
       }
     } catch (error) {
-      toast.error("An error occurred.");
+      toast.error(t('profile.errorOccurred'));
     }
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" >
-        <ProfileImage />
+        <ProfileImage language={language} />
         <FormField
           control={form.control}
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>{t('profile.username')}</FormLabel>
               <FormControl>
                 <Input placeholder="shadcn" {...field} />
               </FormControl>
               <FormDescription>
-                This is your public display name. It can be your real name or a
-                pseudonym. You can only change this once every 30 days.
+                {t('profile.usernameDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -142,12 +153,12 @@ export default function ProfileForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t('profile.email')}</FormLabel>
               <FormControl>
                 <Input placeholder="your@email.com" {...field} readOnly />
               </FormControl>
               <FormDescription>
-                Your email address cannot be changed.
+                {t('profile.emailDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -158,16 +169,16 @@ export default function ProfileForm() {
           name="bio"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bio</FormLabel>
+              <FormLabel>{t('profile.bio')}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Tell us a little bit about yourself"
+                  placeholder={t('profile.bio')}
                   className="resize-none"
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                You can <span>@mention</span> other users and organizations to link to them.
+                {t('profile.bioDescription')}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -182,10 +193,10 @@ export default function ProfileForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className={cn(index !== 0 && "sr-only")}>
-                    URLs
+                    {t('profile.urls')}
                   </FormLabel>
                   <FormDescription className={cn(index !== 0 && "sr-only")}>
-                    Add links to your website, blog, or social media profiles.
+                    {t('profile.urlsDescription')}
                   </FormDescription>
                   <FormControl>
                     <Input {...field} />
@@ -202,10 +213,10 @@ export default function ProfileForm() {
             className="mt-2"
             onClick={() => append({ value: "" })}
           >
-            Add URL
+            {t('profile.addUrl')}
           </Button>
         </div>
-        <Button type="submit">Update profile</Button>
+        <Button type="submit">{t('profile.updateProfile')}</Button>
       </form>
     </Form>
   )

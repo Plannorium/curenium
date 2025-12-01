@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Bed, Building2, MapPin, Phone, Users, Calendar } from "lucide-react";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface Ward {
   _id: string;
@@ -52,6 +54,16 @@ interface ViewWardModalProps {
 
 const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
   ({ ward, children }) => {
+    const { language } = useLanguage();
+    const t = (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+
     const [isOpen, setIsOpen] = useState(false);
 
     if (!ward) return null;
@@ -76,7 +88,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 mr-2 md:mr-3">
                 <Bed className="h-4 w-4 md:h-5 md:w-5 text-blue-500 dark:text-blue-400" />
               </div>
-              Ward Details
+              {t('hospitalManagementPage.modals.viewWard.title')}
             </DialogTitle>
           </DialogHeader>
 
@@ -104,7 +116,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
                   <Bed className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Beds</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('hospitalManagementPage.modals.viewWard.totalBeds')}</span>
                 </div>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{ward.totalBeds}</p>
               </div>
@@ -112,7 +124,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
                   <Users className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Available</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('hospitalManagementPage.modals.viewWard.available')}</span>
                 </div>
                 <p className="text-lg font-bold text-green-600 dark:text-green-400">{ward.availableBeds}</p>
               </div>
@@ -121,7 +133,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                 <Building2 className="h-4 w-4 mr-2" />
-                Department
+                {t('hospitalManagementPage.modals.viewWard.department')}
               </Label>
               <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                 {ward.department.name}
@@ -132,7 +144,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                   <MapPin className="h-4 w-4 mr-2" />
-                  Location
+                  {t('hospitalManagementPage.modals.viewWard.location')}
                 </Label>
                 <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                   {ward.building && `Building ${ward.building}`}
@@ -146,7 +158,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                   <Users className="h-4 w-4 mr-2" />
-                  Charge Nurse
+                  {t('hospitalManagementPage.modals.viewWard.chargeNurse')}
                 </Label>
                 <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                   {ward.chargeNurse.fullName}
@@ -158,7 +170,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                   <Users className="h-4 w-4 mr-2" />
-                  Assigned Nurses ({ward.assignedNurses.length})
+                  {t('hospitalManagementPage.modals.viewWard.assignedNurses').replace('{count}', ward.assignedNurses.length.toString())}
                 </Label>
                 <div className="bg-gray-50/80 dark:bg-gray-900/80 p-3 rounded-lg">
                   <div className="flex flex-wrap gap-2">
@@ -176,17 +188,17 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                   <Phone className="h-4 w-4 mr-2" />
-                  Contact Information
+                  {t('hospitalManagementPage.modals.viewWard.contactInfo')}
                 </Label>
                 <div className="space-y-1">
                   {ward.contactInfo.phone && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Phone: {ward.contactInfo.phone}
+                      {t('hospitalManagementPage.modals.viewWard.phone')} {ward.contactInfo.phone}
                     </p>
                   )}
                   {ward.contactInfo.extension && (
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Extension: {ward.contactInfo.extension}
+                      {t('hospitalManagementPage.modals.viewWard.extension')} {ward.contactInfo.extension}
                     </p>
                   )}
                 </div>
@@ -196,7 +208,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
             {ward.facilities && ward.facilities.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Facilities
+                  {t('hospitalManagementPage.modals.viewWard.facilities')}
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {ward.facilities.map((facility, index) => (
@@ -213,7 +225,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                Created
+                {t('hospitalManagementPage.modals.viewWard.created')}
               </Label>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {ward.createdAt ? new Date(ward.createdAt).toLocaleDateString('en-US', {
@@ -229,7 +241,7 @@ const ViewWardModal: React.FC<ViewWardModalProps> = React.memo(
 
           <DialogFooter className="px-4 md:px-6 py-3 md:py-4 bg-gray-50 dark:bg-gray-900/70 border-t border-gray-200 dark:border-gray-800/60">
             <Button variant="ghost" onClick={() => setIsOpen(false)}>
-              Close
+              {t('hospitalManagementPage.modals.viewWard.close')}
             </Button>
           </DialogFooter>
         </DialogContent>

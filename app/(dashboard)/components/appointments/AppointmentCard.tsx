@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { PopulatedAppointment } from "@/types/appointment";
 import { CheckCircle, XCircle, Calendar as CalendarIcon } from "lucide-react";
 import { useDateFormatter } from "@/lib/date-utils";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface AppointmentCardProps {
   appointment: PopulatedAppointment;
@@ -10,6 +12,15 @@ interface AppointmentCardProps {
 
 const AppointmentCard = ({ appointment }: AppointmentCardProps) => {
   const { formatDateTime } = useDateFormatter();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   const getStatusIcon = () => {
     switch (appointment.status) {
@@ -40,13 +51,13 @@ const AppointmentCard = ({ appointment }: AppointmentCardProps) => {
           }
           className="text-xs"
         >
-          {appointment.status}
+          {t(`appointmentCard.${appointment.status}`)}
         </Badge>
       </CardHeader>
       <CardContent>
         <div className="text-xs md:text-sm text-muted-foreground">
           <p className="text-sm font-medium leading-none mt-2">{appointment.type}</p>
-          MRN: {appointment.patientId.mrn}
+          {t('appointmentCard.mrn')}: {appointment.patientId.mrn}
         </div>
         <div className="flex items-center pt-2">
           {getStatusIcon()}

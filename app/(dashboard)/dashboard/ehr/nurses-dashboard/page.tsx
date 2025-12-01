@@ -31,7 +31,11 @@ import AppointmentsDisplay from "../../../components/patients/AppointmentsDispla
 import ClinicalNotesDisplay from "../../../components/patients/ClinicalNotesDisplay";
 import LabOrdersDisplay from "../../../components/patients/LabOrdersDisplay";
 import LabResultsDisplay from "../../../components/patients/LabResultsDisplay";
+import NursingCarePlanDisplay from "../../../components/patients/NursingCarePlanDisplay";
 import Link from "next/link";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
+import { useSession } from 'next-auth/react';
 
 // Types
 interface Patient {
@@ -53,15 +57,26 @@ interface Patient {
 }
 
 // Nurse-specific workflow steps
-const NURSE_WORKFLOW_STEPS = [
-  { id: 'assessment', label: 'Patient Assessment', icon: Stethoscope, color: 'bg-blue-500' },
-  { id: 'monitoring', label: 'Vital Signs Monitoring', icon: Activity, color: 'bg-green-500' },
-  { id: 'medication', label: 'Medication Administration', icon: Pill, color: 'bg-purple-500' },
-  { id: 'documentation', label: 'Care Documentation', icon: FileText, color: 'bg-orange-500' },
-  { id: 'followup', label: 'Patient Care Planning', icon: Heart, color: 'bg-pink-500' }
+const getNurseWorkflowSteps = (t: (key: string) => string) => [
+  { id: 'assessment', label: t('nurseDashboard.patientAssessment'), icon: Stethoscope, color: 'bg-blue-500' },
+  { id: 'monitoring', label: t('nurseDashboard.vitalSignsMonitoring'), icon: Activity, color: 'bg-green-500' },
+  { id: 'medication', label: t('nurseDashboard.medicationAdministration'), icon: Pill, color: 'bg-purple-500' },
+  { id: 'documentation', label: t('nurseDashboard.careDocumentation'), icon: FileText, color: 'bg-orange-500' },
+  { id: 'careplanning', label: t('nurseDashboard.nursingCarePlanning'), icon: HeartHandshake, color: 'bg-pink-500' }
 ];
 
 const NursesDashboard = () => {
+  const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [currentView, setCurrentView] = useState<'overview' | 'patient-search' | 'patient-care' | 'assigned-patients'>('overview');
   const [previousView, setPreviousView] = useState<'overview' | 'patient-search' | 'assigned-patients'>('overview');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -69,7 +84,7 @@ const NursesDashboard = () => {
   const [assignedPatients, setAssignedPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeWorkflowStep, setActiveWorkflowStep] = useState(NURSE_WORKFLOW_STEPS[0].id);
+  const [activeWorkflowStep, setActiveWorkflowStep] = useState('assessment');
 
   // Fetch patients when search query changes
   useEffect(() => {
@@ -163,7 +178,7 @@ const NursesDashboard = () => {
     setPreviousView(currentView as 'overview' | 'patient-search' | 'assigned-patients');
     setSelectedPatient(patient);
     setCurrentView('patient-care');
-    setActiveWorkflowStep(NURSE_WORKFLOW_STEPS[0].id);
+    setActiveWorkflowStep('assessment');
     fetchAssignedPatients(); // Re-fetch assigned patients
   };
 
@@ -191,10 +206,10 @@ const NursesDashboard = () => {
         </motion.div>
         <div>
           <h1 className="text-4xl font-bold bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-            Nursing Dashboard
+            {t('nurseDashboard.title')}
           </h1>
           <p className="text-xl text-muted-foreground mt-2">
-            Comprehensive patient care and monitoring
+            {t('nurseDashboard.subtitle')}
           </p>
         </div>
       </div>
@@ -214,9 +229,9 @@ const NursesDashboard = () => {
             <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg w-fit mx-auto mb-4">
               <Search className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Search Patients</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('nurseDashboard.searchPatients')}</h3>
             <p className="text-muted-foreground mb-4">
-              Find and access patient records across the system
+              {t('nurseDashboard.searchPatientsDesc')}
             </p>
             <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mx-auto" />
           </CardContent>
@@ -230,9 +245,9 @@ const NursesDashboard = () => {
             <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg w-fit mx-auto mb-4">
               <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">My Patients</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('nurseDashboard.myPatients')}</h3>
             <p className="text-muted-foreground mb-4">
-              {assignedPatients.length} patients under your care
+              {t('nurseDashboard.patientsUnderCare').replace('{count}', assignedPatients.length.toString())}
             </p>
             <div className="flex items-center justify-center space-x-2">
               <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
@@ -255,18 +270,17 @@ const NursesDashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Clock className="h-5 w-5 mr-2 text-primary" />
-              Recent Activity
+              {t('nurseDashboard.activityFeedComingSoon')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center py-12">
               <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Activity Feed Coming Soon
+                {t('nurseDashboard.activityFeedComingSoon')}
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Real-time activity tracking for patient care actions will be available soon.
-                This will show vital sign recordings, medication administrations, and other care activities.
+                {t('nurseDashboard.activityFeedDesc')}
               </p>
             </div>
           </CardContent>
@@ -284,21 +298,21 @@ const NursesDashboard = () => {
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center space-x-4">
           <Button
             variant="ghost"
             onClick={handleBack}
-            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer mb-6 md:mb-0"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Overview
           </Button>
           <div>
             <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              Patient Search
+              {t('nurseDashboard.patientSearch')}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Search and access patient records
+              {t('nurseDashboard.patientSearchDesc')}
             </p>
           </div>
         </div>
@@ -316,7 +330,7 @@ const NursesDashboard = () => {
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Search patients by name or MRN..."
+                placeholder={t('nurseDashboard.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-12 text-lg border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-primary/50 rounded-xl"
@@ -373,7 +387,7 @@ const NursesDashboard = () => {
                         {patient.firstName} {patient.lastName}
                       </h3>
                       {patient.mrn && (
-                        <p className="text-sm text-muted-foreground">MRN: {patient.mrn}</p>
+                        <p className="text-sm text-muted-foreground">{t('nurseDashboard.mrn')}: {patient.mrn}</p>
                       )}
                       {patient.dob && (
                         <p className="text-sm text-muted-foreground">
@@ -391,20 +405,20 @@ const NursesDashboard = () => {
           <div className="col-span-full text-center py-16">
             <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No patients found
+              {t('nurseDashboard.noPatientsFound')}
             </h3>
             <p className="text-muted-foreground">
-              Try adjusting your search terms or check the spelling
+              {t('nurseDashboard.noPatientsFoundDesc')}
             </p>
           </div>
         ) : (
           <div className="col-span-full text-center py-16">
             <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Search for patients
+              {t('nurseDashboard.searchForPatients')}
             </h3>
             <p className="text-muted-foreground">
-              Enter a patient name or MRN in the search box above to get started
+              {t('nurseDashboard.searchForPatientsDesc')}
             </p>
           </div>
         )}
@@ -421,23 +435,23 @@ const NursesDashboard = () => {
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center space-x-4">
           {/* <Link href={"/dashboard/ehr/nurses-dashboard"}> */}
           <Button
             variant="ghost"
-            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer mb-6 md:mb-0"
                         onClick={handleBack}
             >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Overview
+            {t('nurseDashboard.backToOverview')}
           </Button>
             {/* </Link> */}
           <div>
             <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              My Patients
+              {t('nurseDashboard.myPatients')}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Patients currently under your care
+              {t('nurseDashboard.patientsUnderCare').replace('{count}', assignedPatients.length.toString())}
             </p>
           </div>
         </div>
@@ -493,10 +507,10 @@ const NursesDashboard = () => {
           <div className="col-span-full text-center py-16">
             <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No patients assigned
+              {t('nurseDashboard.noPatientsAssigned')}
             </h3>
             <p className="text-muted-foreground">
-              You currently have no patients assigned to your care.
+              {t('nurseDashboard.noPatientsAssignedDesc')}
             </p>
           </div>
         )}
@@ -527,7 +541,7 @@ const NursesDashboard = () => {
           <div className="lg:hidden">
             <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
               <Heart className="h-3 w-3 mr-1" />
-              Under Care
+              {t('nurseDashboard.underCare')}
             </Badge>
           </div>
         </div>
@@ -544,7 +558,7 @@ const NursesDashboard = () => {
                 {selectedPatient?.firstName} {selectedPatient?.lastName}
               </h2>
               <p className="text-sm text-muted-foreground truncate">
-                {selectedPatient?.mrn && `MRN: ${selectedPatient.mrn}`}
+                {selectedPatient?.mrn && `${t('nurseDashboard.mrn')}: ${selectedPatient.mrn}`}
               </p>
             </div>
           </div>
@@ -562,13 +576,13 @@ const NursesDashboard = () => {
         <CardHeader>
           <CardTitle className="flex items-center text-xl">
             <Sparkles className="h-5 w-5 mr-2 text-primary" />
-            Nursing Care Workflow
+            {t('nurseDashboard.nursingCareWorkflow')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeWorkflowStep} onValueChange={setActiveWorkflowStep} className="w-full">
             <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-8 h-auto p-1">
-              {NURSE_WORKFLOW_STEPS.map((step, index) => (
+              {getNurseWorkflowSteps(t).map((step, index) => (
                 <TabsTrigger
                   key={step.id}
                   value={step.id}
@@ -615,30 +629,30 @@ const NursesDashboard = () => {
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Patient Assessment
+                {t('nurseDashboard.patientAssessment')}
               </h3>
               <p className="text-muted-foreground">
-                Review patient history and current status
+                {t('nurseDashboard.patientAssessmentDesc')}
               </p>
             </div>
                   <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Full Name</p>
+                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.fullName')}</p>
                       <p className="text-lg font-medium text-gray-900 dark:text-white">
                         {selectedPatient.firstName} {selectedPatient.lastName}
                       </p>
                     </div>
                     {selectedPatient.mrn && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">MRN</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.mrn')}</p>
                         <p className="text-gray-900 dark:text-white font-mono">{selectedPatient.mrn}</p>
                       </div>
                     )}
                     {selectedPatient.dob && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Date of Birth</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.dateOfBirth')}</p>
                         <p className="text-gray-900 dark:text-white">
                           {new Date(selectedPatient.dob).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -656,13 +670,13 @@ const NursesDashboard = () => {
                   <div className="space-y-4">
                     {selectedPatient.contact?.email && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Email</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.email')}</p>
                         <p className="text-gray-900 dark:text-white">{selectedPatient.contact.email}</p>
                       </div>
                     )}
                     {selectedPatient.contact?.phone && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Phone</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.phone')}</p>
                         <p className="text-gray-900 dark:text-white">{selectedPatient.contact.phone}</p>
                       </div>
                     )}
@@ -672,7 +686,7 @@ const NursesDashboard = () => {
                     {/* Admission Info */}
                     {selectedPatient.admissionType && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Admission Type</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.admissionType')}</p>
                         <Badge variant="outline" className="capitalize">
                           {selectedPatient.admissionType}
                         </Badge>
@@ -680,7 +694,7 @@ const NursesDashboard = () => {
                     )}
                     {selectedPatient.department && (
                       <div>
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Department</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.department')}</p>
                         <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.department}</p>
                       </div>
                     )}
@@ -695,10 +709,10 @@ const NursesDashboard = () => {
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Vital Signs Monitoring
+                {t('nurseDashboard.vitalSignsMonitoring')}
               </h3>
               <p className="text-muted-foreground">
-                Monitor and record patient vital signs
+                {t('nurseDashboard.vitalSignsMonitoringDesc')}
               </p>
             </div>
             <VitalsDisplay patientId={selectedPatient._id} />
@@ -711,10 +725,10 @@ const NursesDashboard = () => {
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Medication Administration
+                {t('nurseDashboard.medicationAdministration')}
               </h3>
               <p className="text-muted-foreground">
-                Manage and administer patient medications
+                {t('nurseDashboard.medicationAdministrationDesc')}
               </p>
             </div>
             <PrescriptionsDisplay patientId={selectedPatient._id} />
@@ -726,27 +740,28 @@ const NursesDashboard = () => {
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Care Documentation
+                {t('nurseDashboard.careDocumentation')}
               </h3>
               <p className="text-muted-foreground">
-                Document nursing care and observations
+                {t('nurseDashboard.careDocumentationDesc')}
               </p>
             </div>
             <ClinicalNotesDisplay patientId={selectedPatient._id} />
           </div>
         );
 
-      case 'followup':
+      case 'careplanning':
         return (
           <div className="space-y-6">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Patient Care Planning
+                {t('nurseDashboard.nursingCarePlanning')}
               </h3>
               <p className="text-muted-foreground">
-                Plan and schedule follow-up care
+                {t('nurseDashboard.nursingCarePlanningDesc')}
               </p>
             </div>
+            <NursingCarePlanDisplay patientId={selectedPatient._id} nurseId={session?.user?._id || ''} />
             <AppointmentsDisplay patientId={selectedPatient._id} />
           </div>
         );

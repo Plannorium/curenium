@@ -21,6 +21,8 @@ import HijriCalendar from '@/components/ui/hijri-calendar';
 import { useCalendar } from '@/components/ui/calendar-context';
 import { Brain, AlertCircle, Calendar, FileText, CheckCircle2, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface CreateDiagnosisProps {
   patientId?: string;
@@ -30,6 +32,16 @@ interface CreateDiagnosisProps {
 
 const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreated, children }) => {
   const { calendarType, setCalendarType } = useCalendar();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [icd10Code, setIcd10Code] = useState('');
   const [description, setDescription] = useState('');
@@ -47,23 +59,23 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
 
     // Validation with specific error messages
     if (!icd10Code.trim()) {
-      toast.error("ICD-10 Code is required");
+      toast.error(t('createDiagnosis.icd10CodeRequired'));
       return;
     }
 
     if (!description.trim()) {
-      toast.error("Diagnosis description is required");
+      toast.error(t('createDiagnosis.diagnosisDescriptionRequired'));
       return;
     }
 
     if (!severity) {
-      toast.error("Please select a severity level");
+      toast.error(t('createDiagnosis.severityRequired'));
       return;
     }
 
     // Validate onsetDate if provided
     if (onsetDate && isNaN(onsetDate.getTime())) {
-      toast.error("Please select a valid onset date");
+      toast.error(t('createDiagnosis.invalidOnsetDate'));
       return;
     }
 
@@ -85,7 +97,7 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
       });
 
       if (response.ok) {
-        toast.success("Diagnosis created successfully");
+        toast.success(t('createDiagnosis.diagnosisCreated'));
         // Reset form
         setIcd10Code('');
         setDescription('');
@@ -97,20 +109,20 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
         onDiagnosisCreated?.();
       } else {
         const errorData: { message?: string } = await response.json();
-        toast.error(errorData.message || "Failed to create diagnosis");
+        toast.error(errorData.message || t('createDiagnosis.failedToCreate'));
       }
     } catch (error) {
       console.error("Failed to create diagnosis", error);
-      toast.error("An error occurred while creating the diagnosis");
+      toast.error(t('createDiagnosis.errorCreating'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const severityOptions = [
-    { value: 'mild', label: 'Mild', color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
-    { value: 'moderate', label: 'Moderate', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
-    { value: 'severe', label: 'Severe', color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' }
+    { value: 'mild', label: t('createDiagnosis.severity.mild'), color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
+    { value: 'moderate', label: t('createDiagnosis.severity.moderate'), color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
+    { value: 'severe', label: t('createDiagnosis.severity.severe'), color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' }
   ];
 
   return (
@@ -125,7 +137,7 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
               <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-              Create Diagnosis
+              {t('createDiagnosis.title')}
             </DialogTitle>
           </div>
         </DialogHeader>
@@ -147,13 +159,13 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
               >
                 <Label htmlFor="icd10Code" className="text-sm font-semibold flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2 text-primary" />
-                  ICD-10 Code *
+                  {t('createDiagnosis.icd10CodeLabel')}
                 </Label>
                 <Input
                   id="icd10Code"
                   value={icd10Code}
                   onChange={(e) => setIcd10Code(e.target.value.toUpperCase())}
-                  placeholder="e.g., J00, I10, E11.9"
+                  placeholder={t('createDiagnosis.icd10CodePlaceholder')}
                   className="h-11 border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-purple-500/50 rounded-lg"
                   required
                 />
@@ -168,11 +180,11 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
               >
                 <Label htmlFor="severity" className="text-sm font-semibold flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2 text-primary" />
-                  Severity
+                  {t('createDiagnosis.severityLabel')}
                 </Label>
                 <Select onValueChange={setSeverity} value={severity}>
                   <SelectTrigger className="h-11 border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-purple-500/50 rounded-lg">
-                    <SelectValue placeholder="Select severity level" />
+                    <SelectValue placeholder={t('createDiagnosis.selectSeverityPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {severityOptions.map((option) => (
@@ -196,13 +208,13 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
             >
               <Label htmlFor="description" className="text-sm font-semibold flex items-center">
                 <FileText className="h-4 w-4 mr-2 text-primary" />
-                Diagnosis Description *
+                {t('createDiagnosis.diagnosisDescriptionLabel')}
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Provide a detailed description of the diagnosis..."
+                placeholder={t('createDiagnosis.diagnosisDescriptionPlaceholder')}
                 className="min-h-[100px] border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-purple-500/50 rounded-lg resize-none"
                 required
               />
@@ -218,7 +230,7 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
               >
                 <Label className="text-sm font-semibold flex items-center">
                   <Calendar className="h-4 w-4 mr-2 text-primary" />
-                  Onset Date
+                  {t('createDiagnosis.onsetDateLabel')}
                 </Label>
                 <div className="space-y-2'[PLo[p">
                   <HijriCalendar
@@ -244,7 +256,7 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
                   className="data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                 />
                 <Label htmlFor="isPrimary" className="text-sm font-semibold cursor-pointer">
-                  Mark as Primary Diagnosis
+                  {t('createDiagnosis.markAsPrimaryDiagnosis')}
                 </Label>
               </motion.div>
             </div>
@@ -258,13 +270,13 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
             >
               <Label htmlFor="note" className="text-sm font-semibold flex items-center">
                 <FileText className="h-4 w-4 mr-2 text-primary" />
-                Clinical Notes
+                {t('createDiagnosis.clinicalNotesLabel')}
               </Label>
               <Textarea
                 id="note"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add any additional clinical notes, observations, or treatment considerations..."
+                placeholder={t('createDiagnosis.clinicalNotesPlaceholder')}
                 className="min-h-[120px] border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-purple-500/50 rounded-lg resize-none"
               />
             </motion.div>
@@ -284,12 +296,12 @@ const CreateDiagnosis: FC<CreateDiagnosisProps> = ({ patientId, onDiagnosisCreat
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Creating Diagnosis...
+                    {t('createDiagnosis.creatingDiagnosis')}
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="h-5 w-5 mr-2" />
-                    Create Diagnosis
+                    {t('createDiagnosis.createDiagnosis')}
                   </>
                 )}
               </Button>

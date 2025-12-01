@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "node server.js",
     "build": "next build --turbopack",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.js",
+    "next:dev": "next dev --turbopack",
+    "next:start": "next start",
     "lint": "eslint",
     "worker:dev": "wrangler dev",
     "worker:deploy": "wrangler deploy"

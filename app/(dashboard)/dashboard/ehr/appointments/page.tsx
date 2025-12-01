@@ -10,10 +10,22 @@ import { useSession } from "next-auth/react";
 import { PopulatedAppointment } from "@/types/appointment";
 import AppointmentCard from "@/app/(dashboard)/components/appointments/AppointmentCard";
 import { Loader } from "@/components/ui/Loader";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 const AppointmentsPage = () => {
   const { data: session } = useSession();
   const { calendarType, setCalendarType } = useCalendar();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [appointments, setAppointments] = useState<PopulatedAppointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<PopulatedAppointment[]>([]);
@@ -59,7 +71,7 @@ const AppointmentsPage = () => {
   const daysWithAppointments = appointments.map(a => new Date(a.date));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-6 gap-1.5 lg:gap-3 p-2 lg:p-0 lg:pt-3 lg:pr-7">
+    <div className={`grid grid-cols-1 lg:grid-cols-6 gap-1.5 lg:gap-3 p-2 lg:p-0 lg:pt-3 ${language === "ar" ? "lg:pl-7" : "lg:pr-7"}`}>
       <div className="col-span-1 lg:col-span-2">
         <Card className="border-none shadow-none rounded-none">
           <CardContent className="bg-background border-none shadow-none rounded-none p-0 flex justify-center items-start">
@@ -78,14 +90,14 @@ const AppointmentsPage = () => {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>
               {date
-                ? `Appointments for ${date.toLocaleDateString()}`
-                : "All Appointments"}
+                ? `${t('appointments.appointmentsFor')} ${date.toLocaleDateString()}`
+                : t('appointments.allAppointments')}
             </CardTitle>
             {session?.user?.role && ['admin', 'receptionist'].includes(session.user.role) && (
               <BookAppointmentModal onAppointmentBooked={fetchAppointments}>
                 <Button className="cursor-pointer dark:text-black" size="sm">
                   <CalendarPlus className="mr-2 h-4 w-4" />
-                  Book Appointment
+                  {t('appointments.bookAppointment')}
                 </Button>
               </BookAppointmentModal>
             )}

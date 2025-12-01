@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useState, useCallback } from 'react';
+import { FC, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, Upload, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface ConsentFormProps {
   patientId: string;
@@ -17,11 +19,23 @@ interface ConsentFormProps {
 }
 
 const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => {
+  const { language } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [formType, setFormType] = useState('');
   const [signedVia, setSignedVia] = useState('digital');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const t = useMemo(() => {
+    return (key: string) => {
+      const keys = key.split('.');
+      let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    };
+  }, [language]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles && acceptedFiles.length > 0) {
@@ -40,14 +54,29 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
     multiple: false,
   });
 
+  const consentTypes = useMemo(() => [
+    { value: 'treatment_consent', label: t('consentForm.consentTypes.treatmentConsent.label'), description: t('consentForm.consentTypes.treatmentConsent.description') },
+    { value: 'surgical_consent', label: t('consentForm.consentTypes.surgicalConsent.label'), description: t('consentForm.consentTypes.surgicalConsent.description') },
+    { value: 'medication_consent', label: t('consentForm.consentTypes.medicationConsent.label'), description: t('consentForm.consentTypes.medicationConsent.description') },
+    { value: 'disclosure_consent', label: t('consentForm.consentTypes.disclosureConsent.label'), description: t('consentForm.consentTypes.disclosureConsent.description') },
+    { value: 'research_consent', label: t('consentForm.consentTypes.researchConsent.label'), description: t('consentForm.consentTypes.researchConsent.description') },
+    { value: 'photography_consent', label: t('consentForm.consentTypes.photographyConsent.label'), description: t('consentForm.consentTypes.photographyConsent.description') },
+  ], [t]);
+
+  const signingMethods = useMemo(() => [
+    { value: 'digital', label: t('consentForm.signingMethods.digital.label'), description: t('consentForm.signingMethods.digital.description') },
+    { value: 'in_person', label: t('consentForm.signingMethods.inPerson.label'), description: t('consentForm.signingMethods.inPerson.description') },
+    { value: 'witnessed', label: t('consentForm.signingMethods.witnessed.label'), description: t('consentForm.signingMethods.witnessed.description') },
+  ], [t]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      toast.error("Please select a file to upload");
+      toast.error(t('consentForm.errors.selectFile'));
       return;
     }
     if (!formType) {
-      toast.error("Please select a consent form type");
+      toast.error(t('consentForm.errors.selectFormType'));
       return;
     }
 
@@ -81,38 +110,24 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
 
       if (response.ok) {
         const result = await response.json();
-        toast.success("Consent form uploaded and signed successfully");
+        toast.success(t('consentForm.success.uploaded'));
         setFile(null);
         setFormType('');
         setSignedVia('digital');
         onConsentUploaded?.();
       } else {
         const errorData: { message?: string } = await response.json();
-        toast.error(errorData.message || "Failed to upload consent form");
+        toast.error(errorData.message || t('consentForm.failed.uploadFailed'));
       }
     } catch (error) {
       console.error("Failed to upload consent form", error);
-      toast.error("An error occurred while uploading the consent form");
+      toast.error(t('consentForm.failed.errorOccurred'));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
   };
 
-  const consentTypes = [
-    { value: 'treatment_consent', label: 'Treatment Consent', description: 'General treatment authorization' },
-    { value: 'surgical_consent', label: 'Surgical Consent', description: 'Authorization for surgical procedures' },
-    { value: 'medication_consent', label: 'Medication Consent', description: 'Authorization for medication administration' },
-    { value: 'disclosure_consent', label: 'Information Disclosure', description: 'authorization for information sharing' },
-    { value: 'research_consent', label: 'Research Participation', description: 'Consent for research study participation' },
-    { value: 'photography_consent', label: 'Photography Consent', description: 'Authorization for medical photography' },
-  ];
-
-  const signingMethods = [
-    { value: 'digital', label: 'Digital Signature', description: 'Electronic signature via secure platform' },
-    { value: 'in_person', label: 'In-Person Signature', description: 'Physical signature collected in person' },
-    { value: 'witnessed', label: 'Witnessed Signature', description: 'Signature witnessed by healthcare provider' },
-  ];
 
   return (
     <motion.div
@@ -127,7 +142,7 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg mr-3">
               <Shield className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
-            Consent Form Management
+            {t('consentForm.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -141,11 +156,11 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
             >
               <Label htmlFor="formType" className="text-sm font-semibold flex items-center">
                 <FileText className="h-4 w-4 mr-2 text-primary" />
-                Consent Form Type *
+                {t('consentForm.formType')}
               </Label>
               <Select onValueChange={setFormType} value={formType}>
                 <SelectTrigger className="h-11 border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-indigo-500/50 rounded-lg">
-                  <SelectValue placeholder="Select consent form type" />
+                  <SelectValue placeholder={t('consentForm.selectFormType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {consentTypes.map((type) => (
@@ -169,11 +184,11 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
             >
               <Label htmlFor="signedVia" className="text-sm font-semibold flex items-center">
                 <CheckCircle2 className="h-4 w-4 mr-2 text-primary" />
-                Signing Method
+                {t('consentForm.signingMethod')}
               </Label>
               <Select onValueChange={setSignedVia} value={signedVia}>
                 <SelectTrigger className="h-11 border-2 border-gray-200/50 dark:border-gray-700/50 focus:border-indigo-500/50 rounded-lg">
-                  <SelectValue placeholder="Select signing method" />
+                  <SelectValue placeholder={t('consentForm.selectSigningMethod')} />
                 </SelectTrigger>
                 <SelectContent>
                   {signingMethods.map((method) => (
@@ -197,7 +212,7 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
             >
               <Label className="text-sm font-semibold flex items-center">
                 <Upload className="h-4 w-4 mr-2 text-primary" />
-                Upload Consent Document *
+                {t('consentForm.uploadDocument')}
               </Label>
               <div
                 {...getRootProps()}
@@ -215,10 +230,10 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
                   ) : (
                     <div>
                       <p className="text-gray-600 dark:text-gray-400 font-medium">
-                        Drag & drop a file here, or click to select
+                        {t('consentForm.dragDropText')}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                        PDF, DOC, DOCX, PNG, JPG, GIF up to 10MB
+                        {t('consentForm.fileTypes')}
                       </p>
                     </div>
                   )}
@@ -240,7 +255,7 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
                       </p>
                     </div>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
-                      Ready to upload
+                      {t('consentForm.readyToUpload')}
                     </Badge>
                   </div>
                 </motion.div>
@@ -255,7 +270,7 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
                   <div className="flex items-center space-x-3">
                     <Loader2 className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin" />
                     <div className="flex-1">
-                      <p className="font-medium text-blue-800 dark:text-blue-200">Uploading consent form...</p>
+                      <p className="font-medium text-blue-800 dark:text-blue-200">{t('consentForm.uploading')}</p>
                       <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-2">
                         <div
                           className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
@@ -289,7 +304,7 @@ const ConsentForm: FC<ConsentFormProps> = ({ patientId, onConsentUploaded }) => 
                 ) : (
                   <>
                     <Shield className="h-5 w-5 mr-2" />
-                    Upload & Sign Consent
+                    {t('consentForm.uploadAndSign')}
                   </>
                 )}
               </Button>

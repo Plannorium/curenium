@@ -1,13 +1,7 @@
+'use client';
 
-'use client'
-
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { useEffect } from "react"
-
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import React, { useEffect, useState } from 'react';
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -16,210 +10,172 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { toast } from "sonner"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useCalendar } from "@/components/ui/calendar-context"
+} from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { settingsTranslations } from "@/lib/settings-translations";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const displayFormSchema = z.object({
-  items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one item.",
-  }),
-  language: z.string().min(1, "Please select a language."),
-  timezone: z.string().min(1, "Please select a timezone."),
+  language: z.string(),
+  timezone: z.string(),
   calendarType: z.enum(['gregorian', 'hijri']),
-})
+});
 
-type DisplayFormValues = z.infer<typeof displayFormSchema>
+type DisplayFormValues = z.infer<typeof displayFormSchema>;
 
-const items = [
-  { id: "recents", label: "Recents" },
-  { id: "home", label: "Home" },
-  { id: "applications", label: "Applications" },
-  { id: "desktop", label: "Desktop" },
-  { id: "downloads", label: "Downloads" },
-  { id: "documents", label: "Documents" },
-] as const
+export default function SettingsDisplayPage() {
+  const { language: currentLanguage, setLanguage } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = settingsTranslations[currentLanguage as keyof typeof settingsTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
-export default function DisplayForm() {
-  const { setCalendarType } = useCalendar();
+  const [settings, setSettings] = useState<DisplayFormValues>({
+    language: 'en',
+    timezone: 'UTC',
+    calendarType: 'gregorian',
+  });
 
   const form = useForm<DisplayFormValues>({
     resolver: zodResolver(displayFormSchema),
-    defaultValues: {
-      items: [],
-      calendarType: 'gregorian',
-    },
-  })
+    defaultValues: settings,
+  });
 
   useEffect(() => {
-    async function fetchSettings() {
+    const fetchSettings = async () => {
       try {
-        const response = await fetch("/api/settings/display");
+        const response = await fetch('/api/settings/display');
         if (response.ok) {
-          const data = (await response.json()) as DisplayFormValues;
+          const data: DisplayFormValues = await response.json();
+          setSettings(data);
           form.reset(data);
-          // Also update the calendar context
-          if (data.calendarType) {
-            setCalendarType(data.calendarType);
-          }
-        } else {
-          console.error("Failed to fetch display settings");
         }
       } catch (error) {
-        console.error("Error fetching display settings:", error);
+        console.error('Failed to fetch display settings', error);
       }
-    }
-
+    };
     fetchSettings();
-  }, [form, setCalendarType]);
+  }, [form]);
 
   async function onSubmit(data: DisplayFormValues) {
     try {
-      const response = await fetch("/api/settings/display", {
-        method: "POST",
+      const response = await fetch('/api/settings/display', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        // Update the calendar context if calendar type changed
-        if (data.calendarType) {
-          setCalendarType(data.calendarType);
+        toast.success(t('display.displayUpdated'));
+        if (data.language !== currentLanguage) {
+          setLanguage(data.language as 'en' | 'ar');
         }
-        toast("Settings updated successfully!");
       } else {
-        toast.error("Failed to update settings.");
+        toast.error(t('display.failedToUpdateDisplay'));
       }
     } catch (error) {
-      toast.error("An error occurred while updating settings.");
+      toast.error(t('display.errorUpdatingDisplay'));
     }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="language"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Language</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a language" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                This is the language that will be used in the dashboard.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="timezone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Timezone</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a timezone" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Asia/Riyadh">Saudi Arabia (GMT+3)</SelectItem>
-                  <SelectItem value="Asia/Dubai">UAE (GMT+4)</SelectItem>
-                  <SelectItem value="Asia/Kuwait">Kuwait (GMT+3)</SelectItem>
-                  <SelectItem value="Asia/Qatar">Qatar (GMT+3)</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Set the timezone for your account.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-       />
-       <FormField
-         control={form.control}
-         name="calendarType"
-         render={({ field }) => (
-           <FormItem>
-             <FormLabel>Calendar Type</FormLabel>
-             <Select onValueChange={field.onChange} value={field.value}>
-               <FormControl>
-                 <SelectTrigger>
-                   <SelectValue placeholder="Select calendar type" />
-                 </SelectTrigger>
-               </FormControl>
-               <SelectContent>
-                 <SelectItem value="gregorian">Gregorian (AD)</SelectItem>
-                 <SelectItem value="hijri">Hijri (AH)</SelectItem>
-               </SelectContent>
-             </Select>
-             <FormDescription>
-               Choose your preferred calendar system for date displays.
-             </FormDescription>
-             <FormMessage />
-           </FormItem>
-         )}
-       />
-       <FormField
-         control={form.control}
-         name="items"
-          render={() => (
-            <FormItem>
-              <div className="mb-4">
-                <FormLabel className="text-base">Sidebar</FormLabel>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">{t('display.title')}</h3>
+        <p className="text-sm text-muted-foreground">
+          {t('display.subtitle')}
+        </p>
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <FormField
+            control={form.control}
+            name="language"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('display.language')}</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('display.selectLanguage')} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="ar">العربية</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormDescription>
-                  Select the items you want to display in the sidebar.
+                  {t('display.languageDescription')}
                 </FormDescription>
-              </div>
-              {items.map((item) => (
-                <FormField
-                  key={item.id}
-                  control={form.control}
-                  name="items"
-                  render={({ field }) => (
-                    <FormItem
-                      key={item.id}
-                      className="flex flex-row items-start space-x-3 space-y-0"
-                    >
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value?.includes(item.id)}
-                          onCheckedChange={(checked) => {
-                            const newValue = checked
-                              ? [...(field.value || []), item.id]
-                              : field.value?.filter((value) => value !== item.id);
-                            field.onChange(newValue);
-                          }}
-                        />
-                      </FormControl>
-                      <FormLabel className="font-normal">
-                        {item.label}
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-              ))}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Update display</Button>
-      </form>
-    </Form>
-  )
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="timezone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('display.timezone')}</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('display.selectTimezone')} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="UTC">UTC</SelectItem>
+                    <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                    <SelectItem value="Europe/London">London</SelectItem>
+                    <SelectItem value="Asia/Dubai">Dubai</SelectItem>
+                    <SelectItem value="Africa/Lagos">Lagos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {t('display.timezoneDescription')}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="calendarType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('display.calendarType')}</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('display.selectCalendarType')} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="gregorian">{t('display.gregorian')}</SelectItem>
+                    <SelectItem value="hijri">{t('display.hijri')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  {t('display.calendarTypeDescription')}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit">{t('display.updateDisplaySettings')}</Button>
+        </form>
+      </Form>
+    </div>
+  );
 }

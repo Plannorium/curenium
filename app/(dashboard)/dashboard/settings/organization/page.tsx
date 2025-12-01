@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 import { OrganizationImage } from "../components/OrganizationImage"
+import { useLanguage } from "@/contexts/LanguageContext"
+import { settingsTranslations } from "@/lib/settings-translations"
 
 const organizationFormSchema = z.object({
   name: z.string().min(2, {
@@ -38,6 +40,15 @@ type OrganizationFormValues = z.infer<typeof organizationFormSchema>
 export default function OrganizationForm() {
   const { data: session } = useSession()
   const isAdmin = session?.user?.role === 'admin'
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = settingsTranslations[language as keyof typeof settingsTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationFormSchema),
@@ -70,7 +81,7 @@ export default function OrganizationForm() {
     });
 
     if (response.ok) {
-      toast.success("Organization updated successfully!");
+      toast.success(t("organization.organizationUpdated"));
     } else {
       const errorData = await response.json() as { error?: string };
       toast.error(errorData?.error || "Failed to update organization.");
@@ -86,13 +97,11 @@ export default function OrganizationForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Organization Name</FormLabel>
+              <FormLabel>{t('organization.organizationName')}</FormLabel>
               <FormControl>
-                <Input placeholder="Your organization" {...field} disabled={!isAdmin} />
+                <Input placeholder={t('organization.organizationNamePlaceholder')} {...field} disabled={!isAdmin} />
               </FormControl>
-              <FormDescription>
-                This is the name of your hospital or organization.
-              </FormDescription>
+              <FormDescription>{t('organization.organizationNameDescription')}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -102,20 +111,20 @@ export default function OrganizationForm() {
           name="timezone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Timezone</FormLabel>
+              <FormLabel>{t('organization.timezone')}</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isAdmin}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a timezone" />
+                    <SelectValue placeholder={t('organization.selectTimezone')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {/* Populate with timezones */}
-                  <SelectItem value="utc-3">Saudi Arabia (AST)</SelectItem>
-                  <SelectItem value="utc-4">Dubai (GST)</SelectItem>
-                  <SelectItem value="utc-5">Eastern Time (US & Canada)</SelectItem>
-                  <SelectItem value="utc-8">Pacific Time (US & Canada)</SelectItem>
-                  <SelectItem value="utc+1">United Kingdom (GMT/BST)</SelectItem>
+                  <SelectItem value="utc-3">{t('organization.saudiArabia')}</SelectItem>
+                  <SelectItem value="utc-4">{t('organization.dubai')}</SelectItem>
+                  <SelectItem value="utc-5">{t('organization.easternTime')}</SelectItem>
+                  <SelectItem value="utc-8">{t('organization.pacificTime')}</SelectItem>
+                  <SelectItem value="utc+1">{t('organization.uk')}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -127,18 +136,18 @@ export default function OrganizationForm() {
           name="language"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Language</FormLabel>
+              <FormLabel>{t('organization.language')}</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isAdmin}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a language" />
+                    <SelectValue placeholder={t('organization.selectLanguage')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {/* Populate with languages */}
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
+                  <SelectItem value="en">{t('organization.english')}</SelectItem>
+                  <SelectItem value="ar">{t('organization.arabic')}</SelectItem>
+                  <SelectItem value="es">{t('organization.spanish')}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -151,14 +160,14 @@ export default function OrganizationForm() {
             name="activeHoursStart"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Active Hours Start</FormLabel>
+                <FormLabel>{t('organization.activeHoursStart')}</FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select start time" />
+                      <SelectValue placeholder={t('organization.selectStartTime')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="max-h-60 overflow-y-auto">
@@ -172,9 +181,7 @@ export default function OrganizationForm() {
                     })}
                   </SelectContent>
                 </Select>
-                <FormDescription>
-                  Select when your organization starts operations
-                </FormDescription>
+                <FormDescription>{t('organization.activeHoursStartDescription')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -184,14 +191,14 @@ export default function OrganizationForm() {
             name="activeHoursEnd"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Active Hours End</FormLabel>
+                <FormLabel>{t('organization.activeHoursEnd')}</FormLabel>
                 <Select 
                   onValueChange={field.onChange} 
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select end time" />
+                      <SelectValue placeholder={t('organization.selectEndTime')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="max-h-60 overflow-y-auto">
@@ -205,15 +212,13 @@ export default function OrganizationForm() {
                     })}
                   </SelectContent>
                 </Select>
-                <FormDescription>
-                  Select when your organization ends operations
-                </FormDescription>
+                <FormDescription>{t('organization.activeHoursEndDescription')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        {isAdmin && <Button type="submit">Update organization</Button>}
+        {isAdmin && <Button type="submit">{t('organization.updateOrganization')}</Button>}
       </form>
     </Form>
   )

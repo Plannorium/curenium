@@ -6,17 +6,18 @@ import { SOAPNote } from '@/models/models';
 import { ISOAPNote } from '@/models/SOAPNote';
 import AuditLog from '@/models/AuditLog';
 import { pusher } from '../../../../lib/pusher';
+import mongoose from 'mongoose';
 
-export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const token = await getToken({ req });
 
-  if (!token) {
+  if (!token || !token.organizationId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   // Capability check
-  const allowedRoles = ['doctor', 'nurse', 'clinical_manager'];
+  const allowedRoles = ['doctor', 'nurse', 'admin', 'matron_nurse'];
   if (!token.role || !allowedRoles.includes(token.role as string)) {
     return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   }
@@ -26,24 +27,29 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   try {
     const { subjective, objective, assessment, plan, visibility, encounterId } = (await req.json()) as ISOAPNote;
 
-    const soapNote = new SOAPNote({
-      patientId: id,
-      author: token.id,
-      authorRole: token.role,
-      orgId: token.orgId,
-      subjective,
-      objective,
-      assessment,
-      plan,
-      visibility,
-      encounterId,
-    });
+    const soapNoteData: any = {
+        patientId: id,
+        author: token.id as any,
+        authorRole: token.role,
+        orgId: token.organizationId,
+        subjective,
+        objective,
+        assessment,
+        plan,
+        visibility,
+    };
+
+    if (encounterId && mongoose.Types.ObjectId.isValid(encounterId as any)) {
+        soapNoteData.encounterId = encounterId;
+    }
+
+    const soapNote = new SOAPNote(soapNoteData);
 
     await soapNote.save();
 
     // Audit log
     await AuditLog.create({
-      orgId: token.orgId,
+      orgId: token.organizationId,
       userId: token.id,
       action: 'soap.create',
       targetId: soapNote._id,
@@ -62,17 +68,24 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   }
 }
 
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const token = await getToken({ req });
-  if (!token) {
+
+  if (!token || !token.organizationId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Capability check
+  const allowedRoles = ['doctor', 'nurse', 'admin', 'matron_nurse'];
+  if (!token.role || !allowedRoles.includes(token.role as string)) {
+    return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
   }
 
   await dbConnect();
 
   try {
-    const soapNotes = await SOAPNote.find({ patientId: id, orgId: token.orgId }).populate('author', 'firstName lastName');
+    const soapNotes = await SOAPNote.find({ patientId: id, orgId: token.organizationId }).populate('author', 'firstName lastName');
     return NextResponse.json(soapNotes);
   } catch (error) {
     console.error('Error fetching SOAP notes:', error);

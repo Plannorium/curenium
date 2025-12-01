@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import { useEffect } from "react"
 
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(1, "Please enter your full name."),
@@ -25,17 +26,19 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 export default function ProfileForm() {
+  const { t } = useLanguage();
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
   })
 
   useEffect(() => {
+    const { reset } = form;
     async function fetchProfile() {
       try {
         const response = await fetch("/api/settings/profile");
         if (response.ok) {
-          const data = (await response.json()) as ProfileFormValues;
-          form.reset(data);
+          const data = await response.json() as ProfileFormValues;
+          reset(data);
         } else {
           console.error("Failed to fetch profile");
         }
@@ -45,7 +48,7 @@ export default function ProfileForm() {
     }
 
     fetchProfile();
-  }, [form]);
+  }, []);
 
   async function onSubmit(data: ProfileFormValues) {
     try {
@@ -75,18 +78,16 @@ export default function ProfileForm() {
           name="fullName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full Name</FormLabel>
+              <FormLabel>{t('profile.fullName')}</FormLabel>
               <FormControl>
-                <Input placeholder="Your full name" {...field} />
+                <Input placeholder={t('profile.fullNamePlaceholder')} {...field} />
               </FormControl>
-              <FormDescription>
-                This is the name that will be displayed on your profile and in emails.
-              </FormDescription>
+              <FormDescription>{t('profile.fullNameDescription')}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit">Update profile</Button>
+        <Button type="submit">{t('profile.updateProfile')}</Button>
       </form>
     </Form>
   )

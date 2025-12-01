@@ -24,6 +24,8 @@ import { useSession } from "next-auth/react";
 import { Loader } from "@/components/ui/Loader";
 import AddAdmissionModal from "./components/AddAdmissionModal";
 import AdmissionDetailsModal from "@/app/(dashboard)/dashboard/ehr/admissions/components/AdmissionDetailsModal";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // Types
 interface Admission {
@@ -69,6 +71,16 @@ interface Admission {
 
 const AdmissionsPage = () => {
   const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [admissions, setAdmissions] = useState<Admission[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -86,7 +98,7 @@ const AdmissionsPage = () => {
         const data = await response.json() as Admission[];
         setAdmissions(data);
       } else {
-        toast.error('Failed to fetch admissions');
+        toast.error(t('admissionsPage.errors.failedToFetch'));
       }
     } catch (error) {
       console.error('Failed to fetch admissions:', error);
@@ -164,7 +176,7 @@ const AdmissionsPage = () => {
   };
 
   if (loading) {
-    return <Loader text="Loading admissions..." />;
+    return <Loader text={t('admissionsPage.loading')} />;
   }
 
   return (
@@ -173,18 +185,18 @@ const AdmissionsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            Admission Management
+            {t('admissionsPage.title')}
           </h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
-            Manage patient admissions and ward assignments
+            {t('admissionsPage.subtitle')}
           </p>
         </div>
         {(session?.user?.role === 'doctor' || session?.user?.role === 'matron_nurse' || session?.user?.role === 'admin') && (
           <AddAdmissionModal onAdmissionAdded={fetchAdmissions}>
             <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden md:inline">Request Admission</span>
-              <span className="md:hidden">New</span>
+              <span className="hidden md:inline">{t('admissionsPage.requestAdmission')}</span>
+              <span className="md:hidden">{t('admissionsPage.new')}</span>
             </Button>
           </AddAdmissionModal>
         )}
@@ -194,10 +206,10 @@ const AdmissionsPage = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Clock className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
+                <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.pendingReview')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => a.status === 'requested').length}
                 </p>
@@ -208,10 +220,10 @@ const AdmissionsPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <CheckCircle className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Approved</p>
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
+                <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.approved')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => a.status === 'approved').length}
                 </p>
@@ -222,10 +234,10 @@ const AdmissionsPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <Bed className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Assigned</p>
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
+                <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.assigned')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => a.status === 'assigned').length}
                 </p>
@@ -236,10 +248,10 @@ const AdmissionsPage = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center">
+            <div className="flex items-center gap-x-3">
               <AlertTriangle className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Active</p>
+              <div className={`${language === "ar" ? "mr-4" : "ml-4"}`}>
+                <p className="text-sm font-medium text-muted-foreground">{t('admissionsPage.stats.totalActive')}</p>
                 <p className="text-2xl font-bold">
                   {admissions.filter(a => ['requested', 'approved', 'assigned'].includes(a.status)).length}
                 </p>
@@ -252,16 +264,16 @@ const AdmissionsPage = () => {
       {/* Admissions List */}
       <Card>
         <CardHeader>
-          <CardTitle>Admissions</CardTitle>
+          <CardTitle>{t('admissionsPage.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto p-1">
-              <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs sm:text-sm">Pending</TabsTrigger>
-              <TabsTrigger value="approved" className="text-xs sm:text-sm hidden sm:inline-flex">Approved</TabsTrigger>
-              <TabsTrigger value="assigned" className="text-xs sm:text-sm hidden sm:inline-flex">Assigned</TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs sm:text-sm">Done</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs sm:text-sm">{t('admissionsPage.tabs.all')}</TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs sm:text-sm">{t('admissionsPage.tabs.pending')}</TabsTrigger>
+              <TabsTrigger value="approved" className="text-xs sm:text-sm hidden sm:inline-flex">{t('admissionsPage.tabs.approved')}</TabsTrigger>
+              <TabsTrigger value="assigned" className="text-xs sm:text-sm hidden sm:inline-flex">{t('admissionsPage.tabs.assigned')}</TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs sm:text-sm">{t('admissionsPage.tabs.done')}</TabsTrigger>
             </TabsList>
 
             <div className="mt-6 space-y-4">
@@ -269,10 +281,10 @@ const AdmissionsPage = () => {
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    No admissions found
+                    {t('admissionsPage.emptyState.noAdmissionsFound')}
                   </h3>
                   <p className="text-muted-foreground">
-                    {activeTab === 'all' ? 'No admissions have been requested yet.' : `No ${activeTab} admissions.`}
+                    {activeTab === 'all' ? t('admissionsPage.emptyState.noAdmissionsYet') : t('admissionsPage.emptyState.noTabAdmissions').replace('{tab}', activeTab)}
                   </p>
                 </div>
               ) : (
@@ -280,9 +292,9 @@ const AdmissionsPage = () => {
                   <Card key={admission._id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div className="flex items-start space-x-3 md:space-x-4 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 md:h-12 md:w-12 shrink-0">
-                            <AvatarFallback className="text-xs md:text-sm">
+                        <div className="flex justify-start items-start space-x-3 md:space-x-4 flex-1 min-w-0">
+                          <Avatar className={`h-10 w-10 md:h-12 md:w-12 shrink-0 ${language === "ar" ? "ml-0" : ""}`}>
+                            <AvatarFallback className={`text-xs md:text-sm ${language === "ar" ? "m-0 mr-1" : ""}`}>
                               {admission.patient.firstName[0]}{admission.patient.lastName[0]}
                             </AvatarFallback>
                           </Avatar>
@@ -302,32 +314,32 @@ const AdmissionsPage = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
                               <div className="min-w-0">
-                                <span className="font-medium">MRN:</span>
+                                <span className="font-medium">{t('admissionsPage.labels.mrn')}</span>
                                 <div className="truncate">{admission.patient.mrn || 'N/A'}</div>
                               </div>
                               <div className="min-w-0">
-                                <span className="font-medium">Doctor:</span>
+                                <span className="font-medium">{t('admissionsPage.labels.doctor')}</span>
                                 <div className="truncate">{admission.doctor.fullName}</div>
                               </div>
                               <div className="min-w-0">
-                                <span className="font-medium">Requested:</span>
+                                <span className="font-medium">{t('admissionsPage.labels.requested')}</span>
                                 <div className="truncate">{new Date(admission.requestedAt).toLocaleDateString()}</div>
                               </div>
                               {admission.matronNurse && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Matron Nurse:</span>
+                                  <span className="font-medium">{t('admissionsPage.labels.matronNurse')}</span>
                                   <div className="truncate">{admission.matronNurse.fullName}</div>
                                 </div>
                               )}
                               {admission.ward && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Ward:</span>
+                                  <span className="font-medium">{t('admissionsPage.labels.ward')}</span>
                                   <div className="truncate">{admission.ward.name} ({admission.ward.wardNumber})</div>
                                 </div>
                               )}
                               {admission.bedNumber && (
                                 <div className="min-w-0">
-                                  <span className="font-medium">Bed:</span>
+                                  <span className="font-medium">{t('admissionsPage.labels.bed')}</span>
                                   <div className="truncate">{admission.bedNumber}</div>
                                 </div>
                               )}
@@ -335,7 +347,7 @@ const AdmissionsPage = () => {
 
                             <div className="mb-3 md:mb-4">
                               <p className="text-xs md:text-sm">
-                                <span className="font-medium">Reason:</span> {admission.reason}
+                                <span className="font-medium">{t('admissionsPage.labels.reason')}</span> {admission.reason}
                               </p>
                             </div>
 
@@ -343,12 +355,12 @@ const AdmissionsPage = () => {
                               <div className="space-y-1 md:space-y-2">
                                 {admission.doctorNotes && (
                                   <p className="text-xs md:text-sm">
-                                    <span className="font-medium">Doctor Notes:</span> {admission.doctorNotes}
+                                    <span className="font-medium">{t('admissionsPage.labels.doctorNotes')}</span> {admission.doctorNotes}
                                   </p>
                                 )}
                                 {admission.matronNurseNotes && (
                                   <p className="text-xs md:text-sm">
-                                    <span className="font-medium">Matron Nurse Notes:</span> {admission.matronNurseNotes}
+                                    <span className="font-medium">{t('admissionsPage.labels.matronNurseNotes')}</span> {admission.matronNurseNotes}
                                   </p>
                                 )}
                               </div>
@@ -361,7 +373,7 @@ const AdmissionsPage = () => {
                           <AdmissionDetailsModal admission={admission} onAdmissionUpdated={fetchAdmissions}>
                             <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
                               <Eye className="h-4 w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">View</span>
+                              <span className="hidden sm:inline">{t('admissionsPage.buttons.view')}</span>
                             </Button>
                           </AdmissionDetailsModal>
 
@@ -373,7 +385,7 @@ const AdmissionsPage = () => {
                                 className="flex-1 sm:flex-none"
                               >
                                 <CheckCircle className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Approve</span>
+                                <span className="hidden sm:inline">{t('admissionsPage.buttons.approve')}</span>
                               </Button>
                             )}
 
@@ -387,8 +399,8 @@ const AdmissionsPage = () => {
                                 })}
                                 className="flex-1 sm:flex-none"
                               >
-                                <span className="hidden sm:inline">Assign Ward</span>
-                                <span className="sm:hidden">Assign</span>
+                                <span className="hidden sm:inline">{t('admissionsPage.buttons.assignWard')}</span>
+                                <span className="sm:hidden">{t('admissionsPage.buttons.assign')}</span>
                               </Button>
                             )}
 
@@ -400,7 +412,7 @@ const AdmissionsPage = () => {
                                 className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                               >
                                 <XCircle className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Cancel</span>
+                                <span className="hidden sm:inline">{t('admissionsPage.buttons.cancel')}</span>
                               </Button>
                             )}
                           </div>

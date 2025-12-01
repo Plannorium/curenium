@@ -20,12 +20,24 @@ import { RecordVitalsModal } from "./RecordVitalsModal";
 import { Patient } from "@/types/patient";
 import { useSession } from "next-auth/react";
 import { useRef } from "react";
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 interface VitalsDisplayProps {
   patientId: string;
 }
 
 const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
   const [latestVital, setLatestVital] = useState<Vital | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,12 +155,12 @@ const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
   }, [session?.user?.token, patientId, patient?.fullName]);
 
   const getBloodPressureCategory = (systolic: number, diastolic: number) => {
-    if (systolic > 180 || diastolic > 120) return "Crisis";
-    if (systolic >= 140 || diastolic >= 90) return "High (Stage 2)";
-    if ((systolic >= 130 && systolic <= 139) || (diastolic >= 80 && diastolic <= 89)) return "High (Stage 1)";
-    if (systolic >= 120 && systolic <= 129 && diastolic < 80) return "Elevated";
-    if (systolic < 120 && diastolic < 80) return "Normal";
-    return "N/A";
+    if (systolic > 180 || diastolic > 120) return t('vitals.bloodPressureCategories.crisis');
+    if (systolic >= 140 || diastolic >= 90) return t('vitals.bloodPressureCategories.highStage2');
+    if ((systolic >= 130 && systolic <= 139) || (diastolic >= 80 && diastolic <= 89)) return t('vitals.bloodPressureCategories.highStage1');
+    if (systolic >= 120 && systolic <= 129 && diastolic < 80) return t('vitals.bloodPressureCategories.elevated');
+    if (systolic < 120 && diastolic < 80) return t('vitals.bloodPressureCategories.normal');
+    return t('vitals.bloodPressureCategories.nA');
   };
 
   const getCategoryBadgeVariant = (category: string) => {
@@ -184,7 +196,7 @@ const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center">
             <Activity className="mr-2" />
-            Latest Vitals
+            {t('vitals.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -201,18 +213,18 @@ const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center">
           <Activity className="mr-2" />
-          Latest Vitals
+          {t('vitals.title')}
         </CardTitle>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/ehr/patients/${patientId}/vitals`}>
-              View All <ArrowRight className="ml-2 h-4 w-4" />
+              {t('vitals.viewAll')} <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
-          <Button className="cursor-pointer" size="sm" onClick={() => setIsModalOpen(true)}>
+          <Button className={`${language === "ar" ? "lg:ml-2" : "lg:mr-1.5"} cursor-pointer`} size="sm" onClick={() => setIsModalOpen(true)}>
             <PlusCircle className="lg:mr-1.5 h-4 w-4" />
             <span className="hidden md:block">
-            Record Vitals
+            {t('vitals.recordVitals')}
             </span>
           </Button>
         </div>
@@ -220,24 +232,24 @@ const VitalsDisplay: React.FC<VitalsDisplayProps> = ({ patientId }) => {
       <CardContent>
         {latestVital ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-4 pt-2">
-            <VitalInfo icon={HeartPulse} label="Heart Rate" value={latestVital.heartRate} unit="bpm" />
+            <VitalInfo icon={HeartPulse} label={t('vitals.heartRate')} value={latestVital.heartRate} unit="bpm" />
             <div className="flex items-start space-x-2">
               <Activity className="h-5 w-5 text-muted-foreground shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">Blood Pressure</p>
+                <p className="text-xs text-muted-foreground">{t('vitals.bloodPressure')}</p>
                 <p className="text-base font-semibold">{`${latestVital.bpSystolic}/${latestVital.bpDiastolic}`} <span className="text-xs font-normal">mmHg</span></p>
                 <Badge className={`mt-1 text-xs font-medium ${getCategoryBadgeVariant(getBloodPressureCategory(latestVital.bpSystolic || 0, latestVital.bpDiastolic || 0))}`}>
                   {getBloodPressureCategory(latestVital.bpSystolic || 0, latestVital.bpDiastolic || 0)}
                 </Badge>
               </div>
             </div>
-            <VitalInfo icon={Activity} label="SpO2" value={latestVital.spo2} unit="%" />
-            <VitalInfo icon={Thermometer} label="Temperature" value={latestVital.temperature} unit="°F" />
-            <VitalInfo icon={Wind} label="Resp. Rate" value={latestVital.respiratoryRate} unit="br/min" />
+            <VitalInfo icon={Activity} label={t('vitals.spo2')} value={latestVital.spo2} unit="%" />
+            <VitalInfo icon={Thermometer} label={t('vitals.temperature')} value={latestVital.temperature} unit="°F" />
+            <VitalInfo icon={Wind} label={t('vitals.respiratoryRate')} value={latestVital.respiratoryRate} unit="br/min" />
           </div>
         ) : (
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-            <p>No vitals recorded for this patient yet.</p>
+            <p>{t('vitals.noVitalsRecorded')}</p>
           </div>
         )}
       </CardContent>

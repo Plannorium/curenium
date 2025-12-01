@@ -8,6 +8,9 @@ import { User, Mail, Lock, Building } from 'lucide-react';
 
 import Image from 'next/image';
 import { useTheme } from '@/components/ThemeProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { translations } from '@/lib/translations';
+import Link from 'next/link';
 
 interface AdminRegisterResponse {
   message?: string;
@@ -18,6 +21,15 @@ interface AdminRegisterResponse {
 
 export const AccountSetup: React.FC = () => {
   const { theme } = useTheme();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = translations[language as keyof typeof translations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,10 +64,10 @@ export const AccountSetup: React.FC = () => {
       // If it fails, NextAuth will handle showing an error on the login page,
       // but we can set a local error for immediate feedback if needed.
       if (signInResponse?.error) {
-        setError('Sign-in failed after registration. Please try logging in manually.');
+        setError(t('auth.accountSetup.signInFailed'));
       }
     } else {
-      setError(data.message || 'An error occurred during registration.');
+      setError(data.message || t('auth.accountSetup.registrationError'));
     }
   };
 
@@ -67,7 +79,7 @@ export const AccountSetup: React.FC = () => {
       
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-4 flex justify-center items-center flex-col">
-          <div className="mx-auto mb-0">
+          <Link href="/" className="mx-auto mb-0">
             <Image
               src="/curenium-logo.png"
               alt="Curenium Logo"
@@ -82,15 +94,15 @@ export const AccountSetup: React.FC = () => {
               height={80}
               className="hidden dark:block"
             />
-          </div>
-          <h2 className="text-2xl font-bold">Create Your Admin Account</h2>
-          <p className="text-dark-400 mt-1">Join Curenium and streamline your team&apos;s communication.</p>
+          </Link>
+          <h2 className="text-2xl font-bold">{t('auth.accountSetup.title')}</h2>
+          <p className="text-dark-400 mt-1">{t('auth.accountSetup.subtitle')}</p>
         </div>
 
         <div className="bg-card/80 dark:bg-dark-800/50 backdrop-blur-lg border border-border dark:border-dark-700 rounded-2xl shadow-2xl p-8">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1">
-              <label htmlFor="fullName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Full Name</label>
+              <label htmlFor="fullName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">{t('auth.accountSetup.fullName')}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                 <input id="fullName" name="fullName" type="text" required
@@ -101,7 +113,7 @@ export const AccountSetup: React.FC = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="email" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Email Address</label>
+              <label htmlFor="email" className="text-sm font-medium text-muted-foreground dark:text-dark-300">{t('auth.accountSetup.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                 <input id="email" name="email" type="email" autoComplete="email" required
@@ -112,7 +124,7 @@ export const AccountSetup: React.FC = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="password" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Password</label>
+              <label htmlFor="password" className="text-sm font-medium text-muted-foreground dark:text-dark-300">{t('auth.accountSetup.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                 <input id="password" name="password" type="password" autoComplete="new-password" required
@@ -123,7 +135,7 @@ export const AccountSetup: React.FC = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <label htmlFor="organizationName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Organization Name</label>
+              <label htmlFor="organizationName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">{t('auth.accountSetup.organizationName')}</label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                 <input id="organizationName" name="organizationName" type="text" required
@@ -139,15 +151,15 @@ export const AccountSetup: React.FC = () => {
 
             <div className="pt-4">
               <Button type="submit" className="w-full text-base font-semibold" size="lg">
-                Create Account
+                {t('auth.accountSetup.createAccount')}
               </Button>
             </div>
           </form>
         </div>
         <p className="text-center text-sm text-muted-foreground dark:text-dark-400 mt-8">
-          Already have an account?{' '}
+          {t('auth.accountSetup.alreadyHaveAccount')}{' '}
           <a href="/login" className="font-medium text-primary hover:text-primary/80 transition-colors">
-            Sign In
+            {t('auth.accountSetup.signIn')}
           </a>
         </p>
       </div>
