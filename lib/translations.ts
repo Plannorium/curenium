@@ -837,7 +837,7 @@ export const translations = {
         },
         phone: {
           title: 'Call Us',
-          details: ['+234 806 892 6547'],
+          details: ['+234 806 892 6547', '+966 53 166 5021'],
           description: 'Available for demo calls and support.'
         },
         location: {
@@ -1940,7 +1940,7 @@ export const translations = {
         },
         phone: {
           title: 'اتصل بنا',
-          details: ['+٢٣٤ ٨٠٦ ٨٩٢ ٦٥٤٧'],
+          details: ['+٢٣٤٨٠٦٨٩٢٦٥٤٧', '+٩٦٦ ٥٣ ١٦٦ ٥٠٢١'],
           description: 'متاح لمكالمات العرض التوضيحي والدعم.'
         },
         location: {
