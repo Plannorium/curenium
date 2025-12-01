@@ -1,3 +1,5 @@
+"use client"
+
 import { AppearanceForm } from "./appearance-form";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { settingsTranslations } from "@/lib/settings-translations";

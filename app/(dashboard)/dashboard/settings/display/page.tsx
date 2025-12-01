@@ -107,7 +107,7 @@ export default function SettingsDisplayPage() {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a language" />
+                      <SelectValue placeholder={t('display.selectLanguage')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -116,7 +116,7 @@ export default function SettingsDisplayPage() {
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  Choose your preferred language for the interface.
+                  {t('display.languageDescription')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -173,7 +173,7 @@ export default function SettingsDisplayPage() {
               </FormItem>
             )}
           />
-          <Button type="submit">Update Display Settings</Button>
+          <Button type="submit">{t('display.updateDisplaySettings')}</Button>
         </form>
       </Form>
     </div>

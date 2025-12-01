@@ -7,9 +7,20 @@ import { Card } from '@/components/Card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { User, Lock, Link2, Trash2, CheckCircle, AlertCircle, Github, Chrome, Loader2, Shield } from 'lucide-react';
+import { useLanguage } from "@/contexts/LanguageContext";
+import { settingsTranslations } from "@/lib/settings-translations";
 
 export default function AccountSettingsPage() {
   const { data: session } = useSession();
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = settingsTranslations[language as keyof typeof settingsTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
@@ -51,13 +62,13 @@ export default function AccountSettingsPage() {
       });
 
       if (res.ok) {
-        setSuccess('Profile updated successfully');
+        setSuccess(t('account.profileUpdated'));
       } else {
         const data = await res.json() as { message?: string };
-        setError(data.message || 'Failed to update profile');
+        setError(data.message || t('account.failedToUpdateProfile'));
       }
     } catch (_error) {
-      setError('Failed to update profile. Please try again.');
+      setError(t('account.failedToUpdateProfile'));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -77,15 +88,15 @@ export default function AccountSettingsPage() {
       });
 
       if (res.ok) {
-        setSuccess('Password changed successfully');
+        setSuccess(t('account.passwordChanged'));
         setCurrentPassword('');
         setNewPassword('');
       } else {
         const data = await res.json() as { message?: string };
-        setError(data.message || 'Failed to change password');
+        setError(data.message || t('account.failedToChangePassword'));
       }
     } catch (_error) {
-      setError('Failed to change password. Please try again.');
+      setError(t('account.failedToChangePassword'));
     } finally {
       setIsChangingPassword(false);
     }
@@ -95,7 +106,7 @@ export default function AccountSettingsPage() {
     setError(null);
     setSuccess(null);
 
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    if (confirm(t('account.confirmDeleteAccount'))) {
       try {
         const res = await fetch('/api/account', {
           method: 'DELETE',
@@ -105,10 +116,10 @@ export default function AccountSettingsPage() {
           window.location.href = '/login';
         } else {
           const data = await res.json() as { message?: string };
-          setError(data.message || 'Failed to delete account');
+          setError(data.message || t('account.failedToDeleteAccount'));
         }
       } catch (_error) {
-        setError('Failed to delete account. Please try again.');
+        setError(t('account.failedToDeleteAccount'));
       }
     }
   };
@@ -118,7 +129,7 @@ export default function AccountSettingsPage() {
     try {
       await signIn(provider, { callbackUrl: '/dashboard/settings/account' });
     } catch (_error) {
-      setError('Failed to link account. Please try again.');
+      setError(t('account.failedToLinkAccount'));
     } finally {
       setIsLinking(null);
     }
@@ -136,10 +147,10 @@ export default function AccountSettingsPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-            Account Settings
+            {t('account.title')}
           </h1>
           <p className="text-muted-foreground font-medium">
-            Manage your profile, security, and account preferences
+            {t('account.subtitle')}
           </p>
         </div>
 
@@ -169,12 +180,12 @@ export default function AccountSettingsPage() {
               <div className="p-2 bg-primary/10 rounded-lg mr-3 border border-primary/20">
                 <User className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="text-xl font-bold text-foreground">Profile Information</h2>
+              <h2 className="text-xl font-bold text-foreground">{t('account.profileInformation')}</h2>
             </div>
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-sm font-semibold text-foreground">
-                  Full Name
+                  {t('account.fullName')}
                 </Label>
                 <Input
                   id="fullName"
@@ -193,7 +204,7 @@ export default function AccountSettingsPage() {
                 {isUpdatingProfile ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  'Update Profile'
+                  t('account.updateProfile')
                 )}
               </Button>
             </form>
@@ -208,12 +219,12 @@ export default function AccountSettingsPage() {
               <div className="p-2 bg-amber-500/10 rounded-lg mr-3 border border-amber-500/20">
                 <Lock className="h-5 w-5 text-amber-600 dark:text-amber-500" />
               </div>
-              <h2 className="text-xl font-bold text-foreground">Change Password</h2>
+              <h2 className="text-xl font-bold text-foreground">{t('account.changePassword')}</h2>
             </div>
             <form onSubmit={handleChangePassword} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="currentPassword" className="text-sm font-semibold text-foreground">
-                  Current Password
+                  {t('account.currentPassword')}
                 </Label>
                 <Input
                   id="currentPassword"
@@ -227,7 +238,7 @@ export default function AccountSettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="newPassword" className="text-sm font-semibold text-foreground">
-                  New Password
+                  {t('account.newPassword')}
                 </Label>
                 <Input
                   id="newPassword"
@@ -247,7 +258,7 @@ export default function AccountSettingsPage() {
                 {isChangingPassword ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  'Change Password'
+                  t('account.changePasswordButton')
                 )}
               </Button>
             </form>
@@ -262,10 +273,10 @@ export default function AccountSettingsPage() {
               <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
                 <Link2 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
               </div>
-              <h2 className="text-xl font-bold text-foreground">Link Accounts</h2>
+              <h2 className="text-xl font-bold text-foreground">{t('account.linkAccounts')}</h2>
             </div>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Link your account to a social provider for easier login and enhanced security.
+              {t('account.linkAccountsDescription')}
             </p>
             <div className="space-y-3">
               <Button 
@@ -278,7 +289,7 @@ export default function AccountSettingsPage() {
                 ) : (
                   <>
                     <Chrome className="h-4 w-4 mr-2" />
-                    Link with Google
+                    {t('account.linkWithGoogle')}
                   </>
                 )}
               </Button>
@@ -292,7 +303,7 @@ export default function AccountSettingsPage() {
                 ) : (
                   <>
                     <Github className="h-4 w-4 mr-2" />
-                    Link with GitHub
+                    {t('account.linkWithGitHub')}
                   </>
                 )}
               </Button>
@@ -308,20 +319,20 @@ export default function AccountSettingsPage() {
               <div className="p-2 bg-red-500/10 rounded-lg mr-3 border border-red-500/20">
                 <Shield className="h-5 w-5 text-red-500" />
               </div>
-              <h2 className="text-xl font-bold text-foreground">Danger Zone</h2>
+              <h2 className="text-xl font-bold text-foreground">{t('account.dangerZone')}</h2>
             </div>
             <div className="backdrop-blur-sm bg-red-500/5 border border-red-500/20 rounded-xl p-4 mb-6">
-              <h3 className="font-semibold text-red-600 dark:text-red-400 mb-2">Delete Account</h3>
+              <h3 className="font-semibold text-red-600 dark:text-red-400 mb-2">{t('account.deleteAccount')}</h3>
               <p className="text-red-600/80 dark:text-red-400/80 text-sm leading-relaxed">
-                Permanently delete your account and all associated data. This action cannot be undone and will immediately log you out.
+                {t('account.deleteAccountDescription')}
               </p>
             </div>
-            <Button 
-              onClick={handleDeleteAccount} 
+            <Button
+              onClick={handleDeleteAccount}
               className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group"
             >
               <Trash2 className="h-4 w-4 mr-2 group-hover:animate-pulse" />
-              Delete Account
+              {t('account.deleteAccountButton')}
             </Button>
           </div>
         </Card>

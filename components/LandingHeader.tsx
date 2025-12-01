@@ -151,7 +151,7 @@ export function LandingHeader() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                  className="backdrop-blur-sm bg-background/50 hover:bg-accent/50 border border-border/30 hover:border-border/50 text-foreground hover:text-primary transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:outline-none hover:cursor-pointer"
                 >
                   {t('nav.login')}
                 </Button>
@@ -159,7 +159,7 @@ export function LandingHeader() {
               <Link href="/signup" prefetch={false} className="hidden md:block">
                 <Button
                   size="sm"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] focus:ring-2 focus:ring-primary/20 focus:outline-none backdrop-blur-sm border border-primary/20 hover:cursor-pointer"
                 >
                   {t('nav.signup')}
                 </Button>

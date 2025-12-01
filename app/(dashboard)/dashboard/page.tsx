@@ -88,11 +88,6 @@ const DashboardContent: React.FC = () => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));
   }, []);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
 
   const dashboardT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
   const welcomeMessage = dashboardT.dashboard.welcome;

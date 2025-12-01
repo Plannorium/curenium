@@ -65,7 +65,7 @@ export const authOptions: NextAuthOptions = {
         // DEBUG: indicate signIn callback reached (do not log secrets)
         console.debug('[nextauth] signIn callback', { email: user?.email, provider: account?.provider });
         await dbConnect();
-        const existingUser = await User.findOne({ email: user.email });
+        const existingUser = await User.findOne({ email: user?.email?.toLowerCase() });
 
         if (existingUser) {
           if (account && !existingUser.provider) {
@@ -94,7 +94,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         // On initial sign-in, fetch the user from the DB to get authoritative data
         await dbConnect();
-        const dbUser = await User.findOne({ email: user.email }).lean();
+        const dbUser = await User.findOne({ email: user?.email?.toLowerCase() }).lean();
 
         if (dbUser) {
           token.id = dbUser._id.toString();

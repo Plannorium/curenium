@@ -106,7 +106,7 @@ export default function ProfileForm() {
       };
       fetchProfile();
     }
-  }, [session, form, t]);
+  }, [session]);
 
   async function onSubmit(data: ProfileFormValues) {
     try {
@@ -131,7 +131,7 @@ export default function ProfileForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" >
-        <ProfileImage />
+        <ProfileImage language={language} />
         <FormField
           control={form.control}
           name="username"

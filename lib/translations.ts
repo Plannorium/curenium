@@ -3,6 +3,44 @@ export const translations = {
     // Common
     welcome: 'Welcome back',
 
+    // Auth
+    auth: {
+      login: {
+        title: "Sign in to your account",
+        subtitle: "Welcome back to Curenium.",
+        email: "Email address",
+        password: "Password",
+        rememberMe: "Remember me",
+        forgotPassword: "Forgot your password?",
+        signIn: "Sign in",
+        signingIn: "Signing in...",
+        orContinueWith: "Or continue with",
+        google: "Google",
+        github: "GitHub",
+        notMember: "Not a member?",
+        signUp: "Sign up",
+        noUserFound: "No account found with this email address.",
+        incorrectPassword: "Incorrect password. Please try again.",
+        pendingVerification: "Your account is pending verification by an administrator.",
+        socialAccountOnly: "Please sign in using your social account or contact support.",
+        invalidCredentials: "Invalid email or password. Please try again.",
+        unexpectedError: "An unexpected error occurred. Please try again.",
+      },
+      accountSetup: {
+        title: "Create Your Organization",
+        subtitle: "Join Curenium and streamline your team's communication.",
+        fullName: "Full Name",
+        email: "Email Address",
+        password: "Password",
+        organizationName: "Organization Name",
+        createAccount: "Create Account",
+        alreadyHaveAccount: "Already have an account?",
+        signIn: "Sign In",
+        registrationError: "An error occurred during registration.",
+        signInFailed: "Sign-in failed after registration. Please try logging in manually.",
+      },
+    },
+
     // Navigation
     nav: {
       about: 'About',
@@ -1070,6 +1108,44 @@ export const translations = {
   ar: {
     // Common
     welcome: 'أهلاً بعودتك',
+
+    // Auth
+    auth: {
+      login: {
+        title: "سجل الدخول إلى حسابك",
+        subtitle: "أهلاً بعودتك إلى كيورينيوم.",
+        email: "عنوان البريد الإلكتروني",
+        password: "كلمة المرور",
+        rememberMe: "تذكرني",
+        forgotPassword: "نسيت كلمة المرور؟",
+        signIn: "سجل الدخول",
+        signingIn: "جاري تسجيل الدخول...",
+        orContinueWith: "أو استمر مع",
+        google: "جوجل",
+        github: "جيت هاب",
+        notMember: "لست عضوًا؟",
+        signUp: "إنشاء حساب",
+        noUserFound: "لم يتم العثور على حساب بهذا البريد الإلكتروني.",
+        incorrectPassword: "كلمة مرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+        pendingVerification: "حسابك في انتظار التحقق من قبل مسؤول.",
+        socialAccountOnly: "يرجى تسجيل الدخول باستخدام حسابك الاجتماعي أو الاتصال بالدعم.",
+        invalidCredentials: "بريد إلكتروني أو كلمة مرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+        unexpectedError: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+      },
+      accountSetup: {
+        title: "أنشئ منظمتك",
+        subtitle: "انضم إلى كيورينيوم وبسط اتصال فريقك.",
+        fullName: "الاسم الكامل",
+        email: "عنوان البريد الإلكتروني",
+        password: "كلمة المرور",
+        organizationName: "اسم المنظمة",
+        createAccount: "إنشاء حساب",
+        alreadyHaveAccount: "لديك حساب بالفعل؟",
+        signIn: "سجل الدخول",
+        registrationError: "حدث خطأ أثناء التسجيل.",
+        signInFailed: "فشل تسجيل الدخول بعد التسجيل. يرجى محاولة تسجيل الدخول يدويًا.",
+      },
+    },
 
     // Navigation
     nav: {

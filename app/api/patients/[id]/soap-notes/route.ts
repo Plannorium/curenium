@@ -8,8 +8,8 @@ import AuditLog from '@/models/AuditLog';
 import { pusher } from '../../../../lib/pusher';
 import mongoose from 'mongoose';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const token = await getToken({ req });
 
   if (!token || !token.organizationId) {
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const token = await getToken({ req });
 
   if (!token || !token.organizationId) {
