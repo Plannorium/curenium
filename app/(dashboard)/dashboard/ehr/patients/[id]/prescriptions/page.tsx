@@ -30,8 +30,19 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdministrationDetailsModal } from "./AdministrationDetailsModal";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
 
 const HistoricalPrescriptionsPage = () => {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<Prescription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -191,22 +202,22 @@ const HistoricalPrescriptionsPage = () => {
             <Link href={`/dashboard/ehr/patients/${patientId}`} className="lg:mb-3">
               <Button variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800 w-full sm:w-auto justify-center sm:justify-start cursor-pointer">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Back to Patient</span>
-                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">{t('prescriptionsPage.backToPatient')}</span>
+                <span className="sm:hidden">{t('prescriptionsPage.back')}</span>
               </Button>
             </Link>
             </div>
             <div className="text-center sm:text-left lg:relative lg:left-9">
               <h1 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-                <span className="hidden sm:inline">Prescription History</span>
-                <span className="sm:hidden">Prescriptions</span>
+                <span className="hidden sm:inline">{t('prescriptionsPage.title')}</span>
+                <span className="sm:hidden">{t('prescriptionsPage.title')}</span>
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground mt-1">
                 <span className="hidden sm:inline">
-                  {getActivePrescriptionsCount()} active prescriptions • {prescriptions.length} total
+                  {t('prescriptionsPage.subtitle').replace('{count}', prescriptions.length.toString())}
                 </span>
                 <span className="sm:hidden">
-                  {getActivePrescriptionsCount()} active • {prescriptions.length} total
+                  {t('prescriptionsPage.subtitle').replace('{count}', prescriptions.length.toString())}
                 </span>
               </p>
             </div>
@@ -230,7 +241,7 @@ const HistoricalPrescriptionsPage = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search medications, dosage, or frequency..."
+                    placeholder={t('prescriptionsPage.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl"
@@ -238,13 +249,13 @@ const HistoricalPrescriptionsPage = () => {
                 </div>
                 <Select value={statusFilter} onValueChange={(value: "all" | "active" | "completed" | "cancelled") => setStatusFilter(value)}>
                   <SelectTrigger className="w-full sm:w-48 bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={t('prescriptionsPage.filterByStatus')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-xl">
-                    <SelectItem value="all">All Prescriptions</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="all">{t('prescriptionsPage.allPrescriptions')}</SelectItem>
+                    <SelectItem value="active">{t('prescriptionsPage.active')}</SelectItem>
+                    <SelectItem value="completed">{t('prescriptionsPage.completed')}</SelectItem>
+                    <SelectItem value="cancelled">{t('prescriptionsPage.cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -263,15 +274,15 @@ const HistoricalPrescriptionsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50/80 dark:bg-gray-900/80">
-                  <TableHead className="font-semibold">Medications</TableHead>
-                  <TableHead className="font-semibold">Dose</TableHead>
-                  <TableHead className="font-semibold">Frequency</TableHead>
-                  <TableHead className="font-semibold">Route</TableHead>
-                  <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Status Reason</TableHead>
-                  <TableHead className="font-semibold">Prescribed</TableHead>
-                  <TableHead className="font-semibold">Duration</TableHead>
-                  <TableHead className="font-semibold">Administrations</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.medications')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.dose')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.frequency')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.route')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.status')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.statusReason')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.prescribed')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.duration')}</TableHead>
+                  <TableHead className="font-semibold">{t('prescriptionsPage.administrations')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -282,7 +293,7 @@ const HistoricalPrescriptionsPage = () => {
                         <Pill className="h-4 w-4 text-blue-600 mt-1 flex-shrink-0" />
                         <div className="min-w-0">
                           <div className="font-semibold text-sm text-gray-900 dark:text-white">
-                            Medications
+                            {t('prescriptionsPage.medications')}
                           </div>
                           <div className="space-y-1 mt-1">
                             {prescription.medication ? (
@@ -291,7 +302,7 @@ const HistoricalPrescriptionsPage = () => {
                               </div>
                             ) : (
                               <div className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                No medication specified
+                                {t('prescriptionsPage.noMedicationSpecified')}
                               </div>
                             )}
                           </div>
@@ -307,9 +318,9 @@ const HistoricalPrescriptionsPage = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="active">{t('prescriptionsPage.active')}</SelectItem>
+                          <SelectItem value="completed">{t('prescriptionsPage.completed')}</SelectItem>
+                          <SelectItem value="cancelled">{t('prescriptionsPage.cancelled')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -323,13 +334,13 @@ const HistoricalPrescriptionsPage = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {prescription.durationDays ? `${prescription.durationDays} days` : 'N/A'}
+                      {prescription.durationDays ? `${prescription.durationDays} ${t('prescriptionsPage.days')}` : t('prescriptionsPage.none')}
                     </TableCell>
                     <TableCell>
                       {prescription.administrations && prescription.administrations.length > 0 ? (
                         <div className="space-y-2">
                           <div className="text-sm">
-                            <div className="font-medium">{prescription.administrations.length} administrations</div>
+                            <div className="font-medium">{prescription.administrations.length} {t('prescriptionsPage.administrationsCount')}</div>
                             {(() => {
                               const lastAdmin = prescription.administrations[prescription.administrations.length - 1];
                               return (
@@ -349,11 +360,11 @@ const HistoricalPrescriptionsPage = () => {
                             }}
                             className="text-xs"
                           >
-                            View Details
+                            {t('prescriptionsPage.viewDetails')}
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">None</span>
+                        <span className="text-muted-foreground">{t('prescriptionsPage.none')}</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -364,12 +375,12 @@ const HistoricalPrescriptionsPage = () => {
             <div className="p-12 text-center">
               <Pill className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {searchTerm || statusFilter !== "all" ? "No prescriptions found" : "No prescriptions yet"}
+                {searchTerm || statusFilter !== "all" ? t('prescriptionsPage.noPrescriptionsFound') : t('prescriptionsPage.noPrescriptionsYet')}
               </h3>
               <p className="text-muted-foreground mb-6">
                 {searchTerm || statusFilter !== "all"
-                  ? "Try adjusting your search or filter criteria."
-                  : "Prescriptions will appear here once they are prescribed."
+                  ? t('prescriptionsPage.tryAdjustingSearch')
+                  : t('prescriptionsPage.prescriptionsWillAppear')
                 }
               </p>
               {(searchTerm || statusFilter !== "all") && (
@@ -381,7 +392,7 @@ const HistoricalPrescriptionsPage = () => {
                   }}
                   className="hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
-                  Clear Filters
+                  {t('prescriptionsPage.clearFilters')}
                 </Button>
               )}
             </div>

@@ -10,7 +10,7 @@ import Announcements from '@/app/(dashboard)/components/Announcements';
 import AuditLogs from '@/app/(dashboard)/components/AuditLogs';
 import ShiftView from '@/app/(dashboard)/components/ShiftView';
 import { InviteList } from '@/components/invites/InviteList';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
 import { Loader } from '@/components/ui/Loader';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -88,6 +88,13 @@ const DashboardContent: React.FC = () => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));
   }, []);
 
+  // Force refresh all data immediately after login
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
+      mutate(() => true);
+    }
+  }, [status, session?.user?.id]);
+
 
   const dashboardT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
   const welcomeMessage = dashboardT.dashboard.welcome;
@@ -152,7 +159,7 @@ const DashboardContent: React.FC = () => {
                 {currentDate} • <span className="text-primary font-semibold capitalize">{organization?.name || 'Organization'}</span>
               </p>
             </div>
-            <Button className="mt-4 sm:mt-0 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white dark:text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm border border-primary/20">
+            <Button title="Coming Soon" className="mt-4 sm:mt-0 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white dark:text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm border border-primary/20 cursor-pointer">
               <BrainIcon className="mr-2 h-4 w-4" />
               <Sparkles className="mr-1 h-3 w-3" />
               {dashboardT.dashboard.askAIAssistant}
