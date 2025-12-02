@@ -123,7 +123,7 @@ const DashboardContent: React.FC = () => {
   // Show loading state while session is loading
   if (status === 'loading') {
     return (
-      <div className="relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto">
+      <div className="relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto custom-scrollbar">
         <div className="absolute inset-0 overflow-hidden pointer-events-none dark:hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>
@@ -138,7 +138,7 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className={`relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto`}>
+    <div className={`relative bg-background h-[calc(100vh-10rem)] lg:h-full overflow-auto custom-scrollbar`}>
       {/* Background blur effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none dark:hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
