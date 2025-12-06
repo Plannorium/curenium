@@ -1,20 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/authOptions";
+import { authenticateUser } from "@/lib/auth";
 import connectDB from "@/lib/dbConnect";
+import { resend } from "@/lib/resendEmail";
 import Appointment from "@/models/Appointment";
 import Patient from "@/models/Patient";
-import { resend } from "@/lib/resendEmail";
 import User from "@/models/User";
-import mongoose from "mongoose";
+import { NextRequest, NextResponse } from "next/server";
 
 interface PatchRequestBody {
   appointmentId: string;
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const user = await authenticateUser(req);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,16 +26,12 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    if (appointment.orgId.toString() !== session.user.organizationId) {
+    if (appointment.orgId.toString() !== user.organizationId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!session.user.id) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     appointment.status = 'confirmed';
-    appointment.confirmedBy = session.user.id as any;
+    appointment.confirmedBy = user.id as any;
     await appointment.save();
 
     // Send confirmation email to patient
@@ -58,8 +52,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const user = await authenticateUser(req);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -67,7 +61,7 @@ export async function GET(req: NextRequest) {
 
   try {
     await connectDB();
-    const query: any = { orgId: session.user.organizationId };
+    const query: any = { orgId: user.organizationId };
 
     if (personnelId) {
       query.doctorId = personnelId;

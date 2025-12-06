@@ -1,26 +1,25 @@
-import { NextResponse } from "next/server";
+import { authenticateUser } from "@/lib/auth";
 import dbConnect from "@/lib/dbConnect";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Organization from "@/models/Organization";
 import User from "@/models/User";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+export async function GET(request: NextRequest) {
+  const user = await authenticateUser(request);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   await dbConnect();
 
-  const user = await User.findById(session.user.id).select("organizationId");
+  const userDoc = await User.findById(user.id).select("organizationId");
 
-  if (!user || !user.organizationId) {
+  if (!userDoc || !userDoc.organizationId) {
     return NextResponse.json({ error: "User is not part of an organization" }, { status: 404 });
   }
 
-  const org = await Organization.findById(user.organizationId);
+  const org = await Organization.findById(userDoc.organizationId);
 
   if (!org) {
     return NextResponse.json({ error: "Organization not found" }, { status: 404 });
@@ -43,17 +42,17 @@ const organizationUpdateSchema = z.object({
   activeHoursEnd: z.string().optional(),
 });
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || session?.user?.role !== "admin") {
+export async function POST(req: NextRequest) {
+  const user = await authenticateUser(req);
+  if (!user || user.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   await dbConnect();
 
-  const user = await User.findById(session.user.id).select("organizationId");
+  const userDoc = await User.findById(user.id).select("organizationId");
 
-  if (!user || !user.organizationId) {
+  if (!userDoc || !userDoc.organizationId) {
     return NextResponse.json({ error: "User is not part of an organization" }, { status: 404 });
   }
 

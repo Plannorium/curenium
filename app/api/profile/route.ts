@@ -1,31 +1,89 @@
 
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from '@/lib/authOptions';
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/User";
+import jwt from 'jsonwebtoken';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+  organizationId: string;
+  email?: string;
+  fullName?: string;
+}
 
-  if (!session) {
+async function authenticateUser(request?: NextRequest): Promise<AuthenticatedUser | null> {
+  try {
+    // First try NextAuth session (for web clients)
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      return {
+        id: session.user.id,
+        role: session.user.role || 'user',
+        organizationId: session.user.organizationId || '',
+        email: session.user.email || undefined,
+        fullName: session.user.name || undefined,
+      };
+    }
+
+    // If no session, try JWT token (for mobile clients)
+    if (request) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+          if (decoded.userId) {
+            // Verify user still exists and is active
+            const user = await User.findById(decoded.userId).select('role organizationId email fullName verified');
+            if (user && user.verified) {
+              return {
+                id: user._id.toString(),
+                role: user.role,
+                organizationId: user.organizationId?.toString() || '',
+                email: user.email,
+                fullName: user.fullName,
+              };
+            }
+          }
+        } catch (jwtError) {
+          console.error('JWT verification failed:', jwtError);
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return null;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const user = await authenticateUser(request);
+
+  if (!user) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
   await dbConnect();
 
   try {
-    const user = await User.findById(session.user.id).select("username bio urls image").lean();
+    const userDoc = await User.findById(user.id).select("username bio urls image").lean();
 
-    if (!user) {
+    if (!userDoc) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
     const profileData = {
-      username: user.username || "",
-      bio: user.bio || "",
-      urls: user.urls || [],
-      imageUrl: user.image || "",
+      username: userDoc.username || "",
+      bio: userDoc.bio || "",
+      urls: userDoc.urls || [],
+      imageUrl: userDoc.image || "",
     };
 
     return NextResponse.json(profileData, { status: 200 });
@@ -41,9 +99,9 @@ interface ProfileUpdateBody {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const user = await authenticateUser(req);
 
-  if (!session?.user?.id) {
+  if (!user) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
@@ -53,7 +111,7 @@ export async function PUT(req: NextRequest) {
   const { username, bio } = body;
   const urlsArray = body.urls || [];
 
-  const userId = session.user.id;
+  const userId = user.id;
 
   try {
     const update: {
@@ -71,14 +129,14 @@ export async function PUT(req: NextRequest) {
       .filter((v): v is string => typeof v === "string" && v.length > 0);
 
     // Try the standard findByIdAndUpdate first and log the result
-    const user = await User.findByIdAndUpdate(userId, { $set: update }, { new: true }).select('username bio urls');
+    const userDoc = await User.findByIdAndUpdate(userId, { $set: update }, { new: true }).select('username bio urls');
 
-    if (!user) {
+    if (!userDoc) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
     // Return the updated profile fields so client can refresh UI
-    return NextResponse.json({ username: user.username || '', bio: user.bio || '', urls: user.urls || [] }, { status: 200 });
+    return NextResponse.json({ username: userDoc.username || '', bio: userDoc.bio || '', urls: userDoc.urls || [] }, { status: 200 });
   } catch (error) {
     console.error('Error updating profile:', error);
     return NextResponse.json({ message: "Error updating user" }, { status: 500 });
