@@ -52,6 +52,12 @@ export async function POST(req: NextRequest) {
         email: user.email,
         role: user.role,
         organizationId: user.organizationId,
+        image: user.image,
+        online: user.online,
+        username: user.username,
+        bio: user.bio,
+        urls: user.urls || [],
+        verified: user.verified,
       },
     });
   } catch (error) {

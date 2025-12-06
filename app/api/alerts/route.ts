@@ -1,12 +1,71 @@
-import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Alert from '@/models/Alert';
 import Channel from '@/models/Channel';
 import Notification from '@/models/Notification';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { pusher } from '../../lib/pusher';
+import jwt from 'jsonwebtoken';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
+
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+  organizationId: string;
+  email?: string;
+  fullName?: string;
+}
+
+async function authenticateUser(request?: NextRequest): Promise<AuthenticatedUser | null> {
+  try {
+    // First try NextAuth session (for web clients)
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      return {
+        id: session.user.id,
+        role: session.user.role || 'user',
+        organizationId: session.user.organizationId || '',
+        email: session.user.email || undefined,
+        fullName: session.user.name || undefined,
+      };
+    }
+
+    // If no session, try JWT token (for mobile clients)
+    if (request) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+          if (decoded.userId) {
+            // Verify user still exists and is active
+            const User = (await import('@/models/User')).default;
+            const user = await User.findById(decoded.userId).select('role organizationId email fullName verified');
+            if (user && user.verified) {
+              return {
+                id: user._id.toString(),
+                role: user.role,
+                organizationId: user.organizationId?.toString() || '',
+                email: user.email,
+                fullName: user.fullName,
+              };
+            }
+          }
+        } catch (jwtError) {
+          console.error('JWT verification failed:', jwtError);
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return null;
+  }
+}
 
 const alertSchema = z.object({
   message: z.string().min(1, 'Message is required'),
@@ -14,9 +73,9 @@ const alertSchema = z.object({
   recipients: z.array(z.string()).optional(),
 });
 
-export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.organizationId) {
+export async function POST(request: NextRequest) {
+  const user = await authenticateUser(request);
+  if (!user?.organizationId) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -41,7 +100,7 @@ export async function POST(request: Request) {
         // Find all channels by their short ID (e.g., 'emergency') and the org ID
         // Match channels where the kebab-case name matches the channel ID
         const channels = await Channel.find({
-          organizationId: session.user.organizationId
+          organizationId: user.organizationId
         }).select('name members');
 
         const matchingChannels = channels.filter(channel => {
@@ -60,8 +119,8 @@ export async function POST(request: Request) {
       message,
       level,
       recipients: finalRecipients,
-      organizationId: session.user.organizationId,
-      createdBy: session.user.id,
+      organizationId: user.organizationId,
+      createdBy: user.id,
     });
 
     await newAlert.save();
@@ -124,15 +183,15 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+export async function GET(request: NextRequest) {
+    const user = await authenticateUser(request);
+    if (!user?.organizationId) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
     try {
-        const alerts = await Alert.find({ organizationId: session.user.organizationId })
+        const alerts = await Alert.find({ organizationId: user.organizationId })
           .populate('createdBy', 'fullName image')
           .sort({ createdAt: -1 })
           .lean();
