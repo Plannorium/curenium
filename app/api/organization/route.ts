@@ -13,6 +13,19 @@ export async function GET(request: NextRequest) {
 
   await dbConnect();
 
+  const { searchParams } = new URL(request.url);
+  const orgId = searchParams.get('id');
+
+  // If an ID is provided, fetch that specific organization (for mobile clients)
+  if (orgId) {
+    const org = await Organization.findById(orgId);
+    if (!org) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+    return NextResponse.json(org);
+  }
+
+  // Otherwise, fetch the user's organization (for web clients)
   const userDoc = await User.findById(user.id).select("organizationId");
 
   if (!userDoc || !userDoc.organizationId) {

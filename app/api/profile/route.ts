@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
       bio: userDoc.bio || "",
       urls: userDoc.urls || [],
       imageUrl: userDoc.image || "",
+      organizationId: user.organizationId,
     };
 
     return NextResponse.json(profileData, { status: 200 });

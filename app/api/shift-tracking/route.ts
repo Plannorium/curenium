@@ -1,15 +1,73 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
 import ShiftTracking from '@/models/ShiftTracking';
-import Shift from '@/models/Shift';
+import jwt from 'jsonwebtoken';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+
+interface AuthenticatedUser {
+  id: string;
+  role: string;
+  organizationId: string;
+  email?: string;
+  fullName?: string;
+}
+
+async function authenticateUser(request?: NextRequest): Promise<AuthenticatedUser | null> {
+  try {
+    // First try NextAuth session (for web clients)
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      return {
+        id: session.user.id,
+        role: session.user.role || 'user',
+        organizationId: session.user.organizationId || '',
+        email: session.user.email || undefined,
+        fullName: session.user.name || undefined,
+      };
+    }
+
+    // If no session, try JWT token (for mobile clients)
+    if (request) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+          if (decoded.userId) {
+            // Verify user still exists and is active
+            const User = (await import('@/models/User')).default;
+            const user = await User.findById(decoded.userId).select('role organizationId email fullName verified');
+            if (user && user.verified) {
+              return {
+                id: user._id.toString(),
+                role: user.role,
+                organizationId: user.organizationId?.toString() || '',
+                email: user.email,
+                fullName: user.fullName,
+              };
+            }
+          }
+        } catch (jwtError) {
+          console.error('JWT verification failed:', jwtError);
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const user = await authenticateUser(req);
 
-  if (!session?.user?.organizationId) {
-    return NextResponse.json({ message: 'Unauthorized: No organization ID found in session' }, { status: 401 });
+  if (!user?.organizationId) {
+    return NextResponse.json({ message: 'Unauthorized: No organization ID found' }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -22,11 +80,11 @@ export async function GET(req: NextRequest) {
 
   try {
     const query: any = {
-      organization: session.user.organizationId
+      organization: user.organizationId
     };
 
     // Role-based filtering
-    if (session.user.role !== 'admin' && session.user.role !== 'matron_nurse') {
+    if (user.role !== 'admin' && user.role !== 'matron_nurse') {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     // Admins and Matron Nurses can see all shifts in their organization
@@ -89,14 +147,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const user = await authenticateUser(req);
 
-  if (!session?.user?.organizationId || !session?.user?.id) {
+  if (!user?.organizationId || !user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   // Only admin can create shift schedules
-  if (session.user.role !== 'admin' && session.user.role !== 'matron_nurse') {
+  if (user.role !== 'admin' && user.role !== 'matron_nurse') {
     return NextResponse.json({ message: 'Forbidden: Only admins can create shift schedules' }, { status: 403 });
   }
 
@@ -145,7 +203,7 @@ export async function POST(req: NextRequest) {
     const newShift = new ShiftTracking({
       user: userId,
       userImage: userImage?.trim(),
-      organization: session.user.organizationId,
+      organization: user.organizationId,
       shiftDate: new Date(shiftDate),
       scheduledStart: shiftStart,
       scheduledEnd: shiftEnd,
@@ -154,7 +212,7 @@ export async function POST(req: NextRequest) {
       role,
       shiftNotes: shiftNotes?.trim(),
       status: 'scheduled',
-      approvedBy: session.user.id
+      approvedBy: user.id
     });
 
     await newShift.save();

@@ -41,11 +41,21 @@ export async function POST(req: NextRequest) {
         organizationId: user.organizationId,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: '1d' }
+      { expiresIn: '15m' } // Short-lived access token
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        userId: user._id,
+        type: 'refresh',
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' } // Long-lived refresh token
     );
 
     return NextResponse.json({
       token,
+      refreshToken,
       user: {
         id: user._id,
         fullName: user.fullName,
