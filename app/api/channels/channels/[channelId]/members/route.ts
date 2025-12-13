@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authenticateUser } from '@/app/api/helpers/auth';
 import dbConnect from '@/lib/dbConnect';
 import Channel from '@/models/Channel';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Force Node.js runtime for database operations
 export const runtime = 'nodejs';
 
 // Add a member to a channel
 export async function POST(request: NextRequest, context: any) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.organizationId || !session?.user?.id) {
+  const user = await authenticateUser(request);
+  if (!user?.organizationId || !user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -22,10 +21,10 @@ export async function POST(request: NextRequest, context: any) {
     // Check if current user has permission to modify this channel
     const channel = await Channel.findOne({
       _id: channelId,
-      organizationId: session.user.organizationId,
+      organizationId: user.organizationId,
       $or: [
-        { members: session.user.id }, // User is a member
-        { createdBy: session.user.id }, // User created the channel
+        { members: user.id }, // User is a member
+        { createdBy: user.id }, // User created the channel
         { type: 'public' } // Public channels can be modified by org members
       ]
     });
@@ -35,7 +34,7 @@ export async function POST(request: NextRequest, context: any) {
     }
 
     const updatedChannel = await Channel.findOneAndUpdate(
-      { _id: channelId, organizationId: session.user.organizationId },
+      { _id: channelId, organizationId: user.organizationId },
       { $addToSet: { members: userId } }, // Use $addToSet to avoid duplicates
       { new: true }
     );
@@ -53,8 +52,8 @@ export async function POST(request: NextRequest, context: any) {
 
 // Remove a member from a channel
 export async function DELETE(request: NextRequest, context: any) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.organizationId || !session?.user?.id) {
+  const user = await authenticateUser(request);
+  if (!user?.organizationId || !user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -66,10 +65,10 @@ export async function DELETE(request: NextRequest, context: any) {
     // Check if current user has permission to modify this channel
     const channel = await Channel.findOne({
       _id: channelId,
-      organizationId: session.user.organizationId,
+      organizationId: user.organizationId,
       $or: [
-        { members: session.user.id }, // User is a member
-        { createdBy: session.user.id }, // User created the channel
+        { members: user.id }, // User is a member
+        { createdBy: user.id }, // User created the channel
         { type: 'public' } // Public channels can be modified by org members
       ]
     });
@@ -79,7 +78,7 @@ export async function DELETE(request: NextRequest, context: any) {
     }
 
     const updatedChannel = await Channel.findOneAndUpdate(
-      { _id: channelId, organizationId: session.user.organizationId },
+      { _id: channelId, organizationId: user.organizationId },
       { $pull: { members: userId } }, // Use $pull to remove the user
       { new: true }
     );

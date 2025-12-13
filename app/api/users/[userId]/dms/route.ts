@@ -1,11 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import DMRoom from "@/models/DMRoom";
-import User from "@/models/User";
-import Message from "@/models/Message";
-import "@/models/Message";
+import { authenticateUser } from '@/app/api/helpers/auth';
 import connectToDb from "@/lib/dbConnect";
+import DMRoom from "@/models/DMRoom";
+import { NextRequest, NextResponse } from 'next/server';
 
 // Force Node.js runtime for database operations
 export const runtime = 'nodejs';
@@ -66,10 +62,10 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ userId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
   const { userId } = await context.params;
+  const user = await authenticateUser(req, userId);
 
-  if (!session || session.user.id !== userId) {
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

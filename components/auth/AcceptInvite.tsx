@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Loader } from '@/components/ui/Loader';
 import Image from 'next/image';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { translations } from '@/lib/translations';
 
 interface InviteDetailsResponse {
   error?: string;
@@ -20,6 +22,15 @@ interface AcceptInviteResponse {
 }
 
 export default function AcceptInvite() {
+  const { language } = useLanguage();
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: any = translations[language as keyof typeof translations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams?.get('token');
@@ -37,9 +48,9 @@ export default function AcceptInvite() {
           const res = await fetch(`/api/invite/details?token=${token}`);
           if (!res.ok) {
             if (res.status === 404) {
-              setError('Invalid invite link.');
+              setError(t('auth.acceptInvite.invalidInviteLink'));
             } else {
-              setError('Failed to fetch invite details.');
+              setError(t('auth.acceptInvite.failedToFetchDetails'));
             }
             return;
           }
@@ -51,10 +62,10 @@ export default function AcceptInvite() {
             setEmail(data.email ?? '');
           }
         } catch (_err) {
-          setError('Failed to fetch invite details.');
+          setError(t('auth.acceptInvite.failedToFetchDetails'));
         }
       } else {
-        setError('Invite token is missing.');
+        setError(t('auth.acceptInvite.inviteTokenMissing'));
       }
     };
 
@@ -67,7 +78,7 @@ export default function AcceptInvite() {
     setSuccess('');
 
     if (!token) {
-      setError('Invite token is missing.');
+      setError(t('auth.acceptInvite.inviteTokenMissing'));
       return;
     }
 
@@ -81,7 +92,7 @@ export default function AcceptInvite() {
 
     if (res.ok) {
       if (isNewUser) {
-        setSuccess('Account created successfully! Signing you in...');
+        setSuccess(t('auth.acceptInvite.accountCreated'));
         await signIn('credentials', {
           email,
           password,
@@ -89,10 +100,10 @@ export default function AcceptInvite() {
         });
         router.push('/dashboard');
       } else {
-        setSuccess('You have been added to the new organization. Please log in to continue.');
+        setSuccess(t('auth.acceptInvite.addedToOrganization'));
       }
     } else {
-      setError(data.message || 'An error occurred while accepting the invite.');
+      setError(data.message || t('auth.acceptInvite.errorAcceptingInvite'));
     }
   };
 
@@ -120,8 +131,8 @@ export default function AcceptInvite() {
               className="hidden dark:block"
             />
           </div>
-          <h2 className="text-2xl font-bold">Accept Invitation</h2>
-          <p className="text-muted-foreground dark:text-dark-400 mt-1">Join your team on Curenium.</p>
+          <h2 className="text-2xl font-bold">{t('auth.acceptInvite.title')}</h2>
+          <p className="text-muted-foreground dark:text-dark-400 mt-1">{t('auth.acceptInvite.subtitle')}</p>
         </div>
 
         <div className="bg-card/80 dark:bg-dark-800/50 backdrop-blur-lg border border-border dark:border-dark-700 rounded-2xl shadow-2xl p-8">
@@ -133,7 +144,7 @@ export default function AcceptInvite() {
               ) : isNewUser === true ? (
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div className="space-y-1">
-                    <label htmlFor="fullName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Full Name</label>
+                    <label htmlFor="fullName" className="text-sm font-medium text-muted-foreground dark:text-dark-300">{t('auth.acceptInvite.fullName')}</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                       <input
@@ -148,7 +159,7 @@ export default function AcceptInvite() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label htmlFor="password" className="text-sm font-medium text-muted-foreground dark:text-dark-300">Create a Password</label>
+                    <label htmlFor="password" className="text-sm font-medium text-muted-foreground dark:text-dark-300">{t('auth.acceptInvite.createPassword')}</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-dark-400" size={18} />
                       <input
@@ -165,19 +176,19 @@ export default function AcceptInvite() {
                   {success && <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg py-2 px-4">{success}</p>}
                   <div className="pt-2">
                     <Button type="submit" className="w-full text-base font-semibold" size="lg">
-                      Complete Registration <Check size={16} className="ml-2" />
+                      {t('auth.acceptInvite.completeRegistration')} <Check size={16} className="ml-2" />
                     </Button>
                   </div>
                 </form>
               ) : (
                 <div>
-                  <p className="text-center">{success || `You have been added to a new organization. Please log in to access it.`}</p>
-                  <Button onClick={() => router.push('/login')} className="w-full mt-4 text-base font-semibold" size="lg">Go to Login</Button>
+                  <p className="text-center">{success || t('auth.acceptInvite.addedToOrganization')}</p>
+                  <Button onClick={() => router.push('/login')} className="w-full mt-4 text-base font-semibold" size="lg">{t('auth.acceptInvite.goToLogin')}</Button>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error || 'Invalid invite link.'}</p>
+            <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error || t('auth.acceptInvite.invalidInviteLink')}</p>
           )}
         </div>
       </div>

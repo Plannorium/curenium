@@ -39,6 +39,20 @@ export const translations = {
         registrationError: "An error occurred during registration.",
         signInFailed: "Sign-in failed after registration. Please try logging in manually.",
       },
+      acceptInvite: {
+        title: "Accept Invitation",
+        subtitle: "Join your team on Curenium.",
+        fullName: "Full Name",
+        createPassword: "Create a Password",
+        completeRegistration: "Complete Registration",
+        accountCreated: "Account created successfully! Signing you in...",
+        addedToOrganization: "You have been added to the new organization. Please log in to continue.",
+        goToLogin: "Go to Login",
+        invalidInviteLink: "Invalid invite link.",
+        failedToFetchDetails: "Failed to fetch invite details.",
+        inviteTokenMissing: "Invite token is missing.",
+        errorAcceptingInvite: "An error occurred while accepting the invite.",
+      },
     },
 
     // Navigation
@@ -1145,6 +1159,20 @@ export const translations = {
         registrationError: "حدث خطأ أثناء التسجيل.",
         signInFailed: "فشل تسجيل الدخول بعد التسجيل. يرجى محاولة تسجيل الدخول يدويًا.",
       },
+      acceptInvite: {
+        title: "قبول الدعوة",
+        subtitle: "انضم إلى فريقك على كيورينيوم.",
+        fullName: "الاسم الكامل",
+        createPassword: "إنشاء كلمة مرور",
+        completeRegistration: "إكمال التسجيل",
+        accountCreated: "تم إنشاء الحساب بنجاح! جاري تسجيل الدخول...",
+        addedToOrganization: "تم إضافتك إلى المنظمة الجديدة. يرجى تسجيل الدخول للمتابعة.",
+        goToLogin: "اذهب إلى تسجيل الدخول",
+        invalidInviteLink: "رابط دعوة غير صالح.",
+        failedToFetchDetails: "فشل في جلب تفاصيل الدعوة.",
+        inviteTokenMissing: "رمز الدعوة مفقود.",
+        errorAcceptingInvite: "حدث خطأ أثناء قبول الدعوة.",
+      },
     },
 
     // Navigation
@@ -1940,7 +1968,7 @@ export const translations = {
         },
         phone: {
           title: 'اتصل بنا',
-          details: ['+٢٣٤٨٠٦٨٩٢٦٥٤٧', '+٩٦٦ ٥٣ ١٦٦ ٥٠٢١'],
+          details: ['+٢٣٤ ٨٠٦ ٨٩٢ ٦٥٤٧', '+٢٣٤ ٧٠١ ٢٣٤ ٥٦٧٨'],
           description: 'متاح لمكالمات العرض التوضيحي والدعم.'
         },
         location: {
