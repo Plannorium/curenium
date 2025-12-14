@@ -76,15 +76,15 @@ export default function SettingsDisplayPage() {
       });
 
       if (response.ok) {
-        toast.success(t('display.displayUpdated'));
+        toast.success(t ? t('display.displayUpdated') : 'Display settings updated successfully.');
         if (data.language !== currentLanguage) {
           setLanguage(data.language as 'en' | 'ar');
         }
       } else {
-        toast.error(t('display.failedToUpdateDisplay'));
+        toast.error(t ? t('display.failedToUpdateDisplay') : 'Failed to update display settings.');
       }
     } catch (error) {
-      toast.error(t('display.errorUpdatingDisplay'));
+      toast.error(t ? t('display.errorUpdatingDisplay') : 'An error occurred while updating display settings.');
     }
   }
 
@@ -107,7 +107,7 @@ export default function SettingsDisplayPage() {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('display.selectLanguage')} />
+                      <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -131,7 +131,7 @@ export default function SettingsDisplayPage() {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('display.selectTimezone')} />
+                      <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -158,7 +158,7 @@ export default function SettingsDisplayPage() {
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={t('display.selectCalendarType')} />
+                      <SelectValue />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>

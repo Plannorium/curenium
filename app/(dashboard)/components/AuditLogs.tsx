@@ -31,17 +31,17 @@ const AuditLogs = () => {
   if (error) return <div className="text-sm text-muted-foreground">{t('auditLogs.failedToLoad')}</div>;
   if (!auditLogs) return <Loader variant="minimal" />;
 
-  const recentLogs = auditLogs.slice(0, 4); // Show only recent 5
+  const recentLogs = auditLogs?.slice(0, 4); // Show only recent 5
 
   return (
     <div className="space-y-4">
-      {recentLogs.map((log: any, index: number) => (
+      {recentLogs?.map((log: any, index: number) => (
         <div key={log._id || index} className="p-3 bg-background/20 rounded-lg border border-border/30 hover:bg-muted/50 transition-colors duration-200">
           <h4 className="text-sm font-medium text-foreground dark:text-white truncate">
-            {log.action.replace('.', ' ').toUpperCase()}
+            {log?.action.replace('.', ' ').toUpperCase()}
           </h4>
           <p className="text-xs text-muted-foreground dark:text-gray-400">
-            {log.userId?.fullName || 'System'} • {formatDistanceToNow(new Date(log.createdAt))} ago
+            {log?.userId?.fullName || 'System'} • {formatDistanceToNow(new Date(log.createdAt))} ago
           </p>
         </div>
       ))}

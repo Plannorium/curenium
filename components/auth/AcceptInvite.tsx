@@ -10,6 +10,7 @@ import { Loader } from '@/components/ui/Loader';
 import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/lib/translations';
+import Link from 'next/link';
 
 interface InviteDetailsResponse {
   error?: string;
@@ -48,9 +49,9 @@ export default function AcceptInvite() {
           const res = await fetch(`/api/invite/details?token=${token}`);
           if (!res.ok) {
             if (res.status === 404) {
-              setError(t('auth.acceptInvite.invalidInviteLink'));
+              setError(t ? t('auth.acceptInvite.invalidInviteLink') : 'Invalid invite link.');
             } else {
-              setError(t('auth.acceptInvite.failedToFetchDetails'));
+              setError(t ? t('auth.acceptInvite.failedToFetchDetails') : 'Failed to fetch invite details.');
             }
             return;
           }
@@ -62,15 +63,19 @@ export default function AcceptInvite() {
             setEmail(data.email ?? '');
           }
         } catch (_err) {
-          setError(t('auth.acceptInvite.failedToFetchDetails'));
+          setError(t ? t('auth.acceptInvite.failedToFetchDetails') : 'Failed to fetch invite details.');
         }
       } else {
-        setError(t('auth.acceptInvite.inviteTokenMissing'));
+        // Delay setting error until translations are loaded
+        const timer = setTimeout(() => {
+          setError(t ? t('auth.acceptInvite.inviteTokenMissing') : 'Invite token is missing.');
+        }, 100);
+        return () => clearTimeout(timer);
       }
     };
 
     fetchInviteDetails();
-  }, [token]);
+  }, [token, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +83,7 @@ export default function AcceptInvite() {
     setSuccess('');
 
     if (!token) {
-      setError(t('auth.acceptInvite.inviteTokenMissing'));
+      setError(t ? t('auth.acceptInvite.inviteTokenMissing') : 'Invite token is missing.');
       return;
     }
 
@@ -92,7 +97,7 @@ export default function AcceptInvite() {
 
     if (res.ok) {
       if (isNewUser) {
-        setSuccess(t('auth.acceptInvite.accountCreated'));
+        setSuccess(t ? t('auth.acceptInvite.accountCreated') : 'Account created successfully! Signing you in...');
         await signIn('credentials', {
           email,
           password,
@@ -100,10 +105,10 @@ export default function AcceptInvite() {
         });
         router.push('/dashboard');
       } else {
-        setSuccess(t('auth.acceptInvite.addedToOrganization'));
+        setSuccess(t ? t('auth.acceptInvite.addedToOrganization') : 'You have been added to the new organization. Please log in to continue.');
       }
     } else {
-      setError(data.message || t('auth.acceptInvite.errorAcceptingInvite'));
+      setError(data.message || (t ? t('auth.acceptInvite.errorAcceptingInvite') : 'An error occurred while accepting the invite.'));
     }
   };
 
@@ -115,7 +120,7 @@ export default function AcceptInvite() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8 flex justify-center items-center flex-col">
-          <div className="mx-auto mb-4">
+          <Link href={"/"} className="mx-auto mb-4">
             <Image
               src="/curenium-logo.png"
               alt="Curenium Logo"
@@ -130,7 +135,7 @@ export default function AcceptInvite() {
               height={48}
               className="hidden dark:block"
             />
-          </div>
+          </Link>
           <h2 className="text-2xl font-bold">{t('auth.acceptInvite.title')}</h2>
           <p className="text-muted-foreground dark:text-dark-400 mt-1">{t('auth.acceptInvite.subtitle')}</p>
         </div>
@@ -188,7 +193,7 @@ export default function AcceptInvite() {
               )}
             </div>
           ) : (
-            <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error || t('auth.acceptInvite.invalidInviteLink')}</p>
+            <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error || (t ? t('auth.acceptInvite.invalidInviteLink') : 'Invalid invite link.')}</p>
           )}
         </div>
       </div>

@@ -20,10 +20,21 @@ export const CalendarProvider: React.FC<{ children: ReactNode }> = ({ children }
       try {
         const response = await fetch('/api/settings/display');
         if (response.ok) {
-          const data = await response.json() as { calendarType?: CalendarType };
-          if (data.calendarType) {
-            setCalendarType(data.calendarType);
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json() as { calendarType?: CalendarType };
+            if (data.calendarType) {
+              setCalendarType(data.calendarType);
+            }
+          } else {
+            // If response is not JSON (e.g., HTML error page), skip silently
+            console.warn('Calendar settings API returned non-JSON response');
           }
+        } else if (response.status === 401) {
+          // User not authenticated, use default calendar type
+          console.log('User not authenticated, using default calendar type');
+        } else {
+          console.error('Failed to fetch calendar type:', response.status);
         }
       } catch (error) {
         console.error('Failed to fetch calendar type:', error);
@@ -45,12 +56,25 @@ export const CalendarProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const response = await fetch('/api/settings/display');
       if (response.ok) {
-        const settings = await response.json() as object;
-        await fetch('/api/settings/display', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...settings, calendarType: type }),
-        });
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const settings = await response.json() as object;
+          await fetch('/api/settings/display', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...settings, calendarType: type }),
+          });
+        } else {
+          // If response is not JSON, try to update with just calendarType
+          await fetch('/api/settings/display', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ calendarType: type }),
+          });
+        }
+      } else if (response.status === 401) {
+        // User not authenticated, silently fail
+        console.log('Cannot update calendar type: user not authenticated');
       } else {
         await fetch('/api/settings/display', {
           method: 'POST',
