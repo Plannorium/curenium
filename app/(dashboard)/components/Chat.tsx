@@ -95,7 +95,32 @@ const Chat: React.FC = () => {
   const pathname = usePathname();
   const fullName = session?.user?.name || "Anonymous";
   const searchParams = useSearchParams();
-  const activeRoom = searchParams?.get("room") || "general";
+  const organizationId = session?.user?.organizationId;
+
+  const generateGeneralRoomId = (orgId: string) => {
+    if (!orgId) throw new Error('Organization ID is required');
+    // Create a simple hash of the organization ID for security
+    let hash = 0;
+    for (let i = 0; i < orgId.length; i++) {
+      const char = orgId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Convert to base36 and take first 8 characters for brevity
+    return Math.abs(hash).toString(36).substring(0, 8);
+  };
+
+  const generalRoomName = useMemo(() => {
+    if (!organizationId) return 'general';
+    try {
+      return `gen-${generateGeneralRoomId(organizationId)}`;
+    } catch {
+      console.error('Failed to generate general room ID');
+      return 'general';
+    }
+  }, [organizationId]);
+  const activeRoom = searchParams?.get("room") || generalRoomName;
+  const isGeneralRoom = activeRoom === generalRoomName;
 
   const t = (key: string) => {
     const keys = key.split(".");
@@ -362,6 +387,7 @@ const Chat: React.FC = () => {
     isCallActive: boolean;
     users: User[];
     onMentionClick: (user: User) => void;
+    userTimezone: string;
   }
 
   const MessageBubble = ({
@@ -385,6 +411,7 @@ const Chat: React.FC = () => {
     id,
     users,
     onMentionClick,
+    userTimezone,
   }: MessageBubbleProps) => {
     const { data: session } = useSession();
     const [isReactionPickerOpen, setReactionPickerOpen] = useState(false);
@@ -527,18 +554,20 @@ const Chat: React.FC = () => {
       }
     }, [isActionsVisible]);
 
-    const timeString = msg.createdAt
-      ? new Date(msg.createdAt).toLocaleTimeString(
-          language === "ar" ? "ar" : "en",
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-          }
-        )
-      : new Date().toLocaleTimeString(language === "ar" ? "ar" : "en", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+    let timeString: string;
+    try {
+      timeString = new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: userTimezone,
+      }).format(msg.createdAt ? new Date(msg.createdAt) : new Date());
+    } catch {
+      timeString = new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "UTC",
+      }).format(msg.createdAt ? new Date(msg.createdAt) : new Date());
+    }
 
     // ---------- IMAGE GALLERY ----------
     const renderImages = () => {
@@ -1002,6 +1031,50 @@ const Chat: React.FC = () => {
       clearInterval(cleanupInterval);
     };
   }, []);
+
+  // Fetch user settings
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchUserSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/display', { signal: controller.signal });
+        if (response.ok) {
+          const data: { timezone: string } = await response.json();
+          setUserSettings(data);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return;
+        console.error('Failed to fetch user settings:', error);
+      }
+    };
+    fetchUserSettings();
+    return () => {
+      if (controller) {
+        controller.abort();
+      }
+    };
+  }, []);
+
+  // Fetch organization
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchOrganization = async () => {
+      try {
+        const response = await fetch('/api/organization', { signal: controller.signal });
+        if (response.ok) {
+          const data: { activeHoursStart?: string; activeHoursEnd?: string; timezone: string } = await response.json();
+          setOrganization(data);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('Failed to fetch organization:', error);
+      }
+    };
+    fetchOrganization();
+    return () => {
+      controller.abort();
+    };
+  }, []);
   const [lightbox, setLightbox] = useState<{
     images: Array<{ url: string; name: string }>;
     initialIndex: number;
@@ -1097,6 +1170,8 @@ const Chat: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [usersToInvite, setUsersToInvite] = useState<User[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
+  const [userSettings, setUserSettings] = useState<{ timezone: string } | null>(null);
+  const [organization, setOrganization] = useState<{ activeHoursStart?: string; activeHoursEnd?: string; timezone: string } | null>(null);
   const {
     messages,
     isMuted,
@@ -2405,7 +2480,7 @@ const Chat: React.FC = () => {
   );
 
   const channelUsers = useMemo(() => {
-    if (activeRoom === "general") {
+    if (isGeneralRoom) {
       return users;
     }
     if (isDmRoom) {
@@ -2431,6 +2506,36 @@ const Chat: React.FC = () => {
     if (!isDmRoom) return null;
     return channelUsers.find((u) => u._id !== session?.user?._id);
   }, [isDmRoom, channelUsers, session?.user?._id]);
+
+  const isActiveHours = useMemo(() => {
+    if (!organization?.activeHoursStart || !organization?.activeHoursEnd) return true;
+    try {
+      const now = new Date();
+      // Map legacy timezone formats to IANA
+      const timezoneMap: Record<string, string> = {
+        'utc-3': 'Etc/GMT+3',
+        'utc-4': 'Etc/GMT+4',
+        'utc-5': 'Etc/GMT+5',
+        'utc-8': 'Etc/GMT+8',
+        'utc+1': 'Etc/GMT-1',
+      };
+      const ianaTimezone = timezoneMap[organization.timezone] || organization.timezone;
+      const orgTime = new Intl.DateTimeFormat('en', { timeZone: ianaTimezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+      const [hour, minute] = orgTime.split(':').map(Number);
+      const currentMinutes = hour * 60 + minute;
+      const [startHour, startMinute] = organization.activeHoursStart.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMinute;
+      const [endHour, endMinute] = organization.activeHoursEnd.split(':').map(Number);
+      const endMinutes = endHour * 60 + endMinute;
+      if (startMinutes < endMinutes) {
+        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+      } else {
+        return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+      }
+    } catch {
+      return true; // Default to active on invalid timezone
+    }
+  }, [organization]);
 
   const filteredUsers = useMemo(() => {
     return users.filter(
@@ -2654,18 +2759,18 @@ const Chat: React.FC = () => {
                 <div className="mt-2 space-y-1">
                   <div
                     className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
-                      activeRoom === "general"
+                      isGeneralRoom
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     <button
                       className="flex cursor-pointer items-center flex-1 text-left"
-                      onClick={() => handleRoomChange("general")}
+                      onClick={() => handleRoomChange(generalRoomName)}
                     >
                       <span
                         className={`w-2.5 h-2.5 rounded-full ${language === "ar" ? "ml-3" : "mr-3"} shadow-sm ${
-                          activeRoom === "general"
+                          isGeneralRoom
                             ? "bg-primary"
                             : "bg-green-500 opacity-60 group-hover:opacity-100 transition-opacity"
                         }`}
@@ -2908,7 +3013,7 @@ const Chat: React.FC = () => {
             <header className="flex items-center justify-between p-3 lg:p-4 border-b border-border/50 dark:border-gray-700/50 bg-background/30 dark:bg-transparent backdrop-blur-sm z-10">
               <div className="flex items-center overflow-hidden">
                 <h2 className="text-base font-bold text-foreground cursor-pointer truncate">
-                  {activeRoom === "general"
+                  {isGeneralRoom
                     ? t("sidebar.general")
                     : activeRoom ===
                         `${session?.user?._id}-${session?.user?._id}`
@@ -2936,13 +3041,28 @@ const Chat: React.FC = () => {
                           : "bg-gray-400"
                     )}
                   />
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
                     {isDmRoom ? (
                       <span className="hidden md:inline">
                         {otherUser && otherUser.online ? "Online" : "Offline"}
                       </span>
                     ) : (
                       `${users.filter((u) => u.online).length} Online`
+                    )}
+                    {!isDmRoom && organization && (
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-sm border ${
+                        isActiveHours
+                          ? "bg-green-500/10 text-green-600 border-green-500/20"
+                          : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      } md:px-2 md:py-1 md:text-xs`}
+                        aria-label={isActiveHours ? "Organization is within active hours" : "Organization is outside active hours"}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          isActiveHours ? "bg-green-500" : "bg-amber-500"
+                        }`} />
+                        <span className="hidden sm:inline">
+                          {isActiveHours ? t("chat.active") : t("chat.offHours")}
+                        </span>
+                      </span>
                     )}
                   </span>
                 </div>
@@ -3153,6 +3273,7 @@ const Chat: React.FC = () => {
                         isCallActive={isCallActive}
                         users={users}
                         onMentionClick={setSelectedUser}
+                        userTimezone={userSettings?.timezone || 'UTC'}
                       />
                     </div>
                   );
@@ -3600,11 +3721,11 @@ const Chat: React.FC = () => {
             name: c.name,
           }))}
           channelMembers={
-            activeRoom.includes("-") // This is a DM room
-              ? users.filter((u) => activeRoom.split("-").includes(u._id))
+            isDmRoom
+              ? users.filter((u) => activeRoom.split("--").includes(u._id))
               : // This is a placeholder. In a real app, you'd get actual channel members.
                 // For now, sending to a "channel" from chat sends to all users.
-                activeRoom !== "general"
+                !isGeneralRoom
                 ? users
                 : undefined
           }

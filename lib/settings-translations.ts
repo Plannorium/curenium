@@ -76,6 +76,7 @@ export const settingsTranslations = {
       failedToLinkAccount: "Failed to link account. Please try again.",
       failedToDeleteAccount: "Failed to delete account",
       confirmDeleteAccount: "Are you sure you want to delete your account? This action cannot be undone.",
+      linkingNote: "Note: You may be logged out during the linking process. After linking, please sign in again with the linked provider.",
     },
     organization: {
       organizationName: "Organization Name",
@@ -260,6 +261,7 @@ export const settingsTranslations = {
       failedToLinkAccount: "فشل في ربط الحساب. يرجى المحاولة مرة أخرى.",
       failedToDeleteAccount: "فشل في حذف الحساب",
       confirmDeleteAccount: "هل أنت متأكد من أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء.",
+      linkingNote: "ملاحظة: قد يتم تسجيل خروجك أثناء عملية الربط. بعد الربط، يرجى تسجيل الدخول مرة أخرى باستخدام المزود المرتبط.",
     },
     organization: {
       organizationName: "اسم المنظمة",

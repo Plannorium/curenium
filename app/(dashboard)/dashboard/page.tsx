@@ -57,7 +57,7 @@ const DashboardContent: React.FC = () => {
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
 
-  const orgId = userProfile?.organizationId;
+  const orgId = session?.user?.organizationId || userProfile?.organizationId;
 
   const { data: organization } = useSWR(
     (status === 'authenticated' && orgId) ? [`/api/organization?id=${orgId}`, pathname] : null,
@@ -65,23 +65,23 @@ const DashboardContent: React.FC = () => {
     { revalidateOnMount: true, dedupingInterval: 0 }
   );
   const { data: shifts, error: shiftsError } = useSWR<Shift[]>(
-    (status === 'authenticated' && orgId) ? ['/api/shift-tracking', orgId] : null,
-    ([url]) => fetcher(url),
+    status === 'authenticated' ? '/api/shift-tracking' : null,
+    fetcher,
     { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const { data: alerts, error: alertsError } = useSWR<Alert[]>(
-    (status === 'authenticated' && orgId) ? ['/api/alerts', orgId] : null,
-    ([url]) => fetcher(url),
+    status === 'authenticated' ? '/api/alerts' : null,
+    fetcher,
     { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const { data: appointments, error: appointmentsError } = useSWR<Appointment[]>(
-    (status === 'authenticated' && orgId) ? ['/api/appointments', orgId] : null,
-    ([url]) => fetcher(url),
+    status === 'authenticated' ? '/api/appointments' : null,
+    fetcher,
     { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
   const { data: users, error: usersError } = useSWR<User[]>(
-    (status === 'authenticated' && orgId) ? ['/api/users', orgId] : null,
-    ([url]) => fetcher(url),
+    status === 'authenticated' ? '/api/users' : null,
+    fetcher,
     { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
 
@@ -131,12 +131,13 @@ const DashboardContent: React.FC = () => {
 
   const pendingAppointments = appointments?.filter(appointment =>
     new Date(appointment.date) > new Date() &&
-    appointment.status === 'scheduled'
+    (appointment.status === 'scheduled' || appointment.status === 'confirmed')
   ).length || 0;
   const overdueAppointments = appointments?.filter(appointment =>
     new Date(appointment.date) < new Date() &&
     appointment.status !== 'completed' &&
-    appointment.status !== 'cancelled'
+    appointment.status !== 'cancelled' &&
+    appointment.status !== 'no_show'
   ).length || 0;
 
   const activeStaff = users?.filter(user => user.online === true).length || 0;
@@ -195,14 +196,21 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-200 dark:text-primary-foreground/90">
-                  {currentShift ? dashboardT.dashboard.currentShift : dashboardT.dashboard.upcomingShift}
+                  {!shifts ? (
+                    <div className="h-4 bg-white/20 rounded animate-pulse"></div>
+                  ) : currentShift ? dashboardT.dashboard.currentShift : dashboardT.dashboard.upcomingShift}
                 </CardTitle>
                 <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                   <CalendarIcon className="h-4 w-4 text-white dark:text-primary-foreground" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {currentShift ? (
+                {!shifts ? (
+                  <div className="space-y-2">
+                    <div className="h-8 bg-white/20 rounded animate-pulse"></div>
+                    <div className="h-4 bg-white/10 rounded animate-pulse w-3/4"></div>
+                  </div>
+                ) : currentShift ? (
                   <>
                     <div className="text-2xl md:text-3xl font-bold text-white dark:text-primary-foreground mb-1">
                       {format(new Date(currentShift.scheduledStart), 'HH:mm')} - {format(new Date(currentShift.scheduledEnd), 'HH:mm')}
@@ -251,14 +259,27 @@ const DashboardContent: React.FC = () => {
             <Card className="group relative overflow-hidden backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 dark:from-red-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">{dashboardT.dashboard.activeAlerts}</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
+                  {!alerts ? (
+                    <div className="h-4 bg-muted rounded animate-pulse"></div>
+                  ) : dashboardT.dashboard.activeAlerts}
+                </CardTitle>
                 <div className="p-2 bg-red-500/10 rounded-lg backdrop-blur-sm border border-red-500/20">
                   <BellIcon className="h-4 w-4 text-red-500" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                <div className="text-2xl md:text-3xl font-bold text-red-500 mb-1">{criticalAlerts} {dashboardT.dashboard.critical}</div>
-                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">+{urgentAlerts} {dashboardT.dashboard.urgent}</p>
+                {!alerts ? (
+                  <div className="space-y-2">
+                    <div className="h-8 bg-red-500/20 rounded animate-pulse"></div>
+                    <div className="h-4 bg-muted/50 rounded animate-pulse w-1/2"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl md:text-3xl font-bold text-red-500 mb-1">{criticalAlerts} {dashboardT.dashboard.critical}</div>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">+{urgentAlerts} {dashboardT.dashboard.urgent}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -266,16 +287,29 @@ const DashboardContent: React.FC = () => {
             <Card className="group relative overflow-hidden backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 dark:from-amber-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">{dashboardT.dashboard.pendingAppointments}</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
+                  {!appointments ? (
+                    <div className="h-4 bg-muted rounded animate-pulse"></div>
+                  ) : dashboardT.dashboard.pendingAppointments}
+                </CardTitle>
                 <div className="p-2 bg-amber-500/10 rounded-lg backdrop-blur-sm border border-amber-500/20">
                   <ClipboardListIcon className="h-4 w-4 text-amber-600 dark:text-amber-500" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                <div className="text-2xl md:text-3xl font-bold text-foreground dark:text-white mb-1">{pendingAppointments}</div>
-                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">
-                  <span className="text-amber-600 dark:text-amber-500 font-semibold">{overdueAppointments} {dashboardT.dashboard.overdue}</span>
-                </p>
+                {!appointments ? (
+                  <div className="space-y-2">
+                    <div className="h-8 bg-amber-500/20 rounded animate-pulse"></div>
+                    <div className="h-4 bg-muted/50 rounded animate-pulse w-2/3"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl md:text-3xl font-bold text-foreground dark:text-white mb-1">{pendingAppointments}</div>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">
+                      <span className="text-amber-600 dark:text-amber-500 font-semibold">{overdueAppointments} {dashboardT.dashboard.overdue}</span>
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -283,14 +317,27 @@ const DashboardContent: React.FC = () => {
             <Card className="group relative overflow-hidden backdrop-blur-lg bg-card/80 dark:bg-gray-900/70 border-border/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]">
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 dark:from-green-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">{dashboardT.dashboard.activeStaff}</CardTitle>
+                <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
+                  {!users ? (
+                    <div className="h-4 bg-muted rounded animate-pulse"></div>
+                  ) : dashboardT.dashboard.activeStaff}
+                </CardTitle>
                 <div className="p-2 bg-green-500/10 rounded-lg backdrop-blur-sm border border-green-500/20">
                   <Users className="h-4 w-4 text-green-600 dark:text-green-500" />
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                <div className="text-2xl md:text-3xl font-bold text-foreground dark:text-white mb-1">{activeStaff} / {totalStaff}</div>
-                <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">{dashboardT.dashboard.cardiologyDepartment}</p>
+                {!users ? (
+                  <div className="space-y-2">
+                    <div className="h-8 bg-green-500/20 rounded animate-pulse"></div>
+                    <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl md:text-3xl font-bold text-foreground dark:text-white mb-1">{activeStaff} / {totalStaff}</div>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 font-medium">{dashboardT.dashboard.cardiologyDepartment}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

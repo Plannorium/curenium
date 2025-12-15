@@ -66,6 +66,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
 
+  const generateGeneralRoomId = (orgId: string) => {
+    // Create a simple hash of the organization ID for security
+    let hash = 0;
+    for (let i = 0; i < orgId.length; i++) {
+      const char = orgId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Convert to base36 and take first 8 characters for brevity
+    return Math.abs(hash).toString(36).substring(0, 8);
+  };
+
   const sidebarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -312,6 +324,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </>
     );
   } else if (pathname && pathname.startsWith("/dashboard/chat")) {
+    const organizationId = session?.user?.organizationId;
+    const generalRoomName = organizationId ? `gen-${generateGeneralRoomId(organizationId)}` : 'general';
     teamsContent = (
       <>
         <h3
@@ -322,9 +336,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="mt-1 space-y-1 px-2">
           <Link
             key="general"
-            href={`/dashboard/chat?room=general`}
+            href={`/dashboard/chat?room=${generalRoomName}`}
             className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
-              activeRoom === "general" || !activeRoom
+              activeRoom === generalRoomName || (!activeRoom && pathname.startsWith('/dashboard/chat'))
                 ? "bg-primary/10 text-primary"
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
             } ${isCollapsed ? "lg:justify-center" : ""}`}
@@ -341,10 +355,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {channels.map((channel) => (
             <Link
               key={channel._id}
-              href={`/dashboard/chat?room=${channel.name.toLowerCase().replace(/\s/g, "")}`}
+              href={`/dashboard/chat?room=${channel.name.trim().toLowerCase().replace(/\s+/g, "-")}`}
               className={`group flex items-center w-full px-3 py-2.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
                 activeRoom ===
-                `${channel.name.toLowerCase().replace(/\s/g, "")}`
+                `${channel.name.trim().toLowerCase().replace(/\s+/g, "-")}`
                   ? "bg-primary/10 text-primary border-primary/30 shadow-md shadow-primary/10"
                   : "text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:text-gray-900 dark:hover:text-white"
               } ${isCollapsed ? "lg:justify-center" : ""}`}

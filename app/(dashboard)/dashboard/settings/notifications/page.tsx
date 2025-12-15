@@ -109,7 +109,7 @@ export default function NotificationsForm() {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-col space-y-1"
                 >
                   <FormItem className="flex items-center space-x-3 space-y-0">
@@ -143,9 +143,9 @@ export default function NotificationsForm() {
               control={form.control}
               name="communication_emails"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 backdrop-blur-lg bg-card/80 border-border/50 shadow-lg">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 backdrop-blur-lg bg-card/80 border-border/50 shadow-lg opacity-50">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base text-foreground">{t('notifications.communicationEmails')}</FormLabel>
+                    <FormLabel className="text-base text-muted-foreground">{t('notifications.communicationEmails')}</FormLabel>
                     <FormDescription className="text-muted-foreground">
                       {t('notifications.communicationEmailsDescription')}
                     </FormDescription>
@@ -154,6 +154,7 @@ export default function NotificationsForm() {
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled
                       className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200"
                     />
                   </FormControl>
@@ -164,9 +165,9 @@ export default function NotificationsForm() {
               control={form.control}
               name="marketing_emails"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 backdrop-blur-lg bg-card/80 border-border/50 shadow-lg">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 backdrop-blur-lg bg-card/80 border-border/50 shadow-lg opacity-50">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base text-foreground">{t('notifications.marketingEmails')}</FormLabel>
+                    <FormLabel className="text-base text-muted-foreground">{t('notifications.marketingEmails')}</FormLabel>
                     <FormDescription className="text-muted-foreground">
                       {t('notifications.marketingEmailsDescription')}
                     </FormDescription>
@@ -175,6 +176,7 @@ export default function NotificationsForm() {
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled
                       className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200"
                     />
                   </FormControl>
@@ -185,9 +187,9 @@ export default function NotificationsForm() {
               control={form.control}
               name="social_emails"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 backdrop-blur-lg bg-card/80 border-border/50 shadow-lg">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 backdrop-blur-lg bg-card/80 border-border/50 shadow-lg opacity-50">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base text-foreground">{t('notifications.socialEmails')}</FormLabel>
+                    <FormLabel className="text-base text-muted-foreground">{t('notifications.socialEmails')}</FormLabel>
                     <FormDescription className="text-muted-foreground">
                       {t('notifications.socialEmailsDescription')}
                     </FormDescription>
@@ -196,6 +198,7 @@ export default function NotificationsForm() {
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      disabled
                       className="backdrop-blur-sm bg-background/50 border-border/60 hover:border-border focus:border-primary transition-all duration-200"
                     />
                   </FormControl>
