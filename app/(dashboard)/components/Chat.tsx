@@ -98,6 +98,7 @@ const Chat: React.FC = () => {
   const organizationId = session?.user?.organizationId;
 
   const generateGeneralRoomId = (orgId: string) => {
+    if (!orgId) throw new Error('Organization ID is required');
     // Create a simple hash of the organization ID for security
     let hash = 0;
     for (let i = 0; i < orgId.length; i++) {
@@ -109,7 +110,15 @@ const Chat: React.FC = () => {
     return Math.abs(hash).toString(36).substring(0, 8);
   };
 
-  const generalRoomName = organizationId ? `gen-${generateGeneralRoomId(organizationId)}` : 'general';
+  const generalRoomName = useMemo(() => {
+    if (!organizationId) return 'general';
+    try {
+      return `gen-${generateGeneralRoomId(organizationId)}`;
+    } catch {
+      console.error('Failed to generate general room ID');
+      return 'general';
+    }
+  }, [organizationId]);
   const activeRoom = searchParams?.get("room") || generalRoomName;
   const isGeneralRoom = activeRoom === generalRoomName;
 
@@ -1048,18 +1057,23 @@ const Chat: React.FC = () => {
 
   // Fetch organization
   useEffect(() => {
+    const controller = new AbortController();
     const fetchOrganization = async () => {
       try {
-        const response = await fetch('/api/organization');
+        const response = await fetch('/api/organization', { signal: controller.signal });
         if (response.ok) {
           const data: { activeHoursStart?: string; activeHoursEnd?: string; timezone: string } = await response.json();
           setOrganization(data);
         }
       } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         console.error('Failed to fetch organization:', error);
       }
     };
     fetchOrganization();
+    return () => {
+      controller.abort();
+    };
   }, []);
   const [lightbox, setLightbox] = useState<{
     images: Array<{ url: string; name: string }>;
