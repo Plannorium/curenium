@@ -545,11 +545,20 @@ const Chat: React.FC = () => {
       }
     }, [isActionsVisible]);
 
-    const timeString = new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: userTimezone,
-    }).format(msg.createdAt ? new Date(msg.createdAt) : new Date());
+    let timeString: string;
+    try {
+      timeString = new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: userTimezone,
+      }).format(msg.createdAt ? new Date(msg.createdAt) : new Date());
+    } catch {
+      timeString = new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "UTC",
+      }).format(msg.createdAt ? new Date(msg.createdAt) : new Date());
+    }
 
     // ---------- IMAGE GALLERY ----------
     const renderImages = () => {
@@ -1025,7 +1034,7 @@ const Chat: React.FC = () => {
           setUserSettings(data);
         }
       } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (error instanceof Error && error.name === 'AbortError') return;
         console.error('Failed to fetch user settings:', error);
       }
     };
@@ -2486,27 +2495,31 @@ const Chat: React.FC = () => {
 
   const isActiveHours = useMemo(() => {
     if (!organization?.activeHoursStart || !organization?.activeHoursEnd) return true;
-    const now = new Date();
-    // Map legacy timezone formats to IANA
-    const timezoneMap: Record<string, string> = {
-      'utc-3': 'Etc/GMT+3',
-      'utc-4': 'Etc/GMT+4',
-      'utc-5': 'Etc/GMT+5',
-      'utc-8': 'Etc/GMT+8',
-      'utc+1': 'Etc/GMT-1',
-    };
-    const ianaTimezone = timezoneMap[organization.timezone] || organization.timezone;
-    const orgTime = new Intl.DateTimeFormat('en', { timeZone: ianaTimezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
-    const [hour, minute] = orgTime.split(':').map(Number);
-    const currentMinutes = hour * 60 + minute;
-    const [startHour, startMinute] = organization.activeHoursStart.split(':').map(Number);
-    const startMinutes = startHour * 60 + startMinute;
-    const [endHour, endMinute] = organization.activeHoursEnd.split(':').map(Number);
-    const endMinutes = endHour * 60 + endMinute;
-    if (startMinutes < endMinutes) {
-      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
-    } else {
-      return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+    try {
+      const now = new Date();
+      // Map legacy timezone formats to IANA
+      const timezoneMap: Record<string, string> = {
+        'utc-3': 'Etc/GMT+3',
+        'utc-4': 'Etc/GMT+4',
+        'utc-5': 'Etc/GMT+5',
+        'utc-8': 'Etc/GMT+8',
+        'utc+1': 'Etc/GMT-1',
+      };
+      const ianaTimezone = timezoneMap[organization.timezone] || organization.timezone;
+      const orgTime = new Intl.DateTimeFormat('en', { timeZone: ianaTimezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+      const [hour, minute] = orgTime.split(':').map(Number);
+      const currentMinutes = hour * 60 + minute;
+      const [startHour, startMinute] = organization.activeHoursStart.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMinute;
+      const [endHour, endMinute] = organization.activeHoursEnd.split(':').map(Number);
+      const endMinutes = endHour * 60 + endMinute;
+      if (startMinutes < endMinutes) {
+        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+      } else {
+        return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+      }
+    } catch {
+      return true; // Default to active on invalid timezone
     }
   }, [organization]);
 
