@@ -66,6 +66,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
 
+  const generateGeneralRoomId = (orgId: string) => {
+    // Create a simple hash of the organization ID for security
+    let hash = 0;
+    for (let i = 0; i < orgId.length; i++) {
+      const char = orgId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Convert to base36 and take first 8 characters for brevity
+    return Math.abs(hash).toString(36).substring(0, 8);
+  };
+
   const sidebarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -313,7 +325,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   } else if (pathname && pathname.startsWith("/dashboard/chat")) {
     const organizationId = session?.user?.organizationId;
-    const generalRoomName = organizationId ? `general-${organizationId}` : 'general';
+    const generalRoomName = organizationId ? `gen-${generateGeneralRoomId(organizationId)}` : 'general';
     teamsContent = (
       <>
         <h3

@@ -96,7 +96,20 @@ const Chat: React.FC = () => {
   const fullName = session?.user?.name || "Anonymous";
   const searchParams = useSearchParams();
   const organizationId = session?.user?.organizationId;
-  const generalRoomName = organizationId ? `general-${organizationId}` : 'general';
+
+  const generateGeneralRoomId = (orgId: string) => {
+    // Create a simple hash of the organization ID for security
+    let hash = 0;
+    for (let i = 0; i < orgId.length; i++) {
+      const char = orgId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Convert to base36 and take first 8 characters for brevity
+    return Math.abs(hash).toString(36).substring(0, 8);
+  };
+
+  const generalRoomName = organizationId ? `gen-${generateGeneralRoomId(organizationId)}` : 'general';
   const activeRoom = searchParams?.get("room") || generalRoomName;
   const isGeneralRoom = activeRoom === generalRoomName;
 
@@ -532,17 +545,11 @@ const Chat: React.FC = () => {
       }
     }, [isActionsVisible]);
 
-    const timeString = msg.createdAt
-      ? new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: userTimezone,
-        }).format(new Date(msg.createdAt))
-      : new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: userTimezone,
-        }).format(new Date());
+    const timeString = new Intl.DateTimeFormat(language === "ar" ? "ar" : "en", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: userTimezone,
+    }).format(msg.createdAt ? new Date(msg.createdAt) : new Date());
 
     // ---------- IMAGE GALLERY ----------
     const renderImages = () => {
@@ -1009,18 +1016,25 @@ const Chat: React.FC = () => {
 
   // Fetch user settings
   useEffect(() => {
+    const controller = new AbortController();
     const fetchUserSettings = async () => {
       try {
-        const response = await fetch('/api/settings/display');
+        const response = await fetch('/api/settings/display', { signal: controller.signal });
         if (response.ok) {
           const data: { timezone: string } = await response.json();
           setUserSettings(data);
         }
       } catch (error) {
+        if (error.name === 'AbortError') return;
         console.error('Failed to fetch user settings:', error);
       }
     };
     fetchUserSettings();
+    return () => {
+      if (controller) {
+        controller.abort();
+      }
+    };
   }, []);
 
   // Fetch organization
@@ -3013,7 +3027,8 @@ const Chat: React.FC = () => {
                         isActiveHours
                           ? "bg-green-500/10 text-green-600 border-green-500/20"
                           : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                      } md:px-2 md:py-1 md:text-xs`}>
+                      } md:px-2 md:py-1 md:text-xs`}
+                        aria-label={isActiveHours ? "Organization is within active hours" : "Organization is outside active hours"}>
                         <div className={`w-1.5 h-1.5 rounded-full ${
                           isActiveHours ? "bg-green-500" : "bg-amber-500"
                         }`} />
