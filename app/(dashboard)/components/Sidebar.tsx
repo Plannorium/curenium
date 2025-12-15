@@ -343,10 +343,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {channels.map((channel) => (
             <Link
               key={channel._id}
-              href={`/dashboard/chat?room=${channel.name.toLowerCase().replace(/\s/g, "")}`}
+              href={`/dashboard/chat?room=${channel.name.trim().toLowerCase().replace(/\s+/g, "-")}`}
               className={`group flex items-center w-full px-3 py-2.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
                 activeRoom ===
-                `${channel.name.toLowerCase().replace(/\s/g, "")}`
+                `${channel.name.trim().toLowerCase().replace(/\s+/g, "-")}`
                   ? "bg-primary/10 text-primary border-primary/30 shadow-md shadow-primary/10"
                   : "text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:text-gray-900 dark:hover:text-white"
               } ${isCollapsed ? "lg:justify-center" : ""}`}

@@ -3679,8 +3679,8 @@ const Chat: React.FC = () => {
             name: c.name,
           }))}
           channelMembers={
-            activeRoom.includes("-") // This is a DM room
-              ? users.filter((u) => activeRoom.split("-").includes(u._id))
+            isDmRoom
+              ? users.filter((u) => activeRoom.split("--").includes(u._id))
               : // This is a placeholder. In a real app, you'd get actual channel members.
                 // For now, sending to a "channel" from chat sends to all users.
                 !isGeneralRoom
