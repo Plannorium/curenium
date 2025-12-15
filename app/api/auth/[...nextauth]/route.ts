@@ -68,13 +68,13 @@ export const authOptions: NextAuthOptions = {
         const existingUser = await User.findOne({ email: user?.email?.toLowerCase() });
 
         if (existingUser) {
-          if (account && !existingUser.provider) {
-            existingUser.provider = account.provider;
-            existingUser.providerAccountId = account.providerAccountId;
-            await existingUser.save();
-          }
-          return true;
-        }
+           if (account) {
+             existingUser.provider = account.provider;
+             existingUser.providerAccountId = account.providerAccountId;
+             await existingUser.save();
+           }
+           return true;
+         }
 
         if (account?.provider !== 'credentials') {
           // For OAuth sign-ins, we don't create a new user here.

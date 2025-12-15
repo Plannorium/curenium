@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { User, Lock, Link2, Trash2, CheckCircle, AlertCircle, Github, Chrome, Loader2, Shield } from 'lucide-react';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { settingsTranslations } from "@/lib/settings-translations";
+import { toast } from "sonner";
 
 export default function AccountSettingsPage() {
   const { data: session } = useSession();
@@ -126,6 +127,7 @@ export default function AccountSettingsPage() {
 
   const handleLinkAccount = async (provider: string) => {
     setIsLinking(provider);
+    toast.info(t('account.linkingNote') || 'Note: You may be logged out during the linking process. After linking, please sign in again with the linked provider.');
     try {
       await signIn(provider, { callbackUrl: '/dashboard/settings/account' });
     } catch (_error) {

@@ -104,7 +104,7 @@ export default function SettingsDisplayPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('display.language')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={t('display.selectLanguage')} />
@@ -128,7 +128,7 @@ export default function SettingsDisplayPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('display.timezone')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={t('display.selectTimezone')} />
@@ -155,7 +155,7 @@ export default function SettingsDisplayPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('display.calendarType')}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={t('display.selectCalendarType')} />

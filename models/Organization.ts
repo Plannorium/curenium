@@ -5,7 +5,7 @@ export interface IOrganization extends Document {
   email: string;
   domain?: string;
   image?: string;
-  timezone: "utc-3" | "utc-4" | "utc-5" | "utc-8" | "utc+1";
+  timezone: string;
   language: "en" | "es" | "ar";
   activeHoursStart?: string;
   activeHoursEnd?: string;
@@ -20,10 +20,7 @@ const OrganizationSchema = new mongoose.Schema(
     email: { type: String, required: true },
     domain: { type: String },
     image: { type: String },
-    timezone: {
-      type: String,
-      enum: ["utc-3", "utc-4", "utc-5", "utc-8", "utc+1"],
-    },
+    timezone: { type: String },
     language: { type: String, enum: ["en", "es", "ar"] },
     activeHoursStart: { type: String },
     activeHoursEnd: { type: String },

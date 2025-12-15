@@ -112,19 +112,27 @@ export default function OrganizationForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('organization.timezone')}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isAdmin}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={!isAdmin}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t('organization.selectTimezone')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {/* Populate with timezones */}
-                  <SelectItem value="utc-3">{t('organization.saudiArabia')}</SelectItem>
-                  <SelectItem value="utc-4">{t('organization.dubai')}</SelectItem>
-                  <SelectItem value="utc-5">{t('organization.easternTime')}</SelectItem>
-                  <SelectItem value="utc-8">{t('organization.pacificTime')}</SelectItem>
-                  <SelectItem value="utc+1">{t('organization.uk')}</SelectItem>
+                  <SelectItem value="Asia/Riyadh">{t('organization.saudiArabia')}</SelectItem>
+                  <SelectItem value="Asia/Dubai">{t('organization.dubai')}</SelectItem>
+                  <SelectItem value="Asia/Kuwait">Kuwait</SelectItem>
+                  <SelectItem value="Asia/Qatar">Qatar</SelectItem>
+                  <SelectItem value="Asia/Bahrain">Bahrain</SelectItem>
+                  <SelectItem value="Asia/Muscat">Oman</SelectItem>
+                  <SelectItem value="Asia/Amman">Jordan</SelectItem>
+                  <SelectItem value="Asia/Beirut">Lebanon</SelectItem>
+                  <SelectItem value="Asia/Damascus">Syria</SelectItem>
+                  <SelectItem value="Asia/Baghdad">Iraq</SelectItem>
+                  <SelectItem value="Europe/London">{t('organization.uk')}</SelectItem>
+                  <SelectItem value="America/New_York">{t('organization.easternTime')}</SelectItem>
+                  <SelectItem value="America/Los_Angeles">{t('organization.pacificTime')}</SelectItem>
+                  <SelectItem value="Africa/Lagos">Lagos</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -137,7 +145,7 @@ export default function OrganizationForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('organization.language')}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!isAdmin}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={!isAdmin}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder={t('organization.selectLanguage')} />
@@ -161,9 +169,9 @@ export default function OrganizationForm() {
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>{t('organization.activeHoursStart')}</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -192,9 +200,9 @@ export default function OrganizationForm() {
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>{t('organization.activeHoursEnd')}</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>

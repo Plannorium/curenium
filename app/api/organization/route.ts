@@ -33,7 +33,7 @@ const organizationUpdateSchema = z.object({
   name: z.string().min(2).optional(),
   timezone: z.preprocess(
     (val) => (val === "" ? undefined : val),
-    z.enum(["utc-3", "utc-4", "utc-5", "utc-8", "utc+1"]).optional()
+    z.string().optional()
   ),
   language: z.preprocess(
     (val) => (val === "" ? undefined : val),
