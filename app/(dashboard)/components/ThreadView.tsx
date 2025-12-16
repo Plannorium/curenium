@@ -70,6 +70,22 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   const { language } = useLanguage();
   const [replyContent, setReplyContent] = useState("");
 
+  // Validate timezone
+  useEffect(() => {
+    const isValidTimezone = (tz: string): boolean => {
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: tz });
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    if (!isValidTimezone(userTimezone)) {
+      console.warn(`Invalid timezone: ${userTimezone}, falling back to UTC`);
+    }
+  }, [userTimezone]);
+
   const t = (key: string) => {
     const keys = key.split('.');
     let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];

@@ -122,6 +122,14 @@ const Chat: React.FC = () => {
   const activeRoom = searchParams?.get("room") || generalRoomName;
   const isGeneralRoom = activeRoom === generalRoomName;
 
+  const browserTimezone = useMemo(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'UTC';
+    }
+  }, []);
+
   const t = (key: string) => {
     const keys = key.split(".");
     let value: any =
@@ -2719,7 +2727,7 @@ const Chat: React.FC = () => {
           voiceUploadProgress={voiceUploadProgress}
           isCallActive={isCallActive}
           onMentionClick={setSelectedUser}
-          userTimezone={userSettings?.timezone || 'UTC'}
+          userTimezone={userSettings?.timezone || browserTimezone}
         />
 
         <div className="relative flex-1 flex min-h-0">
@@ -3274,7 +3282,7 @@ const Chat: React.FC = () => {
                         isCallActive={isCallActive}
                         users={users}
                         onMentionClick={setSelectedUser}
-                        userTimezone={userSettings?.timezone || 'UTC'}
+                        userTimezone={userSettings?.timezone || browserTimezone}
                       />
                     </div>
                   );
