@@ -122,6 +122,14 @@ const Chat: React.FC = () => {
   const activeRoom = searchParams?.get("room") || generalRoomName;
   const isGeneralRoom = activeRoom === generalRoomName;
 
+  const browserTimezone = useMemo(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'UTC';
+    }
+  }, []);
+
   const t = (key: string) => {
     const keys = key.split(".");
     let value: any =
@@ -1172,6 +1180,20 @@ const Chat: React.FC = () => {
   const [selectedAlert, setSelectedAlert] = useState<AlertMessage | null>(null);
   const [userSettings, setUserSettings] = useState<{ timezone: string } | null>(null);
   const [organization, setOrganization] = useState<{ activeHoursStart?: string; activeHoursEnd?: string; timezone: string } | null>(null);
+
+  const userTimezone = useMemo(() => {
+    const isValidTimezone = (tz: string): boolean => {
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: tz });
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const userTz = userSettings?.timezone || browserTimezone;
+    return isValidTimezone(userTz) ? userTz : 'UTC';
+  }, [userSettings, browserTimezone]);
   const {
     messages,
     isMuted,
@@ -2719,6 +2741,7 @@ const Chat: React.FC = () => {
           voiceUploadProgress={voiceUploadProgress}
           isCallActive={isCallActive}
           onMentionClick={setSelectedUser}
+          userTimezone={userTimezone}
         />
 
         <div className="relative flex-1 flex min-h-0">
@@ -3273,7 +3296,7 @@ const Chat: React.FC = () => {
                         isCallActive={isCallActive}
                         users={users}
                         onMentionClick={setSelectedUser}
-                        userTimezone={userSettings?.timezone || 'UTC'}
+                        userTimezone={userTimezone}
                       />
                     </div>
                   );
@@ -3665,6 +3688,7 @@ const Chat: React.FC = () => {
                   onJoinCall={handleJoinCall}
                   allUsers={users}
                   className="bg-background/70 dark:bg-gray-900/80 backdrop-blur-lg"
+                  userTimezone={userTimezone}
                 />
               </motion.div>
             )}
