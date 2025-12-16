@@ -41,6 +41,7 @@ interface ThreadViewProps {
   voiceUploadProgress?: Record<string, number>;
   isCallActive?: boolean;
   onMentionClick?: (user: User) => void;
+  userTimezone?: string;
 }
 
 export const ThreadView: React.FC<ThreadViewProps> = ({
@@ -64,6 +65,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   voiceUploadProgress,
   isCallActive,
   onMentionClick,
+  userTimezone,
 }) => {
   const { language } = useLanguage();
   const [replyContent, setReplyContent] = useState("");
@@ -148,6 +150,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                       isCallActive={isCallActive}
                       users={allUsers}
                       onMentionClick={onMentionClick}
+                      userTimezone={userTimezone}
                     />
                   </div>
                 );
@@ -180,6 +183,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                   users={allUsers}
                   onMentionClick={onMentionClick}
                   user={user}
+                  userTimezone={userTimezone}
                 />;
               })}
             </div>

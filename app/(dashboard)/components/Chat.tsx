@@ -2719,6 +2719,7 @@ const Chat: React.FC = () => {
           voiceUploadProgress={voiceUploadProgress}
           isCallActive={isCallActive}
           onMentionClick={setSelectedUser}
+          userTimezone={userSettings?.timezone || 'UTC'}
         />
 
         <div className="relative flex-1 flex min-h-0">
