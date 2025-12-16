@@ -3666,6 +3666,7 @@ const Chat: React.FC = () => {
                   onJoinCall={handleJoinCall}
                   allUsers={users}
                   className="bg-background/70 dark:bg-gray-900/80 backdrop-blur-lg"
+                  userTimezone={userSettings?.timezone || 'UTC'}
                 />
               </motion.div>
             )}

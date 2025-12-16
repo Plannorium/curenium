@@ -41,7 +41,7 @@ interface ThreadViewProps {
   voiceUploadProgress?: Record<string, number>;
   isCallActive?: boolean;
   onMentionClick?: (user: User) => void;
-  userTimezone?: string;
+  userTimezone: string;
 }
 
 export const ThreadView: React.FC<ThreadViewProps> = ({
