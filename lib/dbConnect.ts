@@ -58,11 +58,11 @@ async function dbConnect() {
     if (!cached.promise) {
         const opts = {
             bufferCommands: false,
-            maxPoolSize: 10, // Maintain up to 10 socket connections
-            serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-            socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-            family: 4, // Use IPv4, skip trying IPv6
-            maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
+            maxPoolSize: 10, 
+            serverSelectionTimeoutMS: 30000, 
+            socketTimeoutMS: 60000, 
+            family: 4, 
+            maxIdleTimeMS: 60000, 
         };
 
         cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
@@ -70,7 +70,7 @@ async function dbConnect() {
             return mongoose;
         }).catch((error) => {
             console.error('MongoDB connection error:', error);
-            cached.promise = null; // Reset promise on error
+            cached.promise = null; 
             throw error;
         });
     }

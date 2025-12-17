@@ -62,7 +62,7 @@ export const ManageChannelModal: React.FC<ManageChannelModalProps> = ({ isOpen, 
     if (!channel) return;
     setIsUpdating(userId);
     try {
-      const response = await fetch(`/api/channels/channels/${channel._id}/members`, {
+      const response = await fetch(`/api/channels/${channel._id}/members`, {
         method: action === 'add' ? 'POST' : 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),

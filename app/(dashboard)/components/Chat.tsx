@@ -97,12 +97,12 @@ const Chat: React.FC = () => {
   const searchParams = useSearchParams();
   const organizationId = session?.user?.organizationId;
 
-  const generateGeneralRoomId = (orgId: string) => {
-    if (!orgId) throw new Error('Organization ID is required');
-    // Create a simple hash of the organization ID for security
+  const generateRoomId = (seed: string) => {
+    if (!seed) throw new Error('Seed is required');
+    // Create a simple hash of the seed for uniqueness
     let hash = 0;
-    for (let i = 0; i < orgId.length; i++) {
-      const char = orgId.charCodeAt(i);
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
@@ -113,7 +113,7 @@ const Chat: React.FC = () => {
   const generalRoomName = useMemo(() => {
     if (!organizationId) return 'general';
     try {
-      return `gen-${generateGeneralRoomId(organizationId)}`;
+      return `general-${generateRoomId(organizationId)}`;
     } catch {
       console.error('Failed to generate general room ID');
       return 'general';
@@ -168,6 +168,7 @@ const Chat: React.FC = () => {
     id: string; // for compatibility if used elsewhere
     name: string;
     members: string[];
+    roomId: string;
   }
 
   interface DM {
@@ -2496,7 +2497,7 @@ const Chat: React.FC = () => {
   const currentChannel = useMemo(
     () =>
       channels.find(
-        (c) => c.name.trim().toLowerCase().replace(/\s+/g, "-") === activeRoom
+        (c) => c.roomId === activeRoom
       ),
     [channels, activeRoom]
   );
@@ -2808,13 +2809,12 @@ const Chat: React.FC = () => {
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase())
                     )
-
+          
                     .map((channel) => (
                       <div
                         key={channel._id}
                         className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
-                          activeRoom ===
-                          channel.name.trim().toLowerCase().replace(/\s+/g, "-")
+                          activeRoom === channel.roomId
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
@@ -2822,21 +2822,12 @@ const Chat: React.FC = () => {
                         <button
                           className="flex cursor-pointer items-center flex-1 text-left"
                           onClick={() =>
-                            handleRoomChange(
-                              channel.name
-                                .trim()
-                                .toLowerCase()
-                                .replace(/\s+/g, "-")
-                            )
+                            handleRoomChange(channel.roomId)
                           }
                         >
                           <span
                             className={`w-2.5 h-2.5 rounded-full ${language === "ar" ? "ml-3" : "mr-3"} shadow-sm ${
-                              activeRoom ===
-                              channel.name
-                                .trim()
-                                .toLowerCase()
-                                .replace(/\s+/g, "-")
+                              activeRoom === channel.roomId
                                 ? "bg-primary"
                                 : "bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity"
                             }`}
@@ -2855,7 +2846,7 @@ const Chat: React.FC = () => {
                       </div>
                     ))}
 
-                  <div className="px-3 cursor-pointer">
+                  <div className="px-3 cursor-pointer mt-5">
                     <button
                       onClick={() => setCreateChannelModalOpen(true)}
                       className="group flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 dark:border-gray-700/50 dark:hover:border-primary/50 dark:bg-gray-800/20 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5 cursor-pointer"
