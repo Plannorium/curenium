@@ -5,6 +5,7 @@ export interface IChannel extends Document {
   organizationId: mongoose.Schema.Types.ObjectId;
   members: mongoose.Schema.Types.ObjectId[];
   isDefault: boolean; // For channels like 'general'
+  roomId?: string;
 }
 
 const ChannelSchema: Schema<IChannel> = new Schema({
@@ -24,6 +25,12 @@ const ChannelSchema: Schema<IChannel> = new Schema({
   isDefault: {
     type: Boolean,
     default: false,
+  },
+  roomId: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
   }
 }, { timestamps: true });
 

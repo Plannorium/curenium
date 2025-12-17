@@ -3,6 +3,7 @@ import dbConnect from '@/lib/dbConnect';
 import Channel from '@/models/Channel';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
+import { generateRoomId } from '@/lib/roomIdGenerator';
 
 // Force Node.js runtime for database operations
 export const runtime = 'nodejs';
@@ -17,13 +18,29 @@ export async function GET(request: Request) {
         await dbConnect();
         let channels = await Channel.find({ organizationId: session.user.organizationId });
 
+        // Bulk update channels missing roomId
+        const channelsWithoutRoomId = channels.filter(c => !c.roomId);
+        if (channelsWithoutRoomId.length > 0) {
+            const bulkOps = channelsWithoutRoomId.map(channel => ({
+                updateOne: {
+                    filter: { _id: channel._id },
+                    update: { $set: { roomId: `${channel.name.toLowerCase().replace(/\s+/g, "-")}-${generateRoomId(session.user.organizationId + channel.name)}` } }
+                }
+            }));
+            await Channel.bulkWrite(bulkOps);
+            // Re-fetch to get updated data
+            channels = await Channel.find({ organizationId: session.user.organizationId });
+        }
+
         // Create default 'General' channel if no channels exist
         if (channels.length === 0) {
+            const roomId = `general-${generateRoomId(session.user.organizationId + 'General')}`;
             const defaultChannel = new Channel({
                 name: 'General',
                 organizationId: session.user.organizationId,
                 members: [session.user.id],
                 isDefault: true,
+                roomId,
             });
             await defaultChannel.save();
             channels = [defaultChannel];
@@ -50,10 +67,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Channel name is required' }, { status: 400 });
         }
 
+        // Check if channel name already exists in this organization
+        const existingChannel = await Channel.findOne({
+            name: name.trim(),
+            organizationId: session.user.organizationId
+        });
+
+        if (existingChannel) {
+            return NextResponse.json({ message: 'Channel name already exists in this organization' }, { status: 400 });
+        }
+
+        const roomId = `${name.trim().toLowerCase().replace(/\s+/g, "-")}-${generateRoomId(session.user.organizationId + name.trim())}`;
+
         const newChannel = new Channel({
-            name,
+            name: name.trim(),
             organizationId: session.user.organizationId,
             members: [session.user.id], // Creator is the first member
+            roomId,
         });
 
         await newChannel.save();
