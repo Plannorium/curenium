@@ -3,22 +3,10 @@ import dbConnect from '@/lib/dbConnect';
 import Channel from '@/models/Channel';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
+import { generateRoomId } from '@/lib/roomIdGenerator';
 
 // Force Node.js runtime for database operations
 export const runtime = 'nodejs';
-
-const generateRoomId = (seed: string) => {
-  if (!seed) throw new Error('Seed is required');
-  // Create a simple hash of the seed for uniqueness
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    const char = seed.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  // Convert to base36 and take first 8 characters for brevity
-  return Math.abs(hash).toString(36).substring(0, 8);
-};
 
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
@@ -30,12 +18,18 @@ export async function GET(request: Request) {
         await dbConnect();
         let channels = await Channel.find({ organizationId: session.user.organizationId });
 
-        // Ensure all channels have roomId
-        for (const channel of channels) {
-            if (!channel.roomId) {
-                channel.roomId = `${channel.name.toLowerCase().replace(/\s+/g, "-")}-${generateRoomId(session.user.organizationId + channel.name)}`;
-                await channel.save();
-            }
+        // Bulk update channels missing roomId
+        const channelsWithoutRoomId = channels.filter(c => !c.roomId);
+        if (channelsWithoutRoomId.length > 0) {
+            const bulkOps = channelsWithoutRoomId.map(channel => ({
+                updateOne: {
+                    filter: { _id: channel._id },
+                    update: { $set: { roomId: `${channel.name.toLowerCase().replace(/\s+/g, "-")}-${generateRoomId(session.user.organizationId + channel.name)}` } }
+                }
+            }));
+            await Channel.bulkWrite(bulkOps);
+            // Re-fetch to get updated data
+            channels = await Channel.find({ organizationId: session.user.organizationId });
         }
 
         // Create default 'General' channel if no channels exist

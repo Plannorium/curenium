@@ -14,14 +14,6 @@ export async function POST(
   { params }: { params: Promise<{ channelId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  
-  // Debug session
-  console.log('Session data:', {
-    exists: !!session,
-    userId: session?.user?.id,
-    organizationId: session?.user?.organizationId,
-    userEmail: session?.user?.email
-  });
 
   if (!session?.user?.organizationId || !session?.user?.id) {
     console.log('Authorization failed: Missing session data');
@@ -33,7 +25,10 @@ export async function POST(
     const { userId } = (await request.json()) as { userId: string };
     const { channelId } = await params;
 
-    console.log('Request params:', { channelId, userId, sessionUserId: session.user.id });
+    // Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
+    }
 
     // First, find the channel to check if it exists and user has access
     const channel = await Channel.findOne({
@@ -41,17 +36,7 @@ export async function POST(
       organizationId: session.user.organizationId
     });
 
-    console.log('Channel found:', {
-      exists: !!channel,
-      channelId: channel?._id,
-      channelName: channel?.name,
-      organizationId: channel?.organizationId,
-      members: channel?.members,
-      isDefault: channel?.isDefault
-    });
-
     if (!channel) {
-      console.log('Channel not found or not in same organization');
       return NextResponse.json({ message: 'Channel not found' }, { status: 404 });
     }
 
@@ -59,16 +44,8 @@ export async function POST(
     const userIsMember = channel.members.some(member => member.toString() === session.user.id);
     const isDefaultChannel = channel.isDefault;
 
-    console.log('Permission check:', {
-      userIsMember,
-      isDefaultChannel,
-      sessionUserId: session.user.id,
-      channelMembers: channel.members
-    });
-
     // Allow if user is a member OR if it's a default channel (like "General")
     if (!userIsMember && !isDefaultChannel) {
-      console.log('Access denied: User is not a member and channel is not default');
       return NextResponse.json({ message: 'Access denied' }, { status: 403 });
     }
 
@@ -81,18 +58,12 @@ export async function POST(
       { new: true }
     );
 
-    console.log('Channel updated:', {
-      success: !!updatedChannel,
-      newMembersCount: updatedChannel?.members.length
-    });
-
     if (!updatedChannel) {
       return NextResponse.json({ message: 'Failed to update channel' }, { status: 500 });
     }
 
     return NextResponse.json(updatedChannel);
   } catch (error) {
-    console.error('Error adding member to channel:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -103,16 +74,8 @@ export async function DELETE(
   { params }: { params: Promise<{ channelId: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  
-  // Debug session
-  console.log('DELETE - Session data:', {
-    exists: !!session,
-    userId: session?.user?.id,
-    organizationId: session?.user?.organizationId
-  });
 
   if (!session?.user?.organizationId || !session?.user?.id) {
-    console.log('DELETE - Authorization failed: Missing session data');
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -121,7 +84,10 @@ export async function DELETE(
     const { userId } = (await request.json()) as { userId: string };
     const { channelId } = await params;
 
-    console.log('DELETE - Request params:', { channelId, userId, sessionUserId: session.user.id });
+    // Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
+    }
 
     // First, find the channel to check if it exists and user has access
     const channel = await Channel.findOne({
@@ -129,16 +95,7 @@ export async function DELETE(
       organizationId: session.user.organizationId
     });
 
-    console.log('DELETE - Channel found:', {
-      exists: !!channel,
-      channelId: channel?._id,
-      channelName: channel?.name,
-      members: channel?.members,
-      isDefault: channel?.isDefault
-    });
-
     if (!channel) {
-      console.log('DELETE - Channel not found or not in same organization');
       return NextResponse.json({ message: 'Channel not found' }, { status: 404 });
     }
 
@@ -146,15 +103,8 @@ export async function DELETE(
     const userIsMember = channel.members.some(member => member.toString() === session.user.id);
     const isDefaultChannel = channel.isDefault;
 
-    console.log('DELETE - Permission check:', {
-      userIsMember,
-      isDefaultChannel,
-      sessionUserId: session.user.id
-    });
-
     // Allow if user is a member OR if it's a default channel
     if (!userIsMember && !isDefaultChannel) {
-      console.log('DELETE - Access denied: User is not a member and channel is not default');
       return NextResponse.json({ message: 'Access denied' }, { status: 403 });
     }
 
@@ -164,18 +114,12 @@ export async function DELETE(
       { new: true }
     );
 
-    console.log('DELETE - Channel updated:', {
-      success: !!updatedChannel,
-      newMembersCount: updatedChannel?.members.length
-    });
-
     if (!updatedChannel) {
       return NextResponse.json({ message: 'Failed to update channel' }, { status: 500 });
     }
 
     return NextResponse.json(updatedChannel);
   } catch (error) {
-    console.error('Error removing member from channel:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

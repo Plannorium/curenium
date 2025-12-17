@@ -86,6 +86,7 @@ import type { IUser } from "@/models/User";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { dashboardTranslations } from "@/lib/dashboard-translations";
 import { useTheme } from "@/components/ThemeProvider";
+import { generateRoomId } from "@/lib/roomIdGenerator";
 
 const Chat: React.FC = () => {
   const { data: session } = useSession();
@@ -97,18 +98,6 @@ const Chat: React.FC = () => {
   const searchParams = useSearchParams();
   const organizationId = session?.user?.organizationId;
 
-  const generateRoomId = (seed: string) => {
-    if (!seed) throw new Error('Seed is required');
-    // Create a simple hash of the seed for uniqueness
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      const char = seed.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    // Convert to base36 and take first 8 characters for brevity
-    return Math.abs(hash).toString(36).substring(0, 8);
-  };
 
   const generalRoomName = useMemo(() => {
     if (!organizationId) return 'general';

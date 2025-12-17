@@ -24,6 +24,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { dashboardTranslations } from "@/lib/dashboard-translations";
 import useSWR from 'swr';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { generateRoomId } from "@/lib/roomIdGenerator";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -67,17 +68,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
 
-  const generateRoomId = (seed: string) => {
-    // Create a simple hash of the seed for uniqueness
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      const char = seed.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    // Convert to base36 and take first 8 characters for brevity
-    return Math.abs(hash).toString(36).substring(0, 8);
-  };
 
   const sidebarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
