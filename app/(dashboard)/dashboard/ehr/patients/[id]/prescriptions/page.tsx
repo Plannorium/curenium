@@ -296,7 +296,14 @@ const HistoricalPrescriptionsPage = () => {
                                 <span className="text-muted-foreground ml-1">{t('prescriptionsPage.administrationsCount')}</span>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                Last: {new Date(prescription.administrations[prescription.administrations.length - 1].administeredAt).toLocaleDateString()}
+                                Last: {(() => {
+                                  // Sort administrations by date (most recent first) to get the actual last administration
+                                  const sortedAdmins = [...prescription.administrations].sort((a, b) =>
+                                    new Date(b.administeredAt).getTime() - new Date(a.administeredAt).getTime()
+                                  );
+                                  const lastAdmin = sortedAdmins[0];
+                                  return lastAdmin ? new Date(lastAdmin.administeredAt).toLocaleDateString() : 'Unknown';
+                                })()}
                               </div>
                             </>
                           ) : (
