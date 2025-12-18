@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Prescription } from "@/types/prescription";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ServerCrash, Pill, Calendar, Repeat, CheckCircle, PlusCircle, ArrowRight, User, Info, ChevronDown, ChevronUp, Activity, Stethoscope, Syringe, Clock, Package, FileText, AlertCircle } from "lucide-react";
+import { ServerCrash, Pill, Calendar, Repeat, PlusCircle, ArrowRight, User, ChevronDown, ChevronUp, Activity, Stethoscope, Syringe, Clock, Package, FileText, AlertCircle, Info } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { AddPrescriptionModal } from "./AddPrescriptionModal";
 import { AdministerPrescriptionModal } from './AdministerPrescriptionModal';
@@ -45,9 +45,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   const fetchPrescriptions = async () => {
     try {
       const res = await fetch(`/api/patients/${patientId}/prescriptions`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch prescriptions");
-      }
+      if (!res.ok) throw new Error("Failed to fetch prescriptions");
       const data: Prescription[] = await res.json();
       setPrescriptions(data);
     } catch (err: any) {
@@ -60,11 +58,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   const toggleTimeline = (prescriptionId: string) => {
     setExpandedTimelines(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(prescriptionId)) {
-        newSet.delete(prescriptionId);
-      } else {
-        newSet.add(prescriptionId);
-      }
+      newSet.has(prescriptionId) ? newSet.delete(prescriptionId) : newSet.add(prescriptionId);
       return newSet;
     });
   };
@@ -72,11 +66,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   const toggleDetails = (prescriptionId: string) => {
     setExpandedDetails(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(prescriptionId)) {
-        newSet.delete(prescriptionId);
-      } else {
-        newSet.add(prescriptionId);
-      }
+      newSet.has(prescriptionId) ? newSet.delete(prescriptionId) : newSet.add(prescriptionId);
       return newSet;
     });
   };
@@ -85,45 +75,39 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
     fetchPrescriptions();
   }, [patientId]);
 
-  const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string }) => (
-    <div className="flex items-start space-x-2 sm:space-x-3">
-      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0 mt-0.5 sm:mt-1" />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{label}</p>
-        <p className="text-sm sm:text-base font-semibold break-words">{value}</p>
-      </div>
-    </div>
-  );
-
   const getPrescriptionTypeInfo = (prescription: Prescription) => {
-    // Try to determine type from medication name pattern
     const medName = prescription.medication || '';
     if (medName.includes('treatment:') || medName.includes('therapy:')) {
-      return { type: t('prescriptionsDisplay.therapyTreatment'), icon: Syringe, color: 'text-purple-600' };
+      return { type: t('prescriptionsDisplay.therapyTreatment'), icon: Syringe, color: 'text-purple-600 dark:text-purple-400' };
     }
     if (medName.includes('procedure:')) {
-      return { type: t('prescriptionsDisplay.procedure'), icon: Stethoscope, color: 'text-blue-600' };
+      return { type: t('prescriptionsDisplay.procedure'), icon: Stethoscope, color: 'text-blue-600 dark:text-blue-400' };
     }
     if (medName.includes('device:') || medName.includes('Medical Device')) {
-      return { type: t('prescriptionsDisplay.medicalDevice'), icon: Activity, color: 'text-green-600' };
+      return { type: t('prescriptionsDisplay.medicalDevice'), icon: Activity, color: 'text-emerald-600 dark:text-emerald-400' };
     }
-    // Default to medication
     return { type: t('prescriptionsDisplay.medication'), icon: Pill, color: 'text-primary' };
   };
 
+  const sortedPrescriptions = useMemo(() => {
+    return prescriptions
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4);
+  }, [prescriptions]);
+
   if (loading) {
     return (
-      <Card className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-2xl border-gray-200/50 dark:border-gray-800/50 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center text-xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            <Pill className="mr-3 h-6 w-6 text-primary" />
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-lg">
+            <Pill className="mr-2 h-5 w-5 text-primary" />
             {t('prescriptionsDisplay.prescriptions')}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4" />
+        <CardContent className="space-y-3 pt-2">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-lg" />
+          ))}
         </CardContent>
       </Card>
     );
@@ -131,7 +115,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="bg-red-50/80 dark:bg-red-950/20 border-red-200/50 dark:border-red-800/50 backdrop-blur-lg">
+      <Alert variant="destructive" className="border-0 shadow-lg">
         <ServerCrash className="h-4 w-4" />
         <AlertTitle>{t('common.error')}</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
@@ -140,217 +124,241 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
   }
 
   return (
-    <Card className="bg-white/70 dark:bg-slate-950/60 backdrop-blur-lg rounded-2xl border-gray-200/50 dark:border-gray-800/50 shadow-xl">
-      <CardHeader className="flex flex-col space-y-4 pb-4 sm:pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <CardTitle className="flex items-center text-xl sm:text-2xl font-bold bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            <Pill className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            <span className="text-lg sm:text-2xl">{t('prescriptionsDisplay.prescriptions')}</span>
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="pb-3 border-b border-border/50">
+        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
+          <CardTitle className="flex items-center text-lg font-medium">
+            <Pill className="mr-2 h-5 w-5 text-primary" />
+            {t('prescriptionsDisplay.prescriptions')}
           </CardTitle>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+          <div className="flex flex-col xs:flex-row w-full xs:w-auto gap-2">
             {session?.user?.role === 'doctor' && (
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              size="sm"
-              className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white dark:text-black shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            >
-              <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline text-sm sm:text-base">{t('prescriptionsDisplay.addPrescription')}</span>
-            </Button>
-            )}
-            <Link href={`/dashboard/ehr/patients/${patientId}/prescriptions`} passHref>
               <Button
                 size="sm"
-                variant="outline"
-                className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+                onClick={() => setIsModalOpen(true)}
+                className="w-full xs:w-auto"
               >
-                <span className="hidden sm:inline text-sm sm:text-base">{t('prescriptionsDisplay.fullView')}</span>
-                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 sm:ml-2" />
+                <PlusCircle className="h-4 w-4 mr-1" />
+                <span className="hidden xs:inline">{t('prescriptionsDisplay.addPrescription')}</span>
+                <span className="xs:hidden">Add</span>
+              </Button>
+            )}
+            <Link href={`/dashboard/ehr/patients/${patientId}/prescriptions`} passHref>
+              <Button size="sm" variant="outline" className="w-full xs:w-auto">
+                <span className="hidden xs:inline">{t('prescriptionsDisplay.fullView')}</span>
+                <span className="xs:hidden">All</span>
+                <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        {prescriptions.length > 0 ? (
-          <div className="space-y-4">
-            {prescriptions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 1).map((prescription, index) => {
+
+      <CardContent className="pt-4">
+        {sortedPrescriptions.length > 0 ? (
+          <div className="space-y-3">
+            {sortedPrescriptions.map((prescription) => {
               const typeInfo = getPrescriptionTypeInfo(prescription);
               const TypeIcon = typeInfo.icon;
+              const detailsExpanded = expandedDetails.has(prescription._id);
+              const timelineExpanded = expandedTimelines.has(prescription._id);
 
               return (
-                <div key={prescription._id} className="bg-white/90 dark:bg-gray-900/60 border border-gray-200/50 dark:border-gray-800/50 rounded-xl p-3 sm:p-4 md:p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-                  {/* Header with Type and Status */}
-                  <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-start sm:justify-between mb-4">
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-800 flex-shrink-0`}>
-                        <TypeIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${typeInfo.color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
-                            {prescription.medication || 'Unnamed Prescription'}
-                          </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium self-start sm:self-auto flex-shrink-0 ${
-                            prescription.status === 'active'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-                              : prescription.status === 'completed'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
-                          }`}>
-                            {t(`prescriptionsDisplay.status.${prescription.status}`)}
-                          </span>
+                <div
+                  key={prescription._id}
+                  className="rounded-lg border bg-card shadow-sm overflow-hidden"
+                >
+                  {/* Main Compact Row - Always Visible */}
+                  <div className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="p-1.5 rounded-md bg-primary/10">
+                          <TypeIcon className={`h-4 w-4 ${typeInfo.color}`} />
                         </div>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{typeInfo.type}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-medium text-base truncate">
+                              {prescription.medication || 'Unnamed Prescription'}
+                            </h3>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              prescription.status === 'active'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : prescription.status === 'completed'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-300'
+                            }`}>
+                              {t(`prescriptionsDisplay.status.${prescription.status}`)}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            <span>{prescription.frequency}</span>
+                            {prescription.dose && prescription.dose !== 'Not specified' && prescription.dose !== 'N/A' && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <span>{prescription.dose}</span>
+                              </>
+                            )}
+                            <span className="text-gray-400">•</span>
+                            <span>{new Date(prescription.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2 flex-shrink-0">
-                      {(session?.user?.role === 'nurse') && !prescription.dispensed && (
+
+                      <div className="flex items-center gap-1">
+                        {(prescription.status === 'active') && (session?.user?.role === 'nurse' || session?.user?.role === 'doctor' || session?.user?.role === 'admin') && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedPrescription(prescription);
+                              setIsAdministerModalOpen(true);
+                            }}
+                            className="h-8 px-3 text-xs"
+                          >
+                            <Syringe className="h-3.5 w-3.5 mr-1" />
+                            <span className="hidden xs:inline">Administer</span>
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          onClick={() => {
-                            setSelectedPrescription(prescription);
-                            setIsAdministerModalOpen(true);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto cursor-pointer"
+                          variant="ghost"
+                          onClick={() => toggleDetails(prescription._id)}
+                          className="h-8 w-8 p-0"
                         >
-                          <Syringe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">{t('prescriptionsDisplay.administer')}</span>
+                          {detailsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
-                      )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Details Toggle Button */}
-                  <div className="mb-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleDetails(prescription._id)}
-                      className="w-full flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors p-2 rounded-lg"
-                    >
-                      {expandedDetails.has(prescription._id) ? (
-                        <>
-                          <ChevronUp className="h-4 w-4 mr-2" />
-                          <span className="text-sm">{t('prescriptionsDisplay.hideDetails')}</span>
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="h-4 w-4 mr-2" />
-                          <span className="text-sm">{t('prescriptionsDisplay.showDetails')}</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Collapsible Details */}
-                  {expandedDetails.has(prescription._id) && (
-                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-                      {/* Professional Details Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                        {prescription.dose && prescription.dose !== 'Not specified' && prescription.dose !== 'N/A' && (
-                          <InfoItem icon={Package} label={t('prescriptionsDisplay.strengthDose')} value={prescription.dose} />
-                        )}
-                        <InfoItem icon={Repeat} label={t('prescriptionsDisplay.frequency')} value={prescription.frequency} />
+                  {/* Expanded Details Section */}
+                  {detailsExpanded && (
+                    <div className="border-t px-3 pb-3 pt-2 space-y-3 text-sm">
+                      {/* Quick Info Grid */}
+                      <div className="grid grid-cols-2 xs:grid-cols-3 gap-3">
                         {prescription.route && prescription.route !== 'As applicable' && (
-                          <InfoItem icon={ArrowRight} label={t('prescriptionsDisplay.route')} value={prescription.route} />
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t('prescriptionsDisplay.route')}</p>
+                              <p className="font-medium">{prescription.route}</p>
+                            </div>
+                          </div>
                         )}
                         {prescription.durationDays && (
-                          <InfoItem icon={Clock} label={t('prescriptionsDisplay.duration')} value={`${prescription.durationDays} ${t('prescriptionsDisplay.days')}`} />
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t('prescriptionsDisplay.duration')}</p>
+                              <p className="font-medium">{prescription.durationDays} {t('prescriptionsDisplay.days')}</p>
+                            </div>
+                          </div>
                         )}
-                        {prescription.refills && (
-                          <InfoItem icon={Repeat} label={t('prescriptionsDisplay.refills')} value={prescription.refills.toString()} />
+                        {prescription.refills !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t('prescriptionsDisplay.refills')}</p>
+                              <p className="font-medium">{prescription.refills}</p>
+                            </div>
+                          </div>
                         )}
-                        <InfoItem icon={Calendar} label={t('prescriptionsDisplay.prescribed')} value={new Date(prescription.createdAt).toLocaleDateString()} />
                         {prescription.startDate && (
-                          <InfoItem icon={Calendar} label={t('prescriptionsDisplay.startDate')} value={new Date(prescription.startDate).toLocaleDateString()} />
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t('prescriptionsDisplay.startDate')}</p>
+                              <p className="font-medium">{new Date(prescription.startDate).toLocaleDateString()}</p>
+                            </div>
+                          </div>
                         )}
                         {prescription.endDate && (
-                          <InfoItem icon={Calendar} label={t('prescriptionsDisplay.endDate')} value={new Date(prescription.endDate).toLocaleDateString()} />
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t('prescriptionsDisplay.endDate')}</p>
+                              <p className="font-medium">{new Date(prescription.endDate).toLocaleDateString()}</p>
+                            </div>
+                          </div>
                         )}
                       </div>
 
-                      {/* Instructions and Reason */}
-                      <div className="space-y-3">
+                      {/* Text Blocks */}
+                      <div className="space-y-2">
                         {prescription.instructions && (
-                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
-                            <h4 className="font-semibold flex items-center text-blue-800 dark:text-blue-300 mb-2 text-sm sm:text-base">
-                              <FileText className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <div className="bg-blue-50/70 dark:bg-blue-950/30 rounded-md p-2.5">
+                            <p className="text-xs font-medium text-blue-800 dark:text-blue-300 flex items-center gap-1.5 mb-1">
+                              <FileText className="h-3.5 w-3.5" />
                               {t('prescriptionsDisplay.instructions')}
-                            </h4>
-                            <p className="text-blue-700 dark:text-blue-200 text-xs sm:text-sm leading-relaxed">{prescription.instructions}</p>
+                            </p>
+                            <p className="text-xs text-blue-700 dark:text-blue-200">{prescription.instructions}</p>
                           </div>
                         )}
-
                         {prescription.reasonForPrescription && (
-                          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4">
-                            <h4 className="font-semibold flex items-center text-amber-800 dark:text-amber-300 mb-2 text-sm sm:text-base">
-                              <AlertCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <div className="bg-amber-50/70 dark:bg-amber-950/30 rounded-md p-2.5">
+                            <p className="text-xs font-medium text-amber-800 dark:text-amber-300 flex items-center gap-1.5 mb-1">
+                              <AlertCircle className="h-3.5 w-3.5" />
                               {t('prescriptionsDisplay.reasonForPrescription')}
-                            </h4>
-                            <p className="text-amber-700 dark:text-amber-200 text-xs sm:text-sm leading-relaxed">{prescription.reasonForPrescription}</p>
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-200">{prescription.reasonForPrescription}</p>
                           </div>
                         )}
-
                         {prescription.notes && (
-                          <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
-                            <h4 className="font-semibold flex items-center text-gray-800 dark:text-gray-300 mb-2 text-sm sm:text-base">
-                              <Info className="mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <div className="bg-muted/50 rounded-md p-2.5">
+                            <p className="text-xs font-medium flex items-center gap-1.5 mb-1">
+                              <Info className="h-3.5 w-3.5" />
                               {t('prescriptionsDisplay.additionalNotes')}
-                            </h4>
-                            <p className="text-gray-700 dark:text-gray-200 text-xs sm:text-sm leading-relaxed">{prescription.notes}</p>
+                            </p>
+                            <p className="text-xs">{prescription.notes}</p>
                           </div>
                         )}
                       </div>
+
+                      {/* Timeline Trigger */}
+                      {prescription.administrations && prescription.administrations.length > 0 && (
+                        <button
+                          onClick={() => toggleTimeline(prescription._id)}
+                          className="w-full flex items-center justify-between py-2 px-3 -mx-3 hover:bg-accent/50 rounded-md transition-colors text-sm"
+                        >
+                          <span className="flex items-center gap-2 font-medium">
+                            <User className="h-4 w-4 text-primary" />
+                            {t('prescriptionsDisplay.administrationTimeline')} ({prescription.administrations.length})
+                          </span>
+                          {timelineExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      )}
                     </div>
                   )}
 
-                  {/* Administration Timeline */}
-                  {prescription.administrations && prescription.administrations.length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <button
-                        onClick={() => toggleTimeline(prescription._id)}
-                        className="w-full flex items-center justify-between text-base sm:text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200 hover:text-primary transition-colors p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <div className="flex items-center">
-                          <User className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 text-primary"/>
-                          <span className="text-sm sm:text-base">{t('prescriptionsDisplay.administrationTimeline')}</span>
-                        </div>
-                        {expandedTimelines.has(prescription._id) ? (
-                          <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                        )}
-                      </button>
-                      {expandedTimelines.has(prescription._id) && (
-                        <div className="relative pl-6 sm:pl-8 space-y-6 sm:space-y-8 before:absolute before:inset-0 before:ml-3 sm:before:ml-5 before:h-full before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700">
-                          {prescription.administrations.map((admin, index) => (
-                            <div key={admin._id || index} className="relative">
-                              <div className="absolute -left-2 sm:-left-1.5 top-1.5 h-3 w-3 rounded-full bg-primary"></div>
-                              <div className="ml-4 sm:ml-6">
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
-                                  <span className={`font-semibold px-3 py-1 rounded-full text-xs self-start sm:self-auto ${
-                                    admin.status === 'administered'
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-                                      : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
-                                  }`}>
-                                    {t(`prescriptionsDisplay.administrationStatus.${admin.status}`)}
-                                  </span>
-                                  <div className="text-left sm:text-right text-xs text-gray-500 dark:text-gray-400">
-                                    <div>{new Date(admin.administeredAt).toLocaleDateString()}</div>
-                                    <div className="font-semibold">{new Date(admin.administeredAt).toLocaleTimeString()}</div>
-                                  </div>
-                                </div>
-                                <p className="mt-2 text-gray-700 dark:text-gray-300 text-sm">
-                                  {t('prescriptionsDisplay.administeredBy')}: <span className="font-medium text-gray-900 dark:text-gray-100">{(admin.administeredBy as any)?.fullName || 'N/A'}</span>
-                                </p>
-                                {admin.doseAdministered && <p className="text-sm text-gray-600 dark:text-gray-400">{t('prescriptionsDisplay.dose')}: {admin.doseAdministered}</p>}
-                                {admin.notes && <p className="text-sm text-gray-600 dark:text-gray-400">{t('prescriptionsDisplay.notes')}: {admin.notes}</p>}
-                              </div>
+                  {/* Timeline Expanded Content */}
+                  {timelineExpanded && prescription.administrations && (
+                    <div className="border-t bg-muted/30 px-3 py-2">
+                      <div className="space-y-2">
+                        {prescription.administrations.slice(0, 4).map((admin, i) => (
+                          <div key={admin._id || i} className="flex items-center justify-between text-xs py-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                admin.status === 'administered'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30'
+                              }`}>
+                                {t(`prescriptionsDisplay.administrationStatus.${admin.status}`)}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {(admin.administeredBy as any)?.fullName || 'N/A'}
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            <div className="text-right text-muted-foreground">
+                              <div>{new Date(admin.administeredAt).toLocaleDateString()}</div>
+                              <div className="text-xs">{new Date(admin.administeredAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {prescription.administrations.length > 4 && (
+                          <p className="text-center text-xs text-muted-foreground pt-1">
+                            +{prescription.administrations.length - 4} more
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -358,27 +366,22 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
             })}
           </div>
         ) : (
-          <div className="text-center py-6 sm:py-8 md:py-12 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 px-4">
-            <Pill className="mx-auto h-6 w-6 sm:h-8 sm:w-8 md:h-12 md:w-12 text-gray-400 dark:text-gray-500 mb-2 sm:mb-3 md:mb-4" />
-            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              {t('prescriptionsDisplay.noPrescriptionsYet')}
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-3 sm:mb-4 md:mb-6 max-w-md mx-auto text-xs sm:text-sm md:text-base leading-relaxed">
+          <div className="text-center py-10 bg-muted/30 rounded-lg">
+            <Pill className="mx-auto h-9 w-9 text-muted-foreground mb-3" />
+            <h3 className="font-medium mb-1">{t('prescriptionsDisplay.noPrescriptionsYet')}</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
               {t('prescriptionsDisplay.noPrescriptionsDescription')}
             </p>
             {session?.user?.role === 'doctor' && (
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              size="sm"
-              className="bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
-            >
-              <PlusCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-sm sm:text-base">{t('prescriptionsDisplay.addFirstPrescription')}</span>
-            </Button>
+              <Button size="sm" onClick={() => setIsModalOpen(true)}>
+                <PlusCircle className="mr-1.5 h-4 w-4" />
+                {t('prescriptionsDisplay.addFirstPrescription')}
+              </Button>
             )}
           </div>
         )}
       </CardContent>
+
       <AddPrescriptionModal
         patientId={patientId}
         isOpen={isModalOpen}
@@ -391,6 +394,7 @@ const PrescriptionsDisplay = ({ patientId }: PrescriptionsDisplayProps) => {
           onClose={() => setIsAdministerModalOpen(false)}
           prescription={selectedPrescription}
           onAdministrationAdded={fetchPrescriptions}
+          enableBarcodeValidation={false}
         />
       )}
     </Card>

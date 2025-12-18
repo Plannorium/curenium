@@ -6,6 +6,7 @@ export interface IAdministrationRecord extends Document {
   doseAdministered?: string;
   notes?: string;
   status: 'administered' | 'missed' | 'patient_refused' | 'not_available';
+  reasonNotGiven?: string;
 }
 
 const AdministrationRecordSchema: Schema = new Schema({

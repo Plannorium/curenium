@@ -1,10 +1,11 @@
 "use client";
 
 import { Patient } from "@/types/patient" ;
- import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" ;
- import { Badge } from "@/components/ui/badge" ;
- import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" ;
- import { Cake, VenetianMask, Mail, Phone, FileText, Pill, Calendar, Activity, ClipboardCheck, ShieldCheck, Home, UserSquare, Share2, Stethoscope, Beaker, ArrowUp, ArrowUpRight, ExternalLink, Users, Building, UserCheck } from 'lucide-react';
+  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" ;
+  import { Badge } from "@/components/ui/badge" ;
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" ;
+  import { Cake, VenetianMask, Mail, Phone, FileText, Pill, Calendar, Activity, ClipboardCheck, ShieldCheck, Home, UserSquare, Share2, Stethoscope, Beaker, ArrowUp, ArrowUpRight, ExternalLink, Users, Building, UserCheck, Printer, Download } from 'lucide-react';
+  import Barcode from 'react-barcode';
 import DetailItem from "@/app/(dashboard)/components/patients/DetailItem";
 import EmptyTabContent from "@/app/(dashboard)/components/patients/EmptyTabContent";
 import AppointmentsDisplay from "./AppointmentsDisplay";
@@ -14,7 +15,7 @@ import { SharePatientModal } from "./SharePatientModal";
   import { Button } from "@/components/ui/button";
   import { toast } from "sonner";
   import { motion } from "framer-motion" ;
-  import { useState, useEffect } from "react";
+  import { useState, useEffect, useRef } from "react";
   import { useSession } from "next-auth/react";
   import ClinicalNotesDisplay from "./ClinicalNotesDisplay";
   import Link from "next/link";
@@ -25,6 +26,7 @@ import { SharePatientModal } from "./SharePatientModal";
   import type { IUser as User } from "@/models/User";
   import { useLanguage } from '@/contexts/LanguageContext';
   import { dashboardTranslations } from '@/lib/dashboard-translations';
+  import { toPng } from 'html-to-image';
  
  interface PatientDetailProps  { 
    patient: Patient ; 
@@ -71,6 +73,7 @@ import { SharePatientModal } from "./SharePatientModal";
    const [doctors, setDoctors] = useState<User[]>([]);
    const [isSavingAssignment, setIsSavingAssignment] = useState(false);
    const { data: session } = useSession();
+   const barcodeRef = useRef<HTMLDivElement>(null);
 
    // Fetch nurses and doctors
    useEffect(() => {
@@ -160,7 +163,27 @@ import { SharePatientModal } from "./SharePatientModal";
      }
    };
 
-   return  ( 
+   const handleDownloadBarcode = async () => {
+     if (!barcodeRef.current) return;
+
+     try {
+       const dataUrl = await toPng(barcodeRef.current, {
+         backgroundColor: '#ffffff',
+         quality: 1,
+         pixelRatio: 2,
+       });
+
+       const link = document.createElement('a');
+       link.download = `patient-barcode-${patient.mrn || patient._id}.png`;
+       link.href = dataUrl;
+       link.click();
+     } catch (error) {
+       console.error('Failed to download barcode:', error);
+       toast.error('Failed to download barcode');
+     }
+   };
+
+   return  (
      <motion.div 
        initial={{ opacity: 0, y: 10  }} 
        animate={{ opacity: 1, y: 0  }} 
@@ -239,8 +262,8 @@ import { SharePatientModal } from "./SharePatientModal";
            </TabsTrigger>
            </TabsList>
 
-           {/* Tab Contents */} 
-           <TabsContent value="overview" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl" > 
+           {/* Tab Contents */}
+           <TabsContent value="overview" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl" >
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 sm:gap-x-12 gap-y-6 sm:gap-y-8 text-sm" >
                <DetailItem icon={Cake} label={t('patientDetail.dateOfBirth')} value={patient.dob ? `${new Date(patient.dob).toLocaleDateString()} (${calculateAge(patient.dob)} years old )` : 'N/A'} />
                <DetailItem icon={VenetianMask} label={t('patientDetail.gender')} value={patient.gender || 'N/A'}  />
@@ -249,6 +272,59 @@ import { SharePatientModal } from "./SharePatientModal";
                 <DetailItem icon={Home} label={t('patientDetail.address')} value={patient.address ? `${patient.address.street}, ${patient.address.city}, ${patient.address.state} ${patient.address.zip}`: 'N/A'} />
                 <DetailItem icon={UserSquare} label={t('patientDetail.emergencyContact')} value={patient.emergencyContact ? `${patient.emergencyContact.name} - ${patient.emergencyContact.phone}`: 'N/A'} />
              </div >
+
+             {/* Patient Barcode */}
+             <Card className="mt-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
+               <CardHeader>
+                 <CardTitle className="flex items-center justify-between text-lg">
+                   <div className="flex items-center">
+                     <Printer className="h-5 w-5 mr-2 text-blue-500" />
+                     Patient Barcode
+                   </div>
+                   <div className="flex space-x-2">
+                     <Button
+                       onClick={handleDownloadBarcode}
+                       variant="outline"
+                       size="sm"
+                       className="print:hidden"
+                     >
+                       <Download className="h-4 w-4 mr-2" />
+                       Download
+                     </Button>
+                     <Button
+                       onClick={() => window.print()}
+                       variant="outline"
+                       size="sm"
+                       className="print:hidden"
+                     >
+                       <Printer className="h-4 w-4 mr-2" />
+                       Print
+                     </Button>
+                   </div>
+                 </CardTitle>
+               </CardHeader>
+               <CardContent className="flex flex-col items-center space-y-4">
+                 <div ref={barcodeRef} className="text-center" data-barcode>
+                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Scan this barcode for patient identification</p>
+                   <div className="bg-white p-4 rounded-lg border print:border-0 print:bg-transparent">
+                     {patient.mrn ? (
+                       <Barcode value={patient.mrn} width={2} height={60} fontSize={12} />
+                     ) : (
+                       <p className="text-gray-500">MRN not available</p>
+                     )}
+                   </div>
+                   <p className="text-xs text-gray-500 mt-2 print:text-black">MRN: {patient.mrn || 'N/A'}</p>
+                 </div>
+               </CardContent>
+               <style jsx>{`
+                 @media print {
+                   .print\\:hidden { display: none !important; }
+                   .print\\:border-0 { border: 0 !important; }
+                   .print\\:bg-transparent { background: transparent !important; }
+                   .print\\:text-black { color: black !important; }
+                 }
+               `}</style>
+             </Card>
            </TabsContent >
 
            <TabsContent value="appointments" >
