@@ -10,6 +10,7 @@ interface AdministerRequestBody {
   doseAdministered: string;
   notes: string;
   status: 'administered' | 'missed' | 'patient_refused' | 'not_available';
+  reasonNotGiven?: string;
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     await connectDB();
     const body: AdministerRequestBody = await req.json();
-    const { administeredAt, doseAdministered, notes, status } = body;
+    const { administeredAt, doseAdministered, notes, status, reasonNotGiven } = body;
 
     const prescription = await Prescription.findById(id);
     if (!prescription) {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       doseAdministered,
       notes,
       status,
+      reasonNotGiven,
     };
 
     if (!prescription.administrations) {
