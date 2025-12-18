@@ -165,7 +165,7 @@ const HistoricalPrescriptionsPage = () => {
             <Link href={`/dashboard/ehr/patients/${patientId}`}>
               <Button variant="ghost" size="sm" className="hover:bg-accent/50 cursor-pointer">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">{t('prescriptionsPage.backToPatient')}</span>
+                {/* <span className="hidden sm:inline">{t('prescriptionsPage.backToPatient')}</span> */}
                 <span className="sm:hidden">{t('prescriptionsPage.back')}</span>
               </Button>
             </Link>

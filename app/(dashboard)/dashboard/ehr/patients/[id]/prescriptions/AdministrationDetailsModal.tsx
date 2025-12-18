@@ -36,7 +36,7 @@ export const AdministrationDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0 outline-none">
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-lg font-medium">
             <FileText className="h-5 w-5 text-primary" />
