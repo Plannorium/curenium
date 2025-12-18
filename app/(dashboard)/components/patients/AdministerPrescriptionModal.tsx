@@ -47,6 +47,10 @@ export const AdministerPrescriptionModal = ({ isOpen, onClose, prescription, onA
           // For now, accept any scan as medication verification
           toast.success('Medication verified successfully!');
           setScannedCode(scannedData);
+        } else {
+          // Generic scan mode (no validation flow)
+          setScannedCode(scannedData);
+          toast.success('Barcode scanned successfully!');
         }
         setIsScanning(false);
         scannerRef.current?.stop();
@@ -192,21 +196,25 @@ export const AdministerPrescriptionModal = ({ isOpen, onClose, prescription, onA
               </SelectContent>
             </Select>
           )}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Scanned Code"
-              value={scannedCode}
-              onChange={(e) => setScannedCode(e.target.value)}
-              className="flex-1"
-            />
-            <Button onClick={() => setIsScanning(!isScanning)} variant="outline">
-              {isScanning ? 'Stop Scan' : 'Scan Barcode'}
-            </Button>
-          </div>
-          {isScanning && (
-            <div className="border rounded p-2">
-              <video ref={videoRef} style={{ width: '100%', maxHeight: '200px' }} />
-            </div>
+          {!enableBarcodeValidation && (
+            <>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Scanned Code"
+                  value={scannedCode}
+                  onChange={(e) => setScannedCode(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={() => setIsScanning(!isScanning)} variant="outline">
+                  {isScanning ? 'Stop Scan' : 'Scan Barcode'}
+                </Button>
+              </div>
+              {isScanning && (
+                <div className="border rounded p-2">
+                  <video ref={videoRef} style={{ width: '100%', maxHeight: '200px' }} />
+                </div>
+              )}
+            </>
           )}
           <Input 
             placeholder={`Dose Administered (e.g., ${prescription.dose})`}
