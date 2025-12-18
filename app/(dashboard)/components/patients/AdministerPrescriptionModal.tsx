@@ -92,6 +92,12 @@ export const AdministerPrescriptionModal = ({ isOpen, onClose, prescription, onA
   }, [isOpen, prescription._id]);
 
   const handleSubmit = async () => {
+    // Validate barcode scans if validation is enabled
+    if (enableBarcodeValidation && (!patientScanned || !medScanned)) {
+      toast.error('Please complete both patient and medication scans.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/prescriptions/${prescription._id}/administer`, {
