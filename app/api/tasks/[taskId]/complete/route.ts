@@ -10,7 +10,7 @@ import { canCompleteTask } from "@/lib/task-permissions";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +18,7 @@ export async function PATCH(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { taskId } = await params;
+  const { taskId } = await params;
     const body = await req.json() as { completedAt?: string; notes?: string };
     const { completedAt, notes } = body;
 
