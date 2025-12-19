@@ -66,6 +66,7 @@ export async function PUT(
       department?: string;
       description?: string;
       totalBeds?: number;
+      totalRooms?: number;
       wardType?: 'general' | 'icu' | 'emergency' | 'maternity' | 'pediatric' | 'surgical' | 'medical';
       floor?: string;
       building?: string;
@@ -116,12 +117,20 @@ export async function PUT(
       }
     }
 
+    // Validation for total rooms
+    if (body.totalRooms !== undefined) {
+      if (body.totalRooms < 1 || body.totalRooms > 50) {
+        return NextResponse.json({ message: 'Total rooms must be between 1 and 50' }, { status: 400 });
+      }
+    }
+
     // Update fields
     if (body.name !== undefined) ward.name = body.name.trim();
     if (body.wardNumber !== undefined) ward.wardNumber = body.wardNumber.trim();
     if (body.department !== undefined) ward.department = body.department as any;
     if (body.description !== undefined) ward.description = body.description?.trim() || undefined;
     if (body.totalBeds !== undefined) ward.totalBeds = body.totalBeds;
+    if (body.totalRooms !== undefined) ward.totalRooms = body.totalRooms;
     if (body.wardType !== undefined) ward.wardType = body.wardType;
     if (body.floor !== undefined) ward.floor = body.floor?.trim() || undefined;
     if (body.building !== undefined) ward.building = body.building?.trim() || undefined;

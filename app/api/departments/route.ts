@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       isActive: true
     })
     .populate('headOfDepartment', 'fullName email')
+    .populate('assignedStaff._id', 'fullName email role')
     .sort({ name: 1 });
 
     return NextResponse.json(departments, { status: 200 });

@@ -7,7 +7,7 @@ export interface INotification extends Document {
   type: 'new_message' | 'system_alert' | 'new_patient' | 'share.request' | 'document_upload';
   read: boolean;
   link?: string;
-  relatedId?: mongoose.Schema.Types.ObjectId;
+  relatedId?: string;
   sender?: {
     _id: mongoose.Schema.Types.ObjectId;
     fullName: string;
@@ -26,7 +26,7 @@ const NotificationSchema = new Schema<INotification>({
     required: true,
   },
   read: { type: Boolean, default: false },
-  relatedId: { type: Schema.Types.ObjectId },
+  relatedId: { type: Schema.Types.Mixed },
   link: { type: String },
   sender: {
     _id: { type: Schema.Types.ObjectId, ref: 'User' },

@@ -45,8 +45,12 @@ export async function PATCH(request: Request) {
         { read: true }
       );
     } else if (read !== undefined && notificationId) {
+      // If notificationId is a valid ObjectId, find by _id, else find by relatedId
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(notificationId);
+      const query = isObjectId ? { _id: notificationId } : { relatedId: notificationId };
+
       await Notification.findOneAndUpdate(
-        { _id: notificationId, userId: session.user.id },
+        { ...query, userId: session.user.id },
         { read }
       );
     }

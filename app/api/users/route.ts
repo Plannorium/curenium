@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const role = searchParams.get('role');
+  const roles = searchParams.getAll('role'); // Get all role parameters
+  const department = searchParams.get('department');
+  const ward = searchParams.get('ward');
 
   await dbConnect();
 
@@ -22,8 +25,20 @@ export async function GET(req: NextRequest) {
       organizationId: session.user.organizationId,
     };
 
-    if (role) {
+    if (roles.length > 0) {
+      query.role = { $in: roles };
+    } else if (role) {
       query.role = role;
+    }
+
+    // Add department filtering if specified
+    if (department) {
+      query.department = department;
+    }
+
+    // Add ward filtering if specified
+    if (ward) {
+      query.ward = ward;
     }
 
     const users = await User.find(query).select('fullName image id _id role online');

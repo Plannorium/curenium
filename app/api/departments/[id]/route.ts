@@ -24,6 +24,7 @@ export async function GET(
       organization: session.user.organizationId
     })
     .populate('headOfDepartment', 'fullName email')
+    .populate('assignedStaff._id', 'fullName email role')
     .populate('createdBy', 'fullName');
 
     if (!department) {
@@ -125,6 +126,7 @@ export async function PUT(
 
     const updatedDepartment = await Department.findById(department._id)
       .populate('headOfDepartment', 'fullName email')
+      .populate('assignedStaff._id', 'fullName email role')
       .populate('createdBy', 'fullName');
 
     return NextResponse.json(updatedDepartment, { status: 200 });

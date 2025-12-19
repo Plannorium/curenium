@@ -124,6 +124,8 @@ export const useChat = (room: string) => {
       const channelName = `private-room-${room}`;
       const channel = pusher.subscribe(channelName);
       pusherChannelRef.current = channel;
+
+      // Bind to message events
       channel.bind('message', (data: any) => {
         try {
           // Basic validation
@@ -136,6 +138,42 @@ export const useChat = (room: string) => {
           console.error('Error handling pusher message:', err);
         }
       });
+
+      // Bind to task delegation events
+      channel.bind('task_delegated', (data: any) => {
+        try {
+          console.log('Pusher: Task delegated event received', data);
+          // Handle task delegation notifications
+          if (data.taskId && data.taskTitle) {
+            // You could trigger a toast or update UI here
+          }
+        } catch (err) {
+          console.error('Error handling pusher task_delegated event:', err);
+        }
+      });
+
+      // Bind to alert notifications
+      channel.bind('alert_notification', (data: any) => {
+        try {
+          if (data && data.message) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === data._id)) return prev;
+              return [...prev, {
+                id: data._id || crypto.randomUUID(),
+                type: 'alert_notification',
+                alert: data,
+                text: data.message,
+                userId: data.createdBy?._id || 'system',
+                fullName: data.createdBy?.fullName || 'System',
+                createdAt: data.createdAt || new Date().toISOString(),
+              }];
+            });
+          }
+        } catch (err) {
+          console.error('Error handling pusher alert notification:', err);
+        }
+      });
+
       console.log('Pusher fallback initialized for room', room);
     } catch (err) {
       console.error('Failed to init pusher fallback', err);
@@ -585,7 +623,13 @@ export const useChat = (room: string) => {
 
             retryTimeout.current = setTimeout(doConnect, delay);
           } else {
-            console.error("Max retry attempts reached. Giving up.");
+            console.error("Max retry attempts reached. Falling back to Pusher.");
+            // Initialize Pusher fallback when WebSocket fails
+            try {
+              initPusherFallback();
+            } catch (pusherError) {
+              console.error('Failed to initialize Pusher fallback:', pusherError);
+            }
           }
         };
       } catch (error) {

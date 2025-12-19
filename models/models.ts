@@ -34,3 +34,4 @@ export { default as CarePlanTemplate, type ICarePlanTemplate } from './CarePlanT
 export { default as NursingNote, type INursingNote } from './NursingNote';
 export { default as DischargeSummary, type IDischargeSummary } from './DischargeSummary';
 export { default as ConsentForm, type IConsentForm } from './ConsentForm';
+export { default as Task, type ITask } from './Task';
