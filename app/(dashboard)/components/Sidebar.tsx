@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 const Image = dynamic(() => import("next/image"), { ssr: false });
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   HomeIcon,
   MessageSquareIcon,
@@ -15,6 +15,9 @@ import {
   XIcon,
   Briefcase,
   PencilIcon,
+  SearchIcon,
+  Users,
+  Plus,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRole } from "@/components/auth/RoleProvider";
@@ -25,6 +28,9 @@ import { dashboardTranslations } from "@/lib/dashboard-translations";
 import useSWR from 'swr';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { generateRoomId } from "@/lib/roomIdGenerator";
+import type { IUser } from "@/models/User";
+import { CreateChannelModal } from "./CreateChannelModal";
+import { ManageChannelModal } from "./ManageChannelModal";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -41,7 +47,9 @@ interface NavItem {
 
 interface Channel {
   _id: string;
+  id: string; // for compatibility if used elsewhere
   name: string;
+  members: string[];
   roomId: string;
 }
 
@@ -50,6 +58,17 @@ interface User {
   fullName: string;
   image?: string;
   online?: boolean;
+}
+
+interface DM {
+  _id: string;
+  participants: IUser[];
+  room: string;
+  messages: any[]; // You might want to type this more strictly
+}
+
+interface DMRoom {
+  dm: DM;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -64,14 +83,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { language } = useLanguage();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const activeRoom = searchParams?.get("room");
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
+  const [isCreateChannelModalOpen, setCreateChannelModalOpen] = useState(false);
+  const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false);
 
+  const handleRoomChange = (room: string) => {
+    router.push(`${pathname}?room=${room}`);
+  };
 
   const sidebarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const t = (key: string) => {
+    const keys = key.split(".");
+    let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    return value || key;
+  };
+
+  const [users, setUsers] = useState<User[]>([]);
+
+  const currentUser = useMemo(() => {
+    if (!session?.user?._id || !users.length) return null;
+    return users.find((u) => u._id === session?.user?._id);
+  }, [session?.user?._id, users]);
 
   const getInitials = (name: string | undefined) => {
     if (!name) return "";
@@ -84,38 +125,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return initials.toUpperCase();
   };
 
+  const fetchChannels = async () => {
+    try {
+      const response = await fetch("/api/channels");
+      if (response.ok) {
+        const data = (await response.json()) as { channels: Channel[] };
+        setChannels(data.channels || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch channels:", error);
+    }
+  };
+
+  // Refresh users online status periodically
   useEffect(() => {
-    const fetchChannels = async () => {
-      if (session?.user?.id) {
-        try {
-          const res = await fetch(`/api/users/${session.user.id}/channels`);
-          if (res.ok) {
-            const data = (await res.json()) as { channels: Channel[] };
-            setChannels(data.channels);
-          }
-        } catch (error) {
-          console.error("Failed to fetch channels", error);
+    const refreshUsersOnlineStatus = async () => {
+      try {
+        const response = await fetch("/api/users");
+        if (response.ok) {
+          const data: User[] = await response.json();
+          setUsers(data);
         }
+      } catch (error) {
+        console.error("Failed to refresh users online status:", error);
       }
     };
 
-    const fetchCurrentUser = async () => {
-      if (session?.user?.id) {
-        try {
-          const res = await fetch(`/api/users/current`);
-          if (res.ok) {
-            const data: { user: User } = await res.json();
-            setCurrentUser(data.user as User);
-          }
-        } catch (error) {
-          console.error("Failed to fetch current user", error);
-        }
+    // Cleanup stale online statuses (run every 5 minutes)
+    const cleanupOnlineStatus = async () => {
+      try {
+        await fetch("/api/users/cleanup", { method: "POST" });
+      } catch (error) {
+        console.error("Failed to cleanup online status:", error);
       }
     };
 
+    // Refresh immediately and then every 60 seconds
+    refreshUsersOnlineStatus();
+    const refreshInterval = setInterval(refreshUsersOnlineStatus, 60000);
+
+    // Cleanup every 5 minutes
+    const cleanupInterval = setInterval(cleanupOnlineStatus, 300000);
+
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(cleanupInterval);
+    };
+  }, []);
+
+  useEffect(() => {
     fetchChannels();
-    fetchCurrentUser();
-  }, [session]);
+  }, []);
 
   const navItems: NavItem[] = [
     { name: sidebarT.sidebar.home, icon: <HomeIcon size={20} />, path: "/dashboard" },
@@ -319,52 +379,100 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const generalRoomName = organizationId ? `general-${generateRoomId(organizationId)}` : 'general';
     teamsContent = (
       <>
+        <div className="px-4 py-1.5">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={t("chat.searchConversations")}
+              className="backdrop-blur-sm bg-background/50 dark:bg-gray-800/50 border border-border/60 dark:border-gray-700/60 rounded-full w-full pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-200"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon size={16} className="text-muted-foreground" />
+            </div>
+          </div>
+        </div>
         <h3
           className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
         >
           {sidebarT.sidebar.channels}
         </h3>
         <div className="mt-1 space-y-1 px-2">
-          <Link
-            key="general"
-            href={`/dashboard/chat?room=${generalRoomName}`}
-            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
+          <div
+            className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
               activeRoom === generalRoomName || (!activeRoom && pathname.startsWith('/dashboard/chat'))
                 ? "bg-primary/10 text-primary"
-                : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-            } ${isCollapsed ? "lg:justify-center" : ""}`}
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
-            <span className={`font-bold ${isCollapsed ? "lg:hidden" : ""}`}>
-              #
-            </span>
-            <span
-              className={`${language === 'ar' ? 'mr-2' : 'ml-2'} truncate whitespace-nowrap ${isCollapsed ? "lg:hidden" : ""}`}
+            <button
+              className="flex cursor-pointer items-center flex-1 text-left"
+              onClick={() => handleRoomChange(generalRoomName)}
             >
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${language === "ar" ? "ml-3" : "mr-3"} shadow-sm ${
+                  activeRoom === generalRoomName || (!activeRoom && pathname.startsWith('/dashboard/chat'))
+                    ? "bg-primary"
+                    : "bg-green-500 opacity-60 group-hover:opacity-100 transition-opacity"
+                }`}
+              ></span>
               {sidebarT.sidebar.general}
-            </span>
-          </Link>
-          {channels.map((channel) => (
-            <Link
-              key={channel._id}
-              href={`/dashboard/chat?room=${channel.roomId}`}
-              className={`group flex items-center w-full px-3 py-2.5 md:px-3 md:py-2.5 text-base md:text-sm font-medium rounded-xl transition-all duration-200 backdrop-blur-sm border border-transparent hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 ${
-                activeRoom === channel.roomId
-                  ? "bg-primary/10 text-primary border-primary/30 shadow-md shadow-primary/10"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/5 hover:text-gray-900 dark:hover:text-white"
-              } ${isCollapsed ? "lg:justify-center" : ""}`}
+            </button>
+          </div>
+          {channels
+            .filter((channel) =>
+              channel.name
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase())
+            )
+            .map((channel) => (
+              <div
+                key={channel._id}
+                className={`group flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:bg-accent/50 dark:hover:bg-gray-800/50 ${
+                  activeRoom === channel.roomId
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <button
+                  className="flex cursor-pointer items-center flex-1 text-left"
+                  onClick={() =>
+                    handleRoomChange(channel.roomId)
+                  }
+                >
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${language === "ar" ? "ml-3" : "mr-3"} shadow-sm ${
+                      activeRoom === channel.roomId
+                        ? "bg-primary"
+                        : "bg-blue-500 opacity-60 group-hover:opacity-100 transition-opacity"
+                    }`}
+                  ></span>
+                  {channel.name}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setManagingChannel(channel);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground p-1 rounded-md"
+                >
+                  <Users size={14} />
+                </button>
+              </div>
+            ))}
+          <div className="px-3 cursor-pointer mt-5">
+            <button
+              onClick={() => setCreateChannelModalOpen(true)}
+              className="group flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 dark:border-gray-700/50 dark:hover:border-primary/50 dark:bg-gray-800/20 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <span
-                className={`font-bold text-primary ${isCollapsed ? "lg:hidden" : ""}`}
-              >
-                #
-              </span>
-              <span
-                className={`${language === 'ar' ? 'mr-2' : 'ml-2'} truncate whitespace-nowrap ${isCollapsed ? "lg:hidden" : ""}`}
-              >
-                {channel.name}
-              </span>
-            </Link>
-          ))}
+              <Plus
+                size={16}
+                className="mr-2 text-muted-foreground group-hover:text-primary transition-colors"
+              />
+              {t("chat.addChannel")}
+            </button>
+          </div>
         </div>
         <h3
           className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
@@ -372,101 +480,128 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {sidebarT.sidebar.directMessages}
         </h3>
         <div className="mt-1 space-y-1 px-2">
-          <Link
-            key="notes-to-self"
-            href={`/dashboard/chat?room=${session?.user?.id}-${session?.user?.id}`}
-            className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              activeRoom === `${session?.user?.id}-${session?.user?.id}`
-                ? "bg-primary/10 text-primary"
-                : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-            } ${isCollapsed ? "lg:justify-center" : ""}`}
-          >
-            <div className="relative">
-              <Avatar className="w-8 h-8">
-                <AvatarImage
-                  src={currentUser?.image || undefined}
-                  alt="Your avatar"
-                />
-                <AvatarFallback>
-                  {getInitials(currentUser?.fullName)}
-                </AvatarFallback>
-              </Avatar>
-              {currentUser?.online && (
-                <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-950" />
-              )}
-            </div>
-            <div
-              className={`${language === 'ar' ? 'mr-3' : 'ml-3'} overflow-hidden ${isCollapsed ? "lg:hidden" : ""}`}
+          {currentUser && (
+            <button
+              onClick={() =>
+                handleRoomChange(
+                  `${currentUser._id}-${currentUser._id}`
+                )
+              }
+              className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                activeRoom === `${currentUser._id}-${currentUser._id}`
+                  ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
+                  : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <p className={`font-semibold truncate`}>{sidebarT.sidebar.notesToSelf}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {sidebarT.sidebar.personalSpace}
-              </p>
-            </div>
-          </Link>
-          {recentDms.slice(0, 3).map((dm) => {
-            const otherUser = dm.participants.find(
-              (p) => p._id.toString() !== session?.user?.id
-            );
-
-            if (!otherUser) {
-              console.warn(
-                "Could not determine other user for DM, skipping render:",
-                dm
-              );
-              return null;
-            }
-
-            const roomHref =
-              dm.room || [session?.user?.id, otherUser._id].sort().join("--");
-            const isActive = activeRoom === roomHref;
-
-            return (
-              <Link
-                key={dm._id}
-                href={`/dashboard/chat?room=${roomHref}`}
-                className={`group flex items-center w-full px-2 py-1.5 md:px-3 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                } ${isCollapsed ? "lg:justify-center" : ""}`}
+              <div
+                className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
               >
-                <div className="relative">
-                  <Avatar className="w-7 h-7 md:w-8 md:h-8">
-                    <AvatarImage
-                      src={otherUser.image || undefined}
-                      alt={otherUser.fullName}
-                    />
-                    <AvatarFallback>
-                      {getInitials(otherUser.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {otherUser.online && (
-                    <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-950" />
-                  )}
-                </div>
-                <div
-                  className={`${language === 'ar' ? 'mr-3' : 'ml-3'} overflow-hidden ${isCollapsed ? "lg:hidden" : ""}`}
+                <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
+                  <AvatarImage src={currentUser.image || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                    {currentUser.fullName
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                {currentUser.online && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
+                )}
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-xs text-muted-foreground -mt-1">
+                  {sidebarT.sidebar.notesToSelf}
+                </span>
+              </div>
+            </button>
+          )}
+          {recentDms
+            .slice(0, 5)
+            .reduce(
+              (acc, dm) => {
+                // Find the other user in the DM
+                const otherUser = dm.participants.find(
+                  (p) => p._id.toString() !== session?.user?._id
+                );
+
+                if (otherUser) {
+                  acc.push({
+                    ...dm,
+                    user: otherUser,
+                    room: dm.room,
+                  } as DM & { user: IUser; room: string });
+                }
+                return acc;
+              },
+              [] as Array<DM & { user: IUser; room: string }>
+            )
+            .filter(
+              (dm) =>
+                !searchQuery ||
+                (dm.user &&
+                  dm.user.fullName
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()))
+            )
+            .map((dm) => {
+              const room = dm.room;
+
+              const user = dm.user;
+
+              return (
+                <button
+                  key={(dm as any)._id}
+                  onClick={() => handleRoomChange(room)}
+                  className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
+                    activeRoom === room
+                      ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
+                      : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  <p
-                    className={`text-[0.925rem] md:text-base font-semibold truncate`}
+                  <div
+                    className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
                   >
-                    {otherUser.fullName}
-                  </p>
-                  <p className="text-[0.7rem] md:text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {dm.text}
-                  </p>
-                </div>
-              </Link>
-            );
-          })}
+                    <Avatar className="h-6 w-6 ring-2 ring-border/20 dark:ring-gray-700/20 group-hover:ring-primary/30 transition-all duration-200">
+                      <AvatarImage src={user.image || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                        {user.fullName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {user.online && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
+                    )}
+                  </div>
+                  {user.fullName}
+                </button>
+              );
+            })}
+          <button
+            onClick={() => setIsNewChatDialogOpen(true)}
+            className="group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
+          >
+            <div
+              className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
+            >
+              <div className="h-6 w-6 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
+                <Plus className="h-4 w-4" />
+              </div>
+            </div>
+            {t("chat.startNewChat")}
+          </button>
         </div>
       </>
     );
   }
 
   return (
-    <aside
+    <>
+      <aside
       className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 shadow-lg transition-all duration-300 ease-in-out flex flex-col
       ${isCollapsed ? "lg:w-24" : "lg:w-64"}
       ${isOpen ? "translate-x-0 w-64" : "-translate-x-full"} lg:translate-x-0
@@ -474,7 +609,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
         <div
-          className={`mb-8 flex items-center ${isCollapsed ? "lg:justify-center" : "justify-between"}`}
+          className={`mb-4 flex items-center ${isCollapsed ? "lg:justify-center" : "justify-between"}`}
         >
           <Link href={"/"} className="flex items-center">
             <Image
@@ -507,7 +642,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        <nav className="space-y-2 px-2">
+        <nav className="space-y-1.5 px-2">
           {navItems.map((item) => {
             const isActive = pathname === item.path;
             return (
@@ -535,7 +670,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </nav>
 
-        <div className={`mt-8 px-2 lg:hidden`}>{teamsContent}</div>
+        <div className={`mt-0 px-2 lg:hidden`}>{teamsContent}</div>
       </div>
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-800">
@@ -571,5 +706,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </aside>
+
+    <CreateChannelModal
+      isOpen={isCreateChannelModalOpen}
+      onClose={() => setCreateChannelModalOpen(false)}
+      onChannelCreated={fetchChannels}
+    />
+
+    <ManageChannelModal
+      isOpen={!!managingChannel}
+      onClose={() => setManagingChannel(null)}
+      channel={managingChannel}
+      allUsers={users}
+      onChannelUpdated={fetchChannels}
+    />
+    </>
   );
 };
