@@ -34,7 +34,7 @@ const AuditLogs = () => {
     return value || key;
   };
 
-  if (error) return <div className="text-sm text-muted-foreground">{t('auditLogs.failedToLoad')}</div>;
+  if (error) return null;
   if (!auditLogs) return <Loader variant="minimal" />;
 
   const recentLogs = auditLogs.slice(0, 4); // Show only recent 5
