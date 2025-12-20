@@ -101,7 +101,7 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
         <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-4">
             <h3 className="font-semibold text-lg text-primary flex items-center">
-              <User className={`mr-2 ${language === "en" ? "mr-2" : "ml-2"}`} />
+              <User className={language === "en" ? "mr-2" : "ml-2"} />
               {t("testDetailsModal.sections.patientInformation")}
             </h3>
             <DetailItem
@@ -112,10 +112,7 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
           </div>
           <div className="space-y-4">
             <h3 className="font-semibold text-lg text-primary flex items-center">
-              <Beaker
-                className={`mr-2 
-             ${language === "en" ? "mr-2" : "ml-2"}`}
-              />
+              <Beaker className={language === "en" ? "mr-2" : "ml-2"} />
               {t("testDetailsModal.sections.testInformation")}
             </h3>
             <DetailItem
@@ -149,10 +146,7 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
           {order.notes && (
             <div className="md:col-span-2 space-y-4">
               <h3 className="font-semibold text-lg text-primary flex items-center">
-                <FileText
-                  className={`mr-2 
-               ${language === "en" ? "mr-2" : "ml-2"}`}
-                />
+                <FileText className={language === "en" ? "mr-2" : "ml-2"} />
                 {t("testDetailsModal.sections.notes")}
               </h3>
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
