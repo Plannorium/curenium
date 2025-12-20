@@ -282,7 +282,7 @@ export const TaskList: React.FC<TaskListProps> = ({
           dueTime:
             taskFormData.dueTime ||
             new Date(Date.now() + 60 * 60 * 1000).toISOString(), // Default 1 hour
-          createdBy: session.user.id,
+          createdBy: session?.user?.id,
         }),
       });
 
