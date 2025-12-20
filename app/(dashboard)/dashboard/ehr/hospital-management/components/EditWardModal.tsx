@@ -295,7 +295,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
                    htmlFor="totalRooms"
                    className="text-sm font-semibold text-gray-700 dark:text-gray-300"
                  >
-                   Total Rooms
+                   {t('hospitalManagementPage.modals.editWard.totalRooms')}
                  </Label>
                  <Input
                    id="totalRooms"

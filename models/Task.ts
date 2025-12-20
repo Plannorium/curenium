@@ -49,9 +49,8 @@ const TaskSchema: Schema<ITask> = new Schema({
 TaskSchema.index({ id: 1 }, { unique: true, partialFilterExpression: { id: { $type: 'string' } } });
 
 TaskSchema.pre('save', function (next) {
-  if (this.isNew) {
-    // ensure id string is set for backward compatibility
-    // if id was provided, prefer the generated _id string
+  if (this.isNew && !(this as any).id) {
+    // ensure id string is set for backward compatibility only if not already provided
     (this as any).id = (this as any)._id.toString();
   }
   next();

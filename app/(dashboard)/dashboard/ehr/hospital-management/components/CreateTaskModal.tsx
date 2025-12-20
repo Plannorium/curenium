@@ -99,7 +99,7 @@ const CreateTaskModal = ({ onTaskCreated, children }: CreateTaskModalProps) => {
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      toast.error(error instanceof Error ? error.message : t('createTaskModal.loading'));
+      toast.error(error instanceof Error ? error.message : t('createTaskModal.failed'));
     } finally {
       setFetching(false);
     }

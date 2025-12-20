@@ -4,11 +4,7 @@ export interface IDepartment extends Document {
   name: string;
   description?: string;
   headOfDepartment?: mongoose.Types.ObjectId; // Reference to User (Doctor/Head)
-  assignedStaff?: Array<{
-    _id: mongoose.Types.ObjectId;
-    fullName: string;
-    role: string;
-  }>;
+  assignedStaff?: mongoose.Types.ObjectId[]; // References to User
   organization: mongoose.Types.ObjectId;
   isActive: boolean;
   specialties?: string[]; // e.g., ['Cardiology', 'Neurology']
@@ -40,19 +36,8 @@ const DepartmentSchema: Schema = new Schema(
       required: false
     },
     assignedStaff: [{
-      _id: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-      },
-      fullName: {
-        type: String,
-        required: true
-      },
-      role: {
-        type: String,
-        required: true
-      }
+      type: Schema.Types.ObjectId,
+      ref: 'User'
     }],
     organization: {
       type: Schema.Types.ObjectId,

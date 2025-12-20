@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { User, Mail, Lock, Building } from 'lucide-react';
+import { User, Mail, Lock, Building, Check } from 'lucide-react';
 
 import Image from 'next/image';
 import { useTheme } from '@/components/ThemeProvider';
@@ -36,6 +36,7 @@ export const AccountSetup: React.FC = () => {
   const [organizationName, setOrganizationName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,20 +53,21 @@ export const AccountSetup: React.FC = () => {
     const data: AdminRegisterResponse = await res.json();
 
     if (res.ok && data.user) {
-      const signInResponse = await signIn('credentials', {
-        email: email,
-        password: password,
-        redirect: true,
-        callbackUrl: '/dashboard',
-      });
+      setIsSuccess(true);
+      setSuccess(t('auth.accountSetup.accountCreated'));
+      setTimeout(async () => {
+        const signInResponse = await signIn('credentials', {
+          email: email,
+          password: password,
+          redirect: true,
+          callbackUrl: '/dashboard',
+        });
 
-      // If signIn is successful with redirect: true, the user will be navigated
-      // to the callbackUrl and this part of the code will not be reached.
-      // If it fails, NextAuth will handle showing an error on the login page,
-      // but we can set a local error for immediate feedback if needed.
-      if (signInResponse?.error) {
-        setError(t('auth.accountSetup.signInFailed'));
-      }
+        if (signInResponse?.error) {
+          setError(t('auth.accountSetup.signInFailed'));
+          setIsSuccess(false);
+        }
+      }, 1500);
     } else {
       setError(data.message || t('auth.accountSetup.registrationError'));
     }
@@ -150,8 +152,13 @@ export const AccountSetup: React.FC = () => {
             {success && <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg py-2 px-4">{success}</p>}
 
             <div className="pt-4">
-              <Button type="submit" className="w-full text-base font-semibold" size="lg">
-                {t('auth.accountSetup.createAccount')}
+              <Button type="submit" className={`w-full text-base font-semibold ${isSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`} size="lg" disabled={isSuccess}>
+                {isSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    {t('auth.accountSetup.success')}
+                  </>
+                ) : t('auth.accountSetup.createAccount')}
               </Button>
             </div>
           </form>

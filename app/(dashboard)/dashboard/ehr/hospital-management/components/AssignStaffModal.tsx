@@ -73,13 +73,9 @@ const AssignStaffModal = ({ department, onStaffAssigned, children }: AssignStaff
           }
         });
 
-        // Filter out staff already assigned elsewhere and add assignment info
+        // Filter out staff already assigned elsewhere
         const availableStaffFiltered = staff
-          .filter(s => !assignedElsewhere.has(s._id))
-          .map(s => ({
-            ...s,
-            assignedTo: assignedElsewhere.has(s._id) ? assignmentDetails.get(s._id) : undefined
-          }));
+          .filter(s => !assignedElsewhere.has(s._id));
 
         setAvailableStaff(availableStaffFiltered);
         // Pre-select currently assigned staff

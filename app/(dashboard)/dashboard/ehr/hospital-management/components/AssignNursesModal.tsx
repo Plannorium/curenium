@@ -77,14 +77,10 @@ const AssignNursesModal = ({ ward, onNursesAssigned, children }: AssignNursesMod
           }
         });
 
-        // Filter nurses and add assignment info
+        // Filter nurses
         const availableNursesFiltered = nurses
           .filter(nurse => nurse.department === ward.department._id || !nurse.department)
-          .filter(nurse => !assignedElsewhere.has(nurse._id))
-          .map(nurse => ({
-            ...nurse,
-            assignedTo: assignedElsewhere.has(nurse._id) ? assignmentDetails.get(nurse._id) : undefined
-          }));
+          .filter(nurse => !assignedElsewhere.has(nurse._id));
 
         setAvailableNurses(availableNursesFiltered);
         // Pre-select currently assigned nurses

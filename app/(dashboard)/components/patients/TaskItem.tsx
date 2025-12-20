@@ -6,58 +6,60 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  User,
-  Calendar,
-  Pill,
-  Activity,
-  FileText,
-  ChevronRight
-} from 'lucide-react';
-import { toast } from 'sonner';
+    CheckCircle,
+    Clock,
+    AlertTriangle,
+    User,
+    Calendar,
+    Pill,
+    Activity,
+    FileText,
+    ChevronRight
+  } from 'lucide-react';
+  import { toast } from 'sonner';
+  import { dashboardTranslations } from '@/lib/dashboard-translations';
+  import { useLanguage } from '@/contexts/LanguageContext';
 
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  type: 'medication' | 'vital_check' | 'assessment' | 'documentation' | 'custom';
-  patientId?: string;
-  prescriptionId?: string;
-  dueTime?: Date;
-  completedAt?: Date;
-  completedBy?: { _id: string; fullName: string; image?: string };
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'completed' | 'overdue' | 'cancelled';
-  notes?: string;
-  delegatedTo?: { _id: string; fullName: string; image?: string };
-  reminderSent?: boolean;
-  assignedTo?: {
-    _id: string;
-    fullName: string;
-    role?: string[];
-  };
-}
-
-interface TaskItemProps {
-  task: Task;
-  onComplete: (taskId: string) => void;
-  onDelegate?: (taskId: string, userId: string) => void;
-  onViewDetails?: (task: Task) => void;
-  showPatientInfo?: boolean;
-  compact?: boolean;
-}
-
-const getTaskIcon = (type: Task['type']) => {
-  switch (type) {
-    case 'medication': return <Pill className="h-4 w-4" />;
-    case 'vital_check': return <Activity className="h-4 w-4" />;
-    case 'assessment': return <User className="h-4 w-4" />;
-    case 'documentation': return <FileText className="h-4 w-4" />;
-    default: return <Clock className="h-4 w-4" />;
+  export interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    type: 'medication' | 'vital_check' | 'assessment' | 'documentation' | 'custom';
+    patientId?: string;
+    prescriptionId?: string;
+    dueTime?: Date;
+    completedAt?: Date;
+    completedBy?: { _id: string; fullName: string; image?: string };
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    status: 'pending' | 'completed' | 'overdue' | 'cancelled';
+    notes?: string;
+    delegatedTo?: { _id: string; fullName: string; image?: string };
+    reminderSent?: boolean;
+    assignedTo?: {
+      _id: string;
+      fullName: string;
+      role?: string[];
+    };
   }
-};
+
+  interface TaskItemProps {
+    task: Task;
+    onComplete: (taskId: string) => void;
+    onDelegate?: (taskId: string, userId: string) => void;
+    onViewDetails?: (task: Task) => void;
+    showPatientInfo?: boolean;
+    compact?: boolean;
+  }
+
+  const getTaskIcon = (type: Task['type']) => {
+    switch (type) {
+      case 'medication': return <Pill className="h-4 w-4" />;
+      case 'vital_check': return <Activity className="h-4 w-4" />;
+      case 'assessment': return <User className="h-4 w-4" />;
+      case 'documentation': return <FileText className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
+  };
 
 const getPriorityBadge = (priority: Task['priority']) => {
   const colors = {
@@ -77,6 +79,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const { language } = useLanguage();
+  const t = dashboardTranslations[language as keyof typeof dashboardTranslations]?.taskList || {};
+  const common = dashboardTranslations[language as keyof typeof dashboardTranslations]?.common || {};
 
   const handleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -121,26 +126,26 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Badge variant="outline" className={`text-xs ${getPriorityBadge(task.priority)}`}>
-                    {task.priority}
+                    {t.priority?.[task.priority] || task.priority}
                   </Badge>
 
                   {task.status !== 'pending' && (
                     <Badge variant="outline" className="text-xs border-muted text-muted-foreground">
-                      {task.status}
+                      {t.status?.[task.status] || task.status}
                     </Badge>
                   )}
 
                   {isOverdue && (
                     <Badge variant="outline" className="text-xs border-red-600 text-red-700">
                       <AlertTriangle className="h-3 w-3 mr-1" />
-                      Overdue
+                      {t.status?.overdue || 'Overdue'}
                     </Badge>
                   )}
 
                   {isDueSoon && (
                     <Badge variant="outline" className="text-xs border-orange-600 text-orange-700">
                       <Clock className="h-3 w-3 mr-1" />
-                      Due Soon
+                      {'Due Soon'}
                     </Badge>
                   )}
                 </div>
@@ -155,7 +160,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                 {task.completedBy && task.status === 'completed' && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                     <CheckCircle className="h-3.5 w-3.5" />
-                    by {task.completedBy.fullName}
+                    {dashboardTranslations.en.taskList.createdBy.replace('{name}', task.completedBy.fullName)}
                   </div>
                 )}
               </div>

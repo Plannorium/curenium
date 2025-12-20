@@ -5,58 +5,7 @@ import Prescription from "@/models/Prescription";
 import Task from "@/models/Task";
 import AuditLog from "@/models/AuditLog";
 import mongoose from "mongoose";
-
-// Helper functions
-function getFrequencyHours(frequency: string): number {
-  const freq = frequency.toLowerCase();
-  if (freq.includes('q4h')) return 4;
-  if (freq.includes('q6h')) return 6;
-  if (freq.includes('q8h')) return 8;
-  if (freq.includes('q12h')) return 12;
-  if (freq.includes('daily')) return 24;
-  if (freq.includes('bid')) return 12;
-  if (freq.includes('tid')) return 8;
-  if (freq.includes('qid')) return 6;
-  return 8;
-}
-
-function calculateNextMedicationDueTime(prescription: any, frequencyHours: number, currentTime: Date): Date {
-  const administrations = prescription.administrations || [];
-  if (administrations.length === 0) {
-    if (prescription.startDate) {
-      const startDate = new Date(prescription.startDate);
-      if (startDate > currentTime) return startDate;
-      const hoursSinceStart = (currentTime.getTime() - startDate.getTime()) / 3600000;
-      const dosesSinceStart = Math.floor(hoursSinceStart / frequencyHours);
-      const nextDoseTime = new Date(startDate.getTime() + (dosesSinceStart + 1) * frequencyHours * 3600000);
-      return nextDoseTime > currentTime ? nextDoseTime : new Date(currentTime.getTime() + frequencyHours * 3600000);
-    }
-    return currentTime;
-  }
-  const sortedAdmins = administrations
-    .filter((admin: any) => admin.administeredAt)
-    .sort((a: any, b: any) => new Date(b.administeredAt).getTime() - new Date(a.administeredAt).getTime());
-  if (sortedAdmins.length === 0) return currentTime;
-  const lastAdminTime = new Date(sortedAdmins[0].administeredAt);
-  const nextDueTime = new Date(lastAdminTime.getTime() + frequencyHours * 3600000);
-  if (nextDueTime <= currentTime) {
-    const hoursSinceLastAdmin = (currentTime.getTime() - lastAdminTime.getTime()) / 3600000;
-    const missedDoses = Math.floor(hoursSinceLastAdmin / frequencyHours);
-    const correctedNextDueTime = new Date(lastAdminTime.getTime() + (missedDoses + 1) * frequencyHours * 3600000);
-    if (correctedNextDueTime <= currentTime) {
-      return new Date(currentTime.getTime() + frequencyHours * 3600000);
-    }
-    return correctedNextDueTime;
-  }
-  return nextDueTime;
-}
-
-function getMedicationPriority(prescription: any, dueTime: Date, now: Date): 'low' | 'medium' | 'high' | 'urgent' {
-  const hoursUntilDue = (dueTime.getTime() - now.getTime()) / 3600000;
-  if (hoursUntilDue < 0.5) return 'urgent';
-  if (hoursUntilDue < 2) return 'high';
-  return 'medium';
-}
+import { getFrequencyHours, calculateNextMedicationDueTime, getMedicationPriority } from "@/lib/medication-utils";
 
 interface AdministerRequestBody {
   administeredAt: Date;
@@ -104,33 +53,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Create next medication task if administered successfully
     if (status === 'administered') {
       try {
-        const frequencyHours = getFrequencyHours(prescription.frequency);
-        if (frequencyHours > 0) {
-          const now = new Date();
-          const nextDueTime = calculateNextMedicationDueTime(prescription, frequencyHours, now);
-          const taskId = `med-${prescription._id}-${nextDueTime.getTime()}`;
+        // Validate prescription status before creating next task
+        const now = new Date();
+        if (prescription.status !== 'active') {
+          console.log(`Skipping next task creation: prescription ${prescription._id} is not active (status: ${prescription.status})`);
+        } else if (prescription.endDate && new Date(prescription.endDate) <= now) {
+          console.log(`Skipping next task creation: prescription ${prescription._id} has ended (endDate: ${prescription.endDate})`);
+        } else {
+          const frequencyHours = getFrequencyHours(prescription.frequency);
+          if (frequencyHours > 0) {
+            const nextDueTime = calculateNextMedicationDueTime(prescription, frequencyHours, now);
+            // Improve task ID generation to avoid collisions by including a random component
+            const taskId = `med-${prescription._id}-${nextDueTime.getTime()}-${Math.random().toString(36).substr(2, 9)}`;
 
-          // Check if task already exists
-          const existingTask = await Task.findOne({ id: taskId });
-          if (!existingTask) {
-            const priority = getMedicationPriority(prescription, nextDueTime, now);
-            const title = `Administer ${prescription.medication || prescription.medications?.join(', ')}`;
+            // Check if task already exists
+            const existingTask = await Task.findOne({ id: taskId });
+            if (!existingTask) {
+              const priority = getMedicationPriority(prescription, nextDueTime, now);
+              const title = `Administer ${prescription.medication || prescription.medications?.join(', ')}`;
 
-            const newTask = new Task({
-              id: taskId,
-              orgId: prescription.orgId,
-              patientId: prescription.patientId,
-              title,
-              description: `${prescription.dose} ${prescription.route || ''} - ${prescription.frequency}`,
-              type: 'medication',
-              priority,
-              dueTime: nextDueTime,
-              status: 'pending',
-              notes: prescription.instructions || undefined,
-              prescriptionId: prescription._id,
-              createdBy: prescription.prescribedBy,
-            });
-            await newTask.save();
+              const newTask = new Task({
+                id: taskId,
+                orgId: prescription.orgId,
+                patientId: prescription.patientId,
+                title,
+                description: `${prescription.dose} ${prescription.route || ''} - ${prescription.frequency}`,
+                type: 'medication',
+                priority,
+                dueTime: nextDueTime,
+                status: 'pending',
+                notes: prescription.instructions || undefined,
+                prescriptionId: prescription._id,
+                createdBy: prescription.prescribedBy,
+              });
+              await newTask.save();
+            }
           }
         }
       } catch (taskError) {

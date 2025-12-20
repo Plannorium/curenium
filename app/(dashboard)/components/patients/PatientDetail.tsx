@@ -334,33 +334,33 @@ import { TaskList } from "./TaskList";
        {/* Tabs */} 
        <div className="p-0">
          <Tabs defaultValue="overview" className="w-full">
-         <TabsList className="grid grid-cols-7 lg:gap-x-2 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
-           <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+         <TabsList className="grid grid-cols-7 lg:gap-x-2.5 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-3 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
+           <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <ClipboardCheck className="h-4 w-4 shrink-0" />
              <span className="hidden sm:inline">{t('patientDetail.overview')}</span>
            </TabsTrigger>
-           <TabsTrigger value="appointments" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <Calendar className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="appointments" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <Calendar className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.appointments')}</span>
            </TabsTrigger>
-           <TabsTrigger value="insurance" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <ShieldCheck className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="insurance" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <ShieldCheck className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.insurance')}</span>
            </TabsTrigger>
-           <TabsTrigger value="audit-log" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <FileText className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="audit-log" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <FileText className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.auditLog')}</span>
            </TabsTrigger>
-           <TabsTrigger value="clinical_notes" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <FileText className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="clinical_notes" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <FileText className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.clinicalNotes')}</span>
            </TabsTrigger>
-           <TabsTrigger value="tasks" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <CheckSquare className="h-4 w-4 shrink-0" />
-             <span className="hidden sm:inline">Tasks</span>
+           <TabsTrigger value="tasks" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <CheckSquare className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
+             <span className="hidden sm:inline">{t('taskList.title')}</span>
            </TabsTrigger>
-           <TabsTrigger value="assignment" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <UserCheck className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="assignment" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <UserCheck className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.assignment')}</span>
            </TabsTrigger>
            </TabsList>
@@ -381,7 +381,7 @@ import { TaskList } from "./TaskList";
                <CardHeader>
                  <CardTitle className="flex items-center text-lg">
                    <Users className="h-5 w-5 mr-2 text-blue-500" />
-                   Care Team Assignment
+                   {t('patientDetail.careTeamAssignmentTitle')}
                  </CardTitle>
                </CardHeader>
                <CardContent>
@@ -389,13 +389,13 @@ import { TaskList } from "./TaskList";
                    <div className="space-y-2">
                      <Label className="text-sm font-semibold flex items-center">
                        <Stethoscope className="h-4 w-4 mr-1 text-blue-500" />
-                       Assigned Nurse
+                       {t('patientDetail.assignedNurseLabel')}
                      </Label>
                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                       {assignmentData.assignedNurse && assignmentData.assignedNurse !== 'unassigned' ? (
-                         nurses.find(n => String((n as any)?._id) === String(assignmentData.assignedNurse))?.fullName || 'Loading...'
+                         nurses.find(n => String((n as any)?._id) === String(assignmentData.assignedNurse))?.fullName || t('common.loading')
                        ) : (
-                         <span className="text-muted-foreground">Not assigned</span>
+                         <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                        )}
                      </div>
                    </div>
@@ -403,13 +403,13 @@ import { TaskList } from "./TaskList";
                    <div className="space-y-2">
                      <Label className="text-sm font-semibold flex items-center">
                        <UserCheck className="h-4 w-4 mr-1 text-green-500" />
-                       Assigned Doctor
+                       {t('patientDetail.assignedDoctorLabel')}
                      </Label>
                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                        {assignmentData.assignedDoctor && assignmentData.assignedDoctor !== 'unassigned' ? (
-                         doctors.find(d => String((d as any)?._id) === String(assignmentData.assignedDoctor))?.fullName || 'Loading...'
+                         doctors.find(d => String((d as any)?._id) === String(assignmentData.assignedDoctor))?.fullName || t('common.loading')
                        ) : (
-                         <span className="text-muted-foreground">Not assigned</span>
+                         <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                        )}
                      </div>
                    </div>
@@ -420,12 +420,12 @@ import { TaskList } from "./TaskList";
                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                      <Label className="text-sm font-semibold flex items-center mb-2">
                        <Building className="h-4 w-4 mr-1 text-purple-500" />
-                       Location Details
+                       {t('patientDetail.locationDetails')}
                      </Label>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                        {assignmentData.ward && (
                          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-center">
-                           <div className="font-medium text-blue-700 dark:text-blue-300">Ward</div>
+                           <div className="font-medium text-blue-700 dark:text-blue-300">{t('patientDetail.ward')}</div>
                            <div className="text-blue-600 dark:text-blue-400">
                              {wards.find(w => w._id === assignmentData.ward)?.name || assignmentData.ward}
                            </div>
@@ -433,7 +433,7 @@ import { TaskList } from "./TaskList";
                        )}
                        {assignmentData.department && (
                          <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded text-center">
-                           <div className="font-medium text-green-700 dark:text-green-300">Department</div>
+                           <div className="font-medium text-green-700 dark:text-green-300">{t('patientDetail.department')}</div>
                            <div className="text-green-600 dark:text-green-400">
                              {departments.find(d => d._id === assignmentData.department)?.name || assignmentData.department}
                            </div>
@@ -441,13 +441,13 @@ import { TaskList } from "./TaskList";
                        )}
                        {assignmentData.roomNumber && (
                          <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-center">
-                           <div className="font-medium text-purple-700 dark:text-purple-300">Room</div>
+                           <div className="font-medium text-purple-700 dark:text-purple-300">{t('patientDetail.room')}</div>
                            <div className="text-purple-600 dark:text-purple-400">{assignmentData.roomNumber}</div>
                          </div>
                        )}
                        {assignmentData.bedNumber && (
                          <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-center">
-                           <div className="font-medium text-orange-700 dark:text-orange-300">Bed</div>
+                           <div className="font-medium text-orange-700 dark:text-orange-300">{t('patientDetail.bed')}</div>
                            <div className="text-orange-600 dark:text-orange-400">{assignmentData.bedNumber}</div>
                          </div>
                        )}
@@ -463,7 +463,7 @@ import { TaskList } from "./TaskList";
                  <CardTitle className="flex items-center justify-between text-lg">
                    <div className="flex items-center">
                      <Printer className="h-5 w-5 mr-2 text-blue-500" />
-                     Patient Barcode
+                     {t('patientDetail.patientBarcode')}
                    </div>
                    <div className="flex space-x-2">
                      <Button
@@ -473,7 +473,7 @@ import { TaskList } from "./TaskList";
                        className="print:hidden"
                      >
                        <Download className="h-4 w-4 mr-2" />
-                       Download
+                       {t('patientDetail.download')}
                      </Button>
                      <Button
                        onClick={() => window.print()}
@@ -482,22 +482,22 @@ import { TaskList } from "./TaskList";
                        className="print:hidden"
                      >
                        <Printer className="h-4 w-4 mr-2" />
-                       Print
+                       {t('patientDetail.print')}
                      </Button>
                    </div>
                  </CardTitle>
                </CardHeader>
                <CardContent className="flex flex-col items-center space-y-4">
                  <div ref={barcodeRef} className="text-center" data-barcode>
-                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Scan this barcode for patient identification</p>
+                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t('patientDetail.scanBarcodeText')}</p>
                    <div className="bg-white p-4 rounded-lg border print:border-0 print:bg-transparent">
                      {patient.mrn ? (
                        <Barcode value={patient.mrn} width={2} height={60} fontSize={12} />
                      ) : (
-                       <p className="text-gray-500">MRN not available</p>
+                       <p className="text-gray-500">{t('patientDetail.mrnNotAvailable')}</p>
                      )}
                    </div>
-                   <p className="text-xs text-gray-500 mt-2 print:text-black">MRN: {patient.mrn || 'N/A'}</p>
+                   <p className="text-xs text-gray-500 mt-2 print:text-black">{t('patientDetail.mrn')}: {patient.mrn || 'N/A'}</p>
                  </div>
                </CardContent>
                <style jsx>{`
@@ -573,10 +573,10 @@ import { TaskList } from "./TaskList";
                           disabled={!assignmentData.department || assignmentData.department === 'unassigned'}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectNurse') : "Select department first"} />
+                            <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectNurse') : t('patientDetail.selectDepartmentFirst')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            <SelectItem value="unassigned">{t('patientDetail.unassigned')}</SelectItem>
                             {nurses.map((nurse) => (
                               <SelectItem key={String((nurse as any)._id)} value={String((nurse as any)._id)}>
                                 {nurse.fullName}
@@ -587,7 +587,7 @@ import { TaskList } from "./TaskList";
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                           {assignmentData.assignedNurse && assignmentData.assignedNurse !== 'unassigned' ? (
-                            nurses.find(n => String((n as any)?._id) === String(assignmentData.assignedNurse))?.fullName || 'Loading...'
+                            nurses.find(n => String((n as any)?._id) === String(assignmentData.assignedNurse))?.fullName || t('common.loading')
                           ) : (
                             <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                           )}
@@ -604,10 +604,10 @@ import { TaskList } from "./TaskList";
                           disabled={!assignmentData.department || assignmentData.department === 'unassigned'}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectDoctor') : "Select department first"} />
+                            <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectDoctor') : t('patientDetail.selectDepartmentFirst')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            <SelectItem value="unassigned">{t('patientDetail.unassigned')}</SelectItem>
                             {doctors.map((doctor) => (
                               <SelectItem key={String((doctor as any)._id)} value={String((doctor as any)._id)}>
                                 {doctor.fullName}
@@ -618,7 +618,7 @@ import { TaskList } from "./TaskList";
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                           {assignmentData.assignedDoctor && assignmentData.assignedDoctor !== 'unassigned' ? (
-                            doctors.find(d => String((d as any)?._id) === String(assignmentData.assignedDoctor))?.fullName || 'Loading...'
+                            doctors.find(d => String((d as any)?._id) === String(assignmentData.assignedDoctor))?.fullName || t('common.loading')
                           ) : (
                             <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                           )}
@@ -633,13 +633,13 @@ import { TaskList } from "./TaskList";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <Building className="h-5 w-5 mr-2 text-green-500" />
-                      Location & Admission
+                      {t('patientDetail.locationAdmission')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="ward" className="text-sm font-semibold">Ward</Label>
+                        <Label htmlFor="ward" className="text-sm font-semibold">{t('patientDetail.ward')}</Label>
                         {isEditingAssignment ? (
                           <Select
                             value={assignmentData.ward}
@@ -670,10 +670,10 @@ import { TaskList } from "./TaskList";
                             disabled={!assignmentData.department || assignmentData.department === 'unassigned'}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? "Select ward" : "Select department first"} />
+                              <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectWard') : t('patientDetail.selectDepartmentFirst')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="unassigned">Not assigned</SelectItem>
+                              <SelectItem value="unassigned">{t('patientDetail.notAssigned')}</SelectItem>
                               {wards
                                 .filter(ward => !assignmentData.department || assignmentData.department === 'unassigned' || ward.department?._id === assignmentData.department)
                                 .map((ward) => (
@@ -688,14 +688,14 @@ import { TaskList } from "./TaskList";
                             {assignmentData.ward ? (
                               wards.find(w => w._id === assignmentData.ward)?.name || assignmentData.ward
                             ) : (
-                              <span className="text-muted-foreground">Not assigned</span>
+                              <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                             )}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="department" className="text-sm font-semibold">Department</Label>
+                        <Label htmlFor="department" className="text-sm font-semibold">{t('patientDetail.department')}</Label>
                         {isEditingAssignment ? (
                           <Select
                             value={assignmentData.department}
@@ -708,10 +708,10 @@ import { TaskList } from "./TaskList";
                             }))}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select department" />
+                              <SelectValue placeholder={t('patientDetail.selectDepartment')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="unassigned">Not assigned</SelectItem>
+                              <SelectItem value="unassigned">{t('patientDetail.notAssigned')}</SelectItem>
                               {departments.map((dept) => (
                                 <SelectItem key={dept._id} value={dept._id}>
                                   {dept.name}
@@ -724,7 +724,7 @@ import { TaskList } from "./TaskList";
                             {assignmentData.department ? (
                               departments.find(d => d._id === assignmentData.department)?.name || assignmentData.department
                             ) : (
-                              <span className="text-muted-foreground">Not assigned</span>
+                              <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                             )}
                           </div>
                         )}
@@ -733,7 +733,7 @@ import { TaskList } from "./TaskList";
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="roomNumber" className="text-sm font-semibold">Room</Label>
+                        <Label htmlFor="roomNumber" className="text-sm font-semibold">{t('patientDetail.room')}</Label>
                         {isEditingAssignment ? (
                           <Select
                             value={assignmentData.roomNumber}
@@ -741,7 +741,7 @@ import { TaskList } from "./TaskList";
                             disabled={!assignmentData.ward || assignmentData.ward === 'unassigned'}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={assignmentData.ward && assignmentData.ward !== 'unassigned' ? "Select room" : "Select ward first"} />
+                              <SelectValue placeholder={assignmentData.ward && assignmentData.ward !== 'unassigned' ? t('patientDetail.selectRoom') : t('patientDetail.selectWardFirst')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-48 overflow-y-auto">
                               <SelectItem value="not-assigned">{t('patientDetail.notAssigned')}</SelectItem>
@@ -755,13 +755,13 @@ import { TaskList } from "./TaskList";
                           </Select>
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.roomNumber || <span className="text-muted-foreground">Not assigned</span>}
+                            {assignmentData.roomNumber || <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="bedNumber" className="text-sm font-semibold">Bed</Label>
+                        <Label htmlFor="bedNumber" className="text-sm font-semibold">{t('patientDetail.bed')}</Label>
                         {isEditingAssignment ? (
                           <Select
                             value={assignmentData.bedNumber}
@@ -769,7 +769,7 @@ import { TaskList } from "./TaskList";
                             disabled={!assignmentData.ward || assignmentData.ward === 'unassigned'}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={assignmentData.ward && assignmentData.ward !== 'unassigned' ? "Select bed" : "Select ward first"} />
+                              <SelectValue placeholder={assignmentData.ward && assignmentData.ward !== 'unassigned' ? t('patientDetail.selectBed') : t('patientDetail.selectWardFirst')} />
                             </SelectTrigger>
                             <SelectContent className="max-h-48 overflow-y-auto">
                               <SelectItem value="not-assigned">{t('patientDetail.notAssigned')}</SelectItem>
@@ -783,7 +783,7 @@ import { TaskList } from "./TaskList";
                           </Select>
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.bedNumber || <span className="text-muted-foreground">Not assigned</span>}
+                            {assignmentData.bedNumber || <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>}
                           </div>
                         )}
                       </div>
@@ -796,62 +796,62 @@ import { TaskList } from "./TaskList";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <Calendar className="h-5 w-5 mr-2 text-purple-500" />
-                      Admission Details
+                      {t('patientDetail.admissionDetails')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="admissionType" className="text-sm font-semibold">Admission Type</Label>
+                      <Label htmlFor="admissionType" className="text-sm font-semibold">{t('patientDetail.admissionType')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.admissionType}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, admissionType: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select admission type" />
+                            <SelectValue placeholder={t('patientDetail.selectAdmissionType')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-specified">Not specified</SelectItem>
-                            <SelectItem value="inpatient">Inpatient</SelectItem>
-                            <SelectItem value="outpatient">Outpatient</SelectItem>
-                            <SelectItem value="emergency">Emergency</SelectItem>
-                            <SelectItem value="day-surgery">Day Surgery</SelectItem>
+                            <SelectItem value="not-specified">{t('patientDetail.notSpecified')}</SelectItem>
+                            <SelectItem value="inpatient">{t('patientDetail.inpatient')}</SelectItem>
+                            <SelectItem value="outpatient">{t('patientDetail.outpatient')}</SelectItem>
+                            <SelectItem value="emergency">{t('patientDetail.emergency')}</SelectItem>
+                            <SelectItem value="day-surgery">{t('patientDetail.daySurgery')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.admissionType && assignmentData.admissionType !== 'not-specified' ? assignmentData.admissionType : <span className="text-muted-foreground">Not specified</span>}
+                          {assignmentData.admissionType && assignmentData.admissionType !== 'not-specified' ? assignmentData.admissionType : <span className="text-muted-foreground">{t('patientDetail.notSpecified')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="careLevel" className="text-sm font-semibold">Care Level</Label>
+                      <Label htmlFor="careLevel" className="text-sm font-semibold">{t('patientDetail.careLevel')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.careLevel}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, careLevel: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select care level" />
+                            <SelectValue placeholder={t('patientDetail.selectCareLevel')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-specified">Not specified</SelectItem>
-                            <SelectItem value="critical">Critical</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="basic">Basic</SelectItem>
+                            <SelectItem value="not-specified">{t('patientDetail.notSpecified')}</SelectItem>
+                            <SelectItem value="critical">{t('patientDetail.critical')}</SelectItem>
+                            <SelectItem value="intermediate">{t('patientDetail.intermediate')}</SelectItem>
+                            <SelectItem value="basic">{t('patientDetail.basic')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.careLevel && assignmentData.careLevel !== 'not-specified' ? assignmentData.careLevel : <span className="text-muted-foreground">Not specified</span>}
+                          {assignmentData.careLevel && assignmentData.careLevel !== 'not-specified' ? assignmentData.careLevel : <span className="text-muted-foreground">{t('patientDetail.notSpecified')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="admissionDate" className="text-sm font-semibold">Admission Date</Label>
+                        <Label htmlFor="admissionDate" className="text-sm font-semibold">{t('patientDetail.admissionDate')}</Label>
                         {isEditingAssignment ? (
                           <Input
                             id="admissionDate"
@@ -861,13 +861,13 @@ import { TaskList } from "./TaskList";
                           />
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.admissionDate ? new Date(assignmentData.admissionDate).toLocaleDateString() : <span className="text-muted-foreground">Not set</span>}
+                            {assignmentData.admissionDate ? new Date(assignmentData.admissionDate).toLocaleDateString() : <span className="text-muted-foreground">{t('patientDetail.notSet')}</span>}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="dischargeDate" className="text-sm font-semibold">Discharge Date</Label>
+                        <Label htmlFor="dischargeDate" className="text-sm font-semibold">{t('patientDetail.dischargeDate')}</Label>
                         {isEditingAssignment ? (
                           <Input
                             id="dischargeDate"
@@ -877,7 +877,7 @@ import { TaskList } from "./TaskList";
                           />
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.dischargeDate ? new Date(assignmentData.dischargeDate).toLocaleDateString() : <span className="text-muted-foreground">Not set</span>}
+                            {assignmentData.dischargeDate ? new Date(assignmentData.dischargeDate).toLocaleDateString() : <span className="text-muted-foreground">{t('patientDetail.notSet')}</span>}
                           </div>
                         )}
                       </div>
@@ -890,79 +890,79 @@ import { TaskList } from "./TaskList";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <ShieldCheck className="h-5 w-5 mr-2 text-orange-500" />
-                      Safety & Mobility
+                      {t('patientDetail.safetyMobility')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="isolationStatus" className="text-sm font-semibold">Isolation Status</Label>
+                      <Label htmlFor="isolationStatus" className="text-sm font-semibold">{t('patientDetail.isolationStatus')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.isolationStatus}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, isolationStatus: value as "none" | "contact" | "droplet" | "airborne" }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select isolation status" />
+                            <SelectValue placeholder={t('patientDetail.selectIsolationStatus')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="contact">Contact</SelectItem>
-                            <SelectItem value="droplet">Droplet</SelectItem>
-                            <SelectItem value="airborne">Airborne</SelectItem>
+                            <SelectItem value="none">{t('patientDetail.none')}</SelectItem>
+                            <SelectItem value="contact">{t('patientDetail.contact')}</SelectItem>
+                            <SelectItem value="droplet">{t('patientDetail.droplet')}</SelectItem>
+                            <SelectItem value="airborne">{t('patientDetail.airborne')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.isolationStatus || <span className="text-muted-foreground">None</span>}
+                          {assignmentData.isolationStatus || <span className="text-muted-foreground">{t('patientDetail.none')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fallRisk" className="text-sm font-semibold">Fall Risk</Label>
+                      <Label htmlFor="fallRisk" className="text-sm font-semibold">{t('patientDetail.fallRisk')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.fallRisk}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, fallRisk: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select fall risk level" />
+                            <SelectValue placeholder={t('patientDetail.selectFallRisk')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-assessed">Not assessed</SelectItem>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="not-assessed">{t('patientDetail.notAssessed')}</SelectItem>
+                            <SelectItem value="low">{t('patientDetail.low')}</SelectItem>
+                            <SelectItem value="medium">{t('patientDetail.medium')}</SelectItem>
+                            <SelectItem value="high">{t('patientDetail.high')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.fallRisk && assignmentData.fallRisk !== 'not-assessed' ? assignmentData.fallRisk : <span className="text-muted-foreground">Not assessed</span>}
+                          {assignmentData.fallRisk && assignmentData.fallRisk !== 'not-assessed' ? assignmentData.fallRisk : <span className="text-muted-foreground">{t('patientDetail.notAssessed')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="mobilityStatus" className="text-sm font-semibold">Mobility Status</Label>
+                      <Label htmlFor="mobilityStatus" className="text-sm font-semibold">{t('patientDetail.mobilityStatus')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.mobilityStatus}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, mobilityStatus: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select mobility status" />
+                            <SelectValue placeholder={t('patientDetail.selectMobilityStatus')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-assessed">Not assessed</SelectItem>
-                            <SelectItem value="independent">Independent</SelectItem>
-                            <SelectItem value="assisted">Assisted</SelectItem>
-                            <SelectItem value="wheelchair">Wheelchair</SelectItem>
-                            <SelectItem value="bedridden">Bedridden</SelectItem>
+                            <SelectItem value="not-assessed">{t('patientDetail.notAssessed')}</SelectItem>
+                            <SelectItem value="independent">{t('patientDetail.independent')}</SelectItem>
+                            <SelectItem value="assisted">{t('patientDetail.assisted')}</SelectItem>
+                            <SelectItem value="wheelchair">{t('patientDetail.wheelchair')}</SelectItem>
+                            <SelectItem value="bedridden">{t('patientDetail.bedridden')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.mobilityStatus && assignmentData.mobilityStatus !== 'not-assessed' ? assignmentData.mobilityStatus : <span className="text-muted-foreground">Not assessed</span>}
+                          {assignmentData.mobilityStatus && assignmentData.mobilityStatus !== 'not-assessed' ? assignmentData.mobilityStatus : <span className="text-muted-foreground">{t('patientDetail.notAssessed')}</span>}
                         </div>
                       )}
                     </div>

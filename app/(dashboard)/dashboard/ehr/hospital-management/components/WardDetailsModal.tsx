@@ -180,7 +180,7 @@ const WardDetailsModal = ({ ward, onWardUpdated, children }: WardDetailsModalPro
                             <Badge variant="outline" className="text-xs mt-1">
                               {nurse.role}
                             </Badge>
-                            {ward.chargeNurse && ward.chargeNurse._id === nurse._id && (
+                            {ward.chargeNurse && ((ward.chargeNurse._id as any)?._id || ward.chargeNurse._id) === ((nurse._id as any)?._id || nurse._id) && (
                               <Badge variant="secondary" className="text-xs mt-1 ml-1">
                                 Charge Nurse
                               </Badge>
@@ -198,7 +198,7 @@ const WardDetailsModal = ({ ward, onWardUpdated, children }: WardDetailsModalPro
                             </Button>
                           )}
                         </div>
-                        {confirmRemove === nurse._id && (
+                        {confirmRemove === ((nurse._id as any)?._id || nurse._id) && (
                           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                             <p className="text-sm text-red-800 mb-2">
                               Are you sure you want to remove this nurse?

@@ -45,6 +45,7 @@ export interface Department {
     _id: string;
     fullName: string;
     role: string;
+    email?: string;
   }>;
   specialties?: string[];
   isActive: boolean;

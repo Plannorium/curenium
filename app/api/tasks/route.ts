@@ -81,9 +81,7 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newTask = new Task({
-      id: taskId,
       orgId: session.user.organizationId,
       title,
       description: description || '',

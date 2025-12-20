@@ -169,7 +169,7 @@ const HospitalManagement = () => {
             <CreateTaskModal onTaskCreated={fetchData}>
               <Button variant="default" size="sm">
                 <ClipboardList className="h-4 w-4 mr-2" />
-                Create Task
+                {t('hospitalManagementPage.createTask')}
               </Button>
             </CreateTaskModal>
           )}
@@ -239,7 +239,7 @@ const HospitalManagement = () => {
             <div className="flex items-center gap-x-3">
               <Home className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Rooms</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('hospitalManagementPage.stats.totalRooms')}</p>
                 <p className="text-2xl font-bold">{wards.reduce((sum, ward) => sum + (ward.totalRooms || 0), 0)}</p>
               </div>
             </div>

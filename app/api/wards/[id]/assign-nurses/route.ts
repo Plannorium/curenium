@@ -5,6 +5,7 @@ import connectToDB from "@/lib/dbConnect";
 import Ward from "@/models/Ward";
 import User from "@/models/User";
 import { writeAudit } from "@/lib/audit";
+import mongoose from "mongoose";
 
 export async function PATCH(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function PATCH(
     }
 
     // Check if user has permission to assign nurses (matron or admin)
-    if (!session.user.role?.includes('matron') && !session.user.role?.includes('admin')) {
+    if (session.user.role !== 'matron_nurse' && session.user.role !== 'admin') {
       return NextResponse.json({ message: "Insufficient permissions" }, { status: 403 });
     }
 
@@ -50,6 +51,9 @@ export async function PATCH(
     // Get currently assigned nurse IDs
     const currentNurseIds = ward.assignedNurses?.map(n => (n._id as any)?._id || n._id) || [];
 
+    // Capture before state for audit
+    const beforeAssignedNurses = [...(ward.assignedNurses || [])];
+
     // Update ward with assigned nurses
     ward.assignedNurses = nurseIds.map(nurseId => {
       const nurse = nurses.find(n => n._id.toString() === nurseId);
@@ -59,22 +63,27 @@ export async function PATCH(
       };
     }) as any;
 
-    await ward.save();
+    // Perform operations in a transaction for atomicity
+    await mongoose.connection.transaction(async (session) => {
+      await ward.save({ session });
 
-    // Update nurse assignments: assign ward and department to selected nurses
-    await User.updateMany(
-      { _id: { $in: nurseIds } },
-      { ward: wardId, department: ward.department }
-    );
-
-    // Remove ward assignment from nurses who are no longer assigned
-    const removedNurseIds = currentNurseIds.filter(id => !nurseIds.includes(id));
-    if (removedNurseIds.length > 0) {
+      // Update nurse assignments: assign ward and department to selected nurses
       await User.updateMany(
-        { _id: { $in: removedNurseIds } },
-        { $unset: { ward: 1 } }
+        { _id: { $in: nurseIds } },
+        { ward: wardId, department: ward.department },
+        { session }
       );
-    }
+
+      // Remove ward assignment from nurses who are no longer assigned
+      const removedNurseIds = currentNurseIds.filter(id => !nurseIds.includes(id));
+      if (removedNurseIds.length > 0) {
+        await User.updateMany(
+          { _id: { $in: removedNurseIds } },
+          { $unset: { ward: 1 } },
+          { session }
+        );
+      }
+    });
 
     // Create audit log
     await writeAudit({
@@ -84,7 +93,7 @@ export async function PATCH(
       action: 'ward.nurses.assign',
       targetType: 'Ward',
       targetId: wardId,
-      before: { assignedNurses: ward.assignedNurses },
+      before: { assignedNurses: beforeAssignedNurses },
       after: { assignedNurses: nurses.map(n => ({ _id: n._id, fullName: n.fullName })) },
       meta: { nurseIds, wardName: ward.name },
       ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'

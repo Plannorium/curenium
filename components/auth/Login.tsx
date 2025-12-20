@@ -4,7 +4,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Check } from 'lucide-react';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -28,6 +28,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
@@ -81,8 +82,11 @@ export const Login: React.FC = () => {
           break;
       }
     } else if (result?.ok) {
-      // Successful login, redirect manually
-      router.push(callbackUrl);
+      // Successful login
+      setIsSuccess(true);
+      setTimeout(() => {
+        router.push(callbackUrl);
+      }, 1500); // Brief delay to show success state
     }
   };
 
@@ -151,8 +155,14 @@ export const Login: React.FC = () => {
             {error && <p className="text-destructive dark:text-red-400 text-sm text-center bg-destructive/10 dark:bg-red-900/20 border border-destructive/20 dark:border-red-500/30 rounded-lg py-2 px-4">{error}</p>}
 
             <div className="pt-2">
-              <Button type="submit" className="w-full text-base font-semibold" size="lg" disabled={isLoading}>
-                {isLoading ? t('auth.login.signingIn') : t('auth.login.signIn')}
+              <Button type="submit" className={`w-full text-base font-semibold ${isSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`} size="lg" disabled={isLoading || isSuccess}>
+                {isLoading ? t('auth.login.signingIn') :
+                 isSuccess ? (
+                   <>
+                     <Check className="w-4 h-4 mr-2" />
+                     {t('auth.login.success')}
+                   </>
+                 ) : t('auth.login.signIn')}
               </Button>
             </div>
           </form>

@@ -23,9 +23,8 @@ export async function PATCH(
 
   const { id } = await context.params;
 
-  await dbConnect();
-
   try {
+    await dbConnect();
     const body = await req.json() as { staffIds: string[] };
     const { staffIds } = body;
 
@@ -50,14 +49,13 @@ export async function PATCH(
     }
 
     // Get currently assigned staff IDs
-    const currentStaffIds = department.assignedStaff?.map(s => (s._id as any)?._id || s._id) || [];
+    const currentStaffIds = department.assignedStaff?.map(s => s.toString()) || [];
+
+    // Capture before state for audit
+    const beforeAssignedStaff = [...(department.assignedStaff || [])];
 
     // Update department with assigned staff
-    department.assignedStaff = staffMembers.map(staff => ({
-      _id: staff._id as any,
-      fullName: staff.fullName,
-      role: staff.role
-    }));
+    department.assignedStaff = staffMembers.map(staff => staff._id as any);
 
     await department.save();
 
@@ -88,12 +86,11 @@ export async function PATCH(
       action: 'department.assign_staff',
       targetType: 'Department',
       targetId: id,
+      before: {
+        assignedStaff: beforeAssignedStaff
+      },
       after: {
-        assignedStaff: staffMembers.map(s => ({
-          _id: s._id,
-          fullName: s.fullName,
-          role: s.role
-        }))
+        assignedStaff: staffMembers.map(s => ({ _id: s._id.toString(), fullName: s.fullName }))
       },
       meta: {
         departmentName: department.name,

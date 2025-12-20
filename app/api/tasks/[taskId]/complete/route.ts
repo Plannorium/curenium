@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import connectToDB from "@/lib/dbConnect";
-import Task from "@/models/Task";
+import Task, { ITask } from "@/models/Task";
 import ShiftTracking from "@/models/ShiftTracking";
 import Patient from "@/models/Patient";
 import { writeAudit } from "@/lib/audit";
@@ -68,17 +68,37 @@ export async function PATCH(
               orgId: session.user.organizationId
             });
             if (prescription) {
+              // Check if user has access to this patient
+              const patient = await Patient.findById(prescription.patientId);
+              if (!patient) {
+                return NextResponse.json({ message: "Patient not found for this task" }, { status: 404 });
+              }
+
+              // Check permission before creating task
+              const hasPermission = await canCompleteTask(session.user as any, {
+                _id: taskId as any,
+                id: taskId,
+                patientId: prescription.patientId.toString(),
+                assignedTo: undefined as any,
+                status: 'pending',
+                type: 'medication'
+              } as any as ITask, patient as any);
+
+              if (!hasPermission) {
+                return NextResponse.json({ message: "Forbidden: You do not have permission to complete this task." }, { status: 403 });
+              }
+
               task = new Task({
                 id: taskId,
-                orgId: session.user.organizationId,
-                patientId: prescription.patientId,
+                orgId: session.user.organizationId as any,
+                patientId: prescription.patientId as any,
                 title: `Administer ${prescription.medication || prescription.medications?.join(', ')}`,
                 description: `${prescription.dose} ${prescription.route || ''} - ${prescription.frequency}`,
                 type: 'medication',
                 priority: 'medium',
                 status: 'pending',
-                createdBy: session.user.id,
-                prescriptionId: prescription._id,
+                createdBy: session.user.id as any,
+                prescriptionId: prescription._id as any,
               });
               await task.save();
             }
@@ -91,6 +111,26 @@ export async function PATCH(
         const parts = taskId.split('-');
         if (parts.length >= 3) {
           const patientId = parts[1];
+          // Verify patient exists before creating task
+          const patient = await Patient.findById(patientId);
+          if (!patient) {
+            return NextResponse.json({ message: "Patient not found for this task" }, { status: 404 });
+          }
+
+          // Check permission before creating task
+          const hasPermission = await canCompleteTask(session.user as any, {
+            _id: taskId as any,
+            id: taskId,
+            patientId: patientId,
+            assignedTo: undefined as any,
+            status: 'pending',
+            type: 'assessment'
+          } as any as ITask, patient as any);
+
+          if (!hasPermission) {
+            return NextResponse.json({ message: "Forbidden: You do not have permission to complete this task." }, { status: 403 });
+          }
+
           // Create Task document
           task = new Task({
             id: taskId,
@@ -154,8 +194,8 @@ export async function PATCH(
       targetType: shiftTracking ? 'ShiftTracking' : 'Task',
       targetId: task._id?.toString() || shiftTracking?._id?.toString() || taskId,
       meta: {
-        patientId: task.patientId.toString(),
-        taskTitle: task.title,
+        patientId: task.patientId?.toString() || '',
+        taskTitle: task.title || 'Unknown Task',
       },
       ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     });

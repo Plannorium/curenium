@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         title: `${level.toUpperCase()} Alert`,
         message,
         type: 'system_alert',
-        relatedId: newAlert._id,
+        relatedId: (newAlert as any)._id.toString(),
         sender: {
           _id: (populatedAlert?.createdBy as any)._id,
           fullName: (populatedAlert?.createdBy as any).fullName,

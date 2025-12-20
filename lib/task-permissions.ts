@@ -1,11 +1,11 @@
 import { IUser } from "@/models/User";
 import { ITask } from "@/models/Task";
-import { IPatient } from "@/models/IPatient";
+import { IPatientTaskProjection } from "@/models/IPatient";
 
 export async function canCompleteTask(
   user: IUser,
   task: ITask,
-  patient: IPatient
+  patient: IPatientTaskProjection
 ): Promise<boolean> {
   if (!user || !task || !patient) return false;
 
