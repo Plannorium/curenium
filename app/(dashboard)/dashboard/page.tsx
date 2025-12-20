@@ -378,7 +378,7 @@ const DashboardContent: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 dark:from-blue-500/10 via-transparent to-purple-500/5 dark:to-purple-500/10 rounded-xl pointer-events-none"></div>
                 <CardHeader className="relative">
                   <CardTitle className="flex items-center text-lg font-semibold text-foreground dark:text-white">
-                    <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
+                    <div className={`p-2 bg-blue-500/10 rounded-lg ${language === "en" ? "mr-3" : "ml-3"} border border-blue-500/20`}>
                       <ClipboardListIcon className="h-5 w-5 text-blue-500" />
                     </div>
                     {dashboardT.dashboard.recentAuditLogs}

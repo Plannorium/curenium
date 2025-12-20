@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     // Role-based filtering
     if (session.user.role !== 'admin' && session.user.role !== 'matron_nurse') {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      query.user = session.user.id; // Non-admin users can only see their own shifts
     }
     // Admins and Matron Nurses can see all shifts in their organization
 

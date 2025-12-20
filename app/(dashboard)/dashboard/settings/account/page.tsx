@@ -272,7 +272,7 @@ export default function AccountSettingsPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 rounded-xl pointer-events-none"></div>
           <div className="relative p-6">
             <div className="flex items-center mb-6">
-              <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
+              <div className={`p-2 bg-blue-500/10 rounded-lg ${language === "en" ? "mr-3" : "ml-3"} border border-blue-500/20`}>
                 <Link2 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
               </div>
               <h2 className="text-xl font-bold text-foreground">{t('account.linkAccounts')}</h2>
