@@ -187,13 +187,13 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
                           rel="noopener noreferrer"
                           className="group inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 border border-transparent text-xs sm:text-sm font-medium rounded-lg shadow-sm text-white dark:text-black bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-lg"
                         >
-                          <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                          <Download className={`${language === "en" ? "mr-2" : "ml-2"} h-5 w-5 group-hover:animate-bounce`} />
                           <div className="text-left">
-                            <div className="font-semibold flex items-center">
-                              <FileIcon className="mr-1 h-4 w-4" />
-                              {result.original_filename ||
-                                `Result ${index + 1}`}
-                            </div>
+                           <div className="font-semibold flex items-center">
+                             <FileIcon className={`${language === "en" ? "mr-1" : "ml-1"} h-4 w-4`} />
+                             {result.original_filename ||
+                               `Result ${index + 1}`}
+                           </div>
                             <div className="text-xs opacity-90">
                               {getFileTypeLabel(result.format)} •{" "}
                               {(result.bytes / 1024).toFixed(1)} KB
@@ -223,10 +223,10 @@ export const TestDetailsModal = ({ order, onClose }: TestDetailsModalProps) => {
                           rel="noopener noreferrer"
                           className="group inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white dark:text-black bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 ease-in-out transform hover:scale-105 hover:shadow-lg"
                         >
-                          <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                          <Download className={`${language === "en" ? "mr-2" : "ml-2"} h-5 w-5 group-hover:animate-bounce`} />
                           <div className="text-left">
                             <div className="font-semibold flex items-center">
-                              <FileIcon className="mr-1 h-4 w-4" />
+                              <FileIcon className={`${language === "en" ? "mr-1" : "ml-1"} h-4 w-4`} />
                               {result.original_filename || "Result File"}
                             </div>
                             <div className="text-xs opacity-90">
