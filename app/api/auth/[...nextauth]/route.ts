@@ -155,7 +155,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     error: '/login',
   },
-  useSecureCookies: false,
+  useSecureCookies: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL?.startsWith('https') || false : false,
 };
 
 const handler = NextAuth(authOptions);
