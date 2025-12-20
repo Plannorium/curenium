@@ -126,7 +126,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   }, [session?.user?.id, patientId]);
 
   useEffect(() => {
-    let filtered = tasks;
+    let filtered = [...tasks];
 
     if (searchQuery) {
       filtered = filtered.filter(

@@ -67,6 +67,12 @@ export async function PATCH(
       }
     }
 
+    // Capture previous delegatedTo for audit BEFORE any mutations
+    let previousDelegatedTo: string | null = null;
+    if (shiftTracking && taskIndex !== -1) {
+      previousDelegatedTo = shiftTracking.tasks[taskIndex].delegatedTo?.toString() ?? null;
+    }
+
     // If task not found in shift tracking, check if it's a dynamically generated medication task
     if (!taskData && taskId.startsWith('med-')) {
       // Extract prescription ID from task ID (format: med-{prescriptionId}-{timestamp})
@@ -82,6 +88,10 @@ export async function PATCH(
           if (prescription) {
             // Find or create Task document for medication tasks
             let task = await Task.findOne({ id: taskId });
+            // Capture previous assignedTo for medication tasks
+            if (task && !previousDelegatedTo) {
+              previousDelegatedTo = (task.delegatedTo ?? task.assignedTo)?.toString() ?? null;
+            }
             if (!task) {
               task = new Task({
                 id: taskId,
@@ -128,9 +138,6 @@ export async function PATCH(
     }
 
     // Create audit log
-    const previousDelegatedTo = shiftTracking && taskIndex !== -1
-      ? shiftTracking.tasks[taskIndex].delegatedTo?.toString() ?? null
-      : (taskData.delegatedTo ?? taskData.assignedTo ?? null)?.toString() ?? null;
 
     await writeAudit({
       orgId: session.user.organizationId || '',
