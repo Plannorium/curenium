@@ -183,8 +183,17 @@ export default function AcceptInvite() {
                   </div>
                   {(success || successKey) && <p className="text-green-600 dark:text-green-400 text-sm text-center bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-lg py-2 px-4">{translatedSuccess}</p>}
                   <div className="pt-2">
-                    <Button type="submit" className="w-full text-base font-semibold" size="lg">
-                      {t('auth.acceptInvite.completeRegistration')} <Check size={16} className="ml-2" />
+                    <Button type="submit" className={`w-full text-base font-semibold ${successKey === 'auth.acceptInvite.accountCreatedSuccess' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`} size="lg" disabled={!!successKey}>
+                      {successKey === 'auth.acceptInvite.accountCreatedSuccess' ? (
+                        <>
+                          <Check size={16} className="mr-2" />
+                          {t('auth.acceptInvite.success')}
+                        </>
+                      ) : (
+                        <>
+                          {t('auth.acceptInvite.completeRegistration')} <Check size={16} className="ml-2" />
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>

@@ -50,6 +50,9 @@ export interface IUser extends Document {
     };
     timeZone: string;
   };
+  // Hospital assignment fields
+  department?: mongoose.Types.ObjectId;
+  ward?: mongoose.Types.ObjectId;
 }
 
 const UserSchema = new mongoose.Schema(
@@ -136,6 +139,15 @@ const UserSchema = new mongoose.Schema(
         },
       },
       timeZone: { type: String, default: "UTC" },
+    },
+    // Hospital assignment fields
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department'
+    },
+    ward: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Ward'
     },
   },
   { timestamps: true }

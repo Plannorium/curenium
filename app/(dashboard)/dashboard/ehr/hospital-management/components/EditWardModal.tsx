@@ -23,38 +23,15 @@ import { Bed, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
+import { Ward as SharedWard } from '@/types/schema';
 
 interface Department {
   _id: string;
   name: string;
 }
 
-interface User {
-  _id: string;
-  fullName: string;
-  email: string;
-}
 
-interface Ward {
-  _id: string;
-  name: string;
-  wardNumber: string;
-  department: {
-    _id: string;
-    name: string;
-  };
-  totalBeds: number;
-  wardType: string;
-  floor?: string;
-  building?: string;
-  chargeNurse?: {
-    _id: string;
-    fullName: string;
-  };
-  assignedNurses: Array<{
-    _id: string;
-    fullName: string;
-  }>;
+interface Ward extends SharedWard {
   contactInfo?: {
     phone?: string;
     extension?: string;
@@ -96,13 +73,13 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
     const [department, setDepartment] = useState("");
     const [description, setDescription] = useState("");
     const [totalBeds, setTotalBeds] = useState("");
+    const [totalRooms, setTotalRooms] = useState("");
     const [wardType, setWardType] = useState<'general' | 'icu' | 'emergency' | 'maternity' | 'pediatric' | 'surgical' | 'medical'>('general');
     const [floor, setFloor] = useState("");
     const [building, setBuilding] = useState("");
     const [phone, setPhone] = useState("");
     const [extension, setExtension] = useState("");
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -113,6 +90,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
         setDepartment(ward.department?._id || "");
         setDescription(""); // Ward doesn't have description in current model
         setTotalBeds(ward.totalBeds?.toString() || "");
+        setTotalRooms(ward.totalRooms?.toString() || "");
         setWardType((ward.wardType as any) || 'general');
         setFloor(ward.floor || "");
         setBuilding(ward.building || "");
@@ -125,19 +103,11 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const [deptRes, userRes] = await Promise.all([
-            fetch("/api/departments"),
-            fetch("/api/users?role=nurse")
-          ]);
+          const deptRes = await fetch("/api/departments");
 
           if (deptRes.ok) {
             const deptData: Department[] = await deptRes.json();
             setDepartments(deptData || []);
-          }
-
-          if (userRes.ok) {
-            const userData: User[] = await userRes.json();
-            setUsers(userData || []);
           }
         } catch (error) {
           console.error("Failed to fetch data:", error);
@@ -163,6 +133,7 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
             wardNumber: wardNumber.trim(),
             department,
             totalBeds: parseInt(totalBeds),
+            totalRooms: totalRooms ? parseInt(totalRooms) : undefined,
             wardType,
             floor: floor.trim() || undefined,
             building: building.trim() || undefined,
@@ -265,48 +236,67 @@ const EditWardModal: React.FC<EditWardModalProps> = React.memo(
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="totalBeds"
-                  className="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >
-                  {t('hospitalManagementPage.modals.editWard.totalBeds')}
-                </Label>
-                <Input
-                  id="totalBeds"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={totalBeds}
-                  onChange={(e) => setTotalBeds(e.target.value)}
-                  placeholder="Number of beds"
-                  className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
-                  required
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="space-y-2">
+                 <Label
+                   htmlFor="totalBeds"
+                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                 >
+                   {t('hospitalManagementPage.modals.editWard.totalBeds')}
+                 </Label>
+                 <Input
+                   id="totalBeds"
+                   type="number"
+                   min="1"
+                   max="100"
+                   value={totalBeds}
+                   onChange={(e) => setTotalBeds(e.target.value)}
+                   placeholder="Number of beds"
+                   className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                   required
+                 />
+               </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="wardType"
-                  className="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >
-                  {t('hospitalManagementPage.modals.editWard.wardType')}
-                </Label>
-                <Select value={wardType} onValueChange={(value: any) => setWardType(value)}>
-                  <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                    <SelectValue placeholder={t('hospitalManagementPage.modals.editWard.selectWardType')} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-950">
-                    {wardTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+               <div className="space-y-2">
+                 <Label
+                   htmlFor="totalRooms"
+                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                 >
+                   {t('hospitalManagementPage.modals.editWard.totalRooms')}
+                 </Label>
+                 <Input
+                   id="totalRooms"
+                   type="number"
+                   min="1"
+                   max="50"
+                   value={totalRooms}
+                   onChange={(e) => setTotalRooms(e.target.value)}
+                   placeholder="Number of rooms"
+                   className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label
+                   htmlFor="wardType"
+                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                 >
+                   {t('hospitalManagementPage.modals.editWard.wardType')}
+                 </Label>
+                 <Select value={wardType} onValueChange={(value: any) => setWardType(value)}>
+                   <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
+                     <SelectValue placeholder={t('hospitalManagementPage.modals.editWard.selectWardType')} />
+                   </SelectTrigger>
+                   <SelectContent className="bg-white dark:bg-gray-950">
+                     {wardTypes.map((type) => (
+                       <SelectItem key={type.value} value={type.value}>
+                         {type.label}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
+             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

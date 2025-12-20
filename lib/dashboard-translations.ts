@@ -1,3 +1,5 @@
+import { se } from "date-fns/locale";
+
 export const dashboardTranslations = {
   en: {
     // Dashboard Page
@@ -286,7 +288,10 @@ export const dashboardTranslations = {
       save: "Save",
       delete: "Delete",
       edit: "Edit",
-      view: "View",
+      view: "View Profile",
+      billing: "Billing",
+      settings: "Settings",
+      team: "Team",
       create: "Create",
       update: "Update",
       confirm: "Confirm",
@@ -608,6 +613,21 @@ export const dashboardTranslations = {
       assisted: "Assisted",
       wheelchair: "Wheelchair",
       bedridden: "Bedridden",
+      careTeamAssignmentTitle: "Care Team Assignment",
+      assignedNurseLabel: "Assigned Nurse",
+      assignedDoctorLabel: "Assigned Doctor",
+      locationDetails: "Location Details",
+      patientBarcode: "Patient Barcode",
+      scanBarcodeText: "Scan this barcode for patient identification",
+      mrnNotAvailable: "MRN not available",
+      download: "Download",
+      print: "Print",
+      selectWard: "Select ward",
+      selectDepartmentFirst: "Select department first",
+      selectDepartment: "Select department",
+      selectRoom: "Select room",
+      selectWardFirst: "Select ward first",
+      selectBed: "Select bed",
     },
 
     // Appointments Display Componen
@@ -1295,16 +1315,19 @@ export const dashboardTranslations = {
 
     hospitalManagementPage: {
       title: "Hospital Management",
-      subtitle: "Manage departments, wards, and hospital infrastructure",
+      subtitle: "Manage departments, wards, and bed allocations",
       loading: "Loading hospital data...",
+      createTask: "Create Task",
+      assignStaff: "Assign Staff",
+      assignNurse: "Assign Nurse",
       errors: {
-        fetchFailed: "Failed to load hospital data",
+        fetchFailed: "Failed to fetch hospital data",
         departmentDeactivated: "Department deactivated successfully",
         departmentDeactivateFailed: "Failed to deactivate department",
-        departmentDeactivateError: "An error occurred while deactivating department",
+        departmentDeactivateError: "An error occurred while deactivating the department",
         wardDeactivated: "Ward deactivated successfully",
         wardDeactivateFailed: "Failed to deactivate ward",
-        wardDeactivateError: "An error occurred while deactivating ward"
+        wardDeactivateError: "An error occurred while deactivating the ward"
       },
       buttons: {
         refresh: "Refresh",
@@ -1312,13 +1335,17 @@ export const dashboardTranslations = {
         addWard: "Add Ward",
         view: "View",
         edit: "Edit",
-        deactivate: "Deactivate"
+        deactivate: "Deactivate",
+        createTask: "Create Task",
+        assignStaff: "Assign Staff",
+        assign: "Assign"
       },
       stats: {
         departments: "Departments",
         totalWards: "Total Wards",
         totalBeds: "Total Beds",
-        availableBeds: "Available Beds"
+        availableBeds: "Available Beds",
+        totalRooms: "Total Rooms"
       },
       tabs: {
         departments: "Departments",
@@ -1328,16 +1355,17 @@ export const dashboardTranslations = {
         departments: "Departments",
         wards: "Wards"
       },
+      cardTitle: "Hospital Management",
       status: {
         active: "Active",
         inactive: "Inactive"
       },
       wardTypes: {
         icu: "ICU",
-        emergency: "EMERGENCY",
-        maternity: "MATERNITY",
-        pediatric: "PEDIATRIC",
-        surgical: "SURGICAL"
+        emergency: "Emergency",
+        maternity: "Maternity",
+        pediatric: "Pediatric",
+        surgical: "Surgical"
       },
       labels: {
         head: "Head:",
@@ -1346,19 +1374,97 @@ export const dashboardTranslations = {
         beds: "Beds:",
         location: "Location:",
         chargeNurse: "Charge Nurse:",
-        noDescription: "No description"
-      },
-      confirm: {
-        deactivateDepartment: "Are you sure you want to deactivate this department?",
-        deactivateWard: "Are you sure you want to deactivate this ward?"
+        noDescription: "No description",
+        totalRooms: "Total Rooms",
+        available: "available",
+        rooms: "rooms",
+        headOfDepartment: "Head of Department",
+        createTask: "Create Task",
+        assign: "Assign"
       },
       modals: {
+        createTask: {
+          title: "Create Task",
+          patient: "Patient",
+          assignTo: "Assign to",
+          taskTitle: "Task Title",
+          description: "Description",
+          taskType: "Task Type",
+          priority: "Priority",
+          dueDateTime: "Due Date & Time",
+          cancel: "Cancel",
+          createTask: "Create Task",
+          creating: "Creating...",
+          fillRequiredFields: "Please fill in all required fields",
+          assignPermissionError: "Tasks can only be assigned to nurses in the same department or ward as the patient",
+          success: "Task created successfully",
+          failed: "Failed to create task",
+          insufficientPermissions: "Insufficient permissions to create tasks",
+          loading: "Loading patients and nurses...",
+          selectPatient: "Select a patient",
+          selectNurse: "Select a nurse",
+          taskTitlePlaceholder: "e.g., Administer IV antibiotics",
+          descriptionPlaceholder: "Additional details or instructions...",
+          taskTypes: {
+            assessment: "Assessment",
+            medication: "Medication",
+            vital_check: "Vital Check",
+            documentation: "Documentation",
+            custom: "Custom"
+          },
+          priorities: {
+            low: "Low",
+            medium: "Medium",
+            high: "High",
+            urgent: "Urgent"
+          }
+        },
+        wardDetails: {
+          title: "Ward Details",
+          wardInformation: "Ward Information",
+          name: "Name",
+          type: "Type",
+          wardNumber: "Ward Number",
+          department: "Department",
+          beds: "Beds",
+          chargeNurse: "Charge Nurse",
+          location: "Location",
+          assignedNurses: "Assigned Nurses ({count})",
+          noNursesAssigned: "No nurses assigned to this ward",
+          assignFirstNurse: "Assign First Nurse",
+          close: "Close"
+        },
+        departmentDetails: {
+          title: "Department Details",
+          departmentInformation: "Department Information",
+          name: "Name",
+          status: "Status",
+          headOfDepartment: "Head of Department",
+          description: "Description",
+          specialties: "Specialties",
+          assignedStaff: "Assigned Staff ({count})",
+          noStaffAssigned: "No staff members assigned to this department",
+          assignFirstStaff: "Assign First Staff Member",
+          close: "Close"
+        },
+        assignStaff: {
+          title: "Assign Staff to {department}",
+          description: "Select staff members to assign to this department.",
+          selected: "Selected",
+          noStaffAvailable: "No staff members available for assignment."
+        },
+        assignNurses: {
+          title: "Assign Nurses to {ward}",
+          description: "Select nurses to assign to this ward. Nurses can only be assigned from the same department.",
+          selected: "Selected",
+          noNursesAvailable: "No nurses available for assignment in this department."
+        },
         addDepartment: {
           title: "Add New Department",
           departmentName: "Department Name *",
           description: "Description",
           headOfDepartment: "Head of Department",
-          selectHead: "Select head of department",
+          selectHead: "Select Head of Department",
           specialties: "Specialties",
           enterSpecialty: "Enter specialty name",
           phone: "Phone",
@@ -1375,16 +1481,16 @@ export const dashboardTranslations = {
           wardName: "Ward Name *",
           wardNumber: "Ward Number *",
           department: "Department *",
-          selectDepartment: "Select department",
+          selectDepartment: "Select Department",
           totalBeds: "Total Beds *",
           wardType: "Ward Type *",
-          selectWardType: "Select ward type",
+          selectWardType: "Select Ward Type",
           floor: "Floor",
           building: "Building",
           phone: "Phone",
           extension: "Extension",
           description: "Description",
-          descriptionPlaceholder: "Ward description and facilities...",
+          descriptionPlaceholder: "Describe the ward and its facilities...",
           cancel: "Cancel",
           creating: "Creating...",
           createWard: "Create Ward",
@@ -1405,17 +1511,19 @@ export const dashboardTranslations = {
           extension: "Extension:",
           facilities: "Facilities",
           created: "Created",
-          close: "Close"
+          close: "Close",
+          active: "Active",
+          inactive: "Inactive"
         },
         editWard: {
           title: "Edit Ward",
           wardName: "Ward Name *",
           wardNumber: "Ward Number *",
           department: "Department *",
-          selectDepartment: "Select department",
+          selectDepartment: "Select Department",
           totalBeds: "Total Beds *",
           wardType: "Ward Type *",
-          selectWardType: "Select ward type",
+          selectWardType: "Select Ward Type",
           floor: "Floor",
           building: "Building",
           phone: "Phone",
@@ -1432,9 +1540,9 @@ export const dashboardTranslations = {
           departmentName: "Department Name *",
           description: "Description",
           headOfDepartment: "Head of Department",
-          selectHead: "Select head of department",
+          selectHead: "Select Head of Department",
           specialties: "Specialties",
-          addSpecialty: "Add new specialty",
+          addSpecialty: "Add New Specialty",
           phone: "Phone",
           email: "Email",
           cancel: "Cancel",
@@ -1451,11 +1559,128 @@ export const dashboardTranslations = {
           specialties: "Specialties",
           contactInfo: "Contact Information",
           created: "Created",
-          close: "Close"
+          close: "Close",
+          active: "Active",
+          inactive: "Inactive"
         }
-      }
+      },
+      confirm: {
+        deactivateDepartment: "deactivate this department",
+        deactivateWard: "deactivate this ward"
+      },
     },
 
+     createTaskModal: {
+       title: "Create Patient Task",
+       patient: "Patient",
+       assignTo: "Assign To",
+       taskTitle: "Task Title",
+       description: "Description",
+       taskType: "Task Type",
+       priority: "Priority",
+       dueDateTime: "Due Date & Time",
+       cancel: "Cancel",
+       createTask: "Create Task",
+       creating: "Creating...",
+       fillRequiredFields: "Please fill in all required fields",
+       assignPermissionError: "Can only assign tasks to nurses in the same department or ward as the patient",
+       success: "Task created successfully",
+       failed: "Failed to create task",
+       insufficientPermissions: "Insufficient permissions to create tasks",
+       loading: "Loading patients and nurses...",
+       selectPatient: "Select patient",
+       selectNurse: "Select nurse",
+       selectNursePlaceholder: "Select nurse",
+       taskTitlePlaceholder: "e.g., Administer IV antibiotics",
+       descriptionPlaceholder: "Additional details or instructions...",
+       taskTypes: {
+         assessment: "Assessment",
+         medication: "Medication",
+         vital_check: "Vital Check",
+         documentation: "Documentation",
+         custom: "Custom"
+       },
+       priorities: {
+         low: "Low",
+         medium: "Medium",
+         high: "High",
+         urgent: "Urgent"
+       }
+     },
+
+        // Task List Component
+        taskList: {
+          title: "Tasks",
+          subtitle: "Patient care tasks and assignments",
+          createTask: "Create Task",
+          noTasksYet: "No tasks yet",
+          tasksDescription: "Tasks will appear here when assigned to this patient.",
+          createFirstTask: "Create First Task",
+          failedToFetch: "Failed to fetch tasks",
+          status: {
+            pending: "Pending",
+            in_progress: "In Progress",
+            completed: "Completed",
+            overdue: "Overdue"
+          },
+          priority: {
+            low: "Low",
+            medium: "Medium",
+            high: "High",
+            urgent: "Urgent"
+          },
+          type: {
+            assessment: "Assessment",
+            medication: "Medication",
+            vital_check: "Vital Check",
+            documentation: "Documentation",
+            custom: "Custom"
+          },
+          assignedTo: "Assigned to",
+          dueDate: "Due Date",
+          actions: "Actions",
+          markComplete: "Mark Complete",
+          viewDetails: "View Details",
+          noAssignee: "No assignee",
+          overdueBy: "Overdue by {days} days",
+          dueIn: "Due in {days} days",
+          dueToday: "Due today",
+          completedOn: "Completed on {date}",
+          createdBy: "Created by {name}",
+          notes: "Notes",
+          description: "Description",
+          stats: {
+            pending: "Pending",
+            completed: "Completed",
+            overdue: "Overdue",
+            urgent: "Urgent"
+          },
+          filters: {
+            statusPlaceholder: "Status",
+            priorityPlaceholder: "Priority",
+            searchPlaceholder: "Search tasks...",
+            status: {
+              all: "All Status",
+              pending: "Pending",
+              completed: "Completed",
+              overdue: "Overdue"
+            },
+            priority: {
+              all: "All Priority",
+              urgent: "Urgent",
+              high: "High",
+              medium: "Medium",
+              low: "Low"
+            }
+          },
+          emptyState: {
+            noTasksFound: "No tasks found",
+            tryAdjustingFilters: "Try adjusting your filters",
+            allCaughtUp: "All caught up! No pending tasks."
+          },
+          loadingTasks: "Loading tasks..."
+        },
+    
     // Patients Page
     patientsPage: {
       title: "Patient Management",
@@ -1865,6 +2090,9 @@ export const dashboardTranslations = {
       delete: "حذف",
       edit: "تعديل",
       view: "عرض",
+      billing: "الفواتير",
+      settings: "الإعدادات",
+      team: "الفريق",
       create: "إنشاء",
       update: "تحديث",
       confirm: "تأكيد",
@@ -1934,6 +2162,44 @@ export const dashboardTranslations = {
       targetId: "معرف الهدف",
       noAuditLogsFound: "لم يتم العثور على سجلات تدقيق.",
     },
+
+      createTaskModal: {
+        title: "إنشاء مهمة مريض",
+        patient: "المريض",
+        assignTo: "تعيين إلى",
+        taskTitle: "عنوان المهمة",
+        description: "الوصف",
+        taskType: "نوع المهمة",
+        priority: "الأولوية",
+        dueDateTime: "تاريخ ووقت الاستحقاق",
+        cancel: "إلغاء",
+        createTask: "إنشاء مهمة",
+        creating: "جارٍ الإنشاء...",
+        fillRequiredFields: "يرجى ملء جميع الحقول المطلوبة",
+        assignPermissionError: "يمكن تعيين المهام فقط للممرضات في نفس القسم أو الجناح كالمريض",
+        success: "تم إنشاء المهمة بنجاح",
+        failed: "فشل في إنشاء المهمة",
+        insufficientPermissions: "صلاحيات غير كافية لإنشاء المهام",
+        loading: "جارٍ تحميل المرضى والممرضات...",
+        selectPatient: "اختر مريضاً",
+        selectNurse: "اختر ممرضة",
+        selectNursePlaceholder: "اختر ممرضة",
+        taskTitlePlaceholder: "مثال: إعطاء مضادات حيوية وريدية",
+        descriptionPlaceholder: "تفاصيل إضافية أو تعليمات...",
+        taskTypes: {
+          assessment: "تقييم",
+          medication: "أدوية",
+          vital_check: "فحص العلامات الحيوية",
+          documentation: "توثيق",
+          custom: "مخصص"
+        },
+        priorities: {
+          low: "منخفض",
+          medium: "متوسط",
+          high: "عالي",
+          urgent: "عاجل"
+        }
+      },
 
     // Shift View Component
     shiftView: {
@@ -2357,7 +2623,6 @@ export const dashboardTranslations = {
       resolved: "محلول",
       inactive: "غير نشط",
     },
-
     // Appointments Display Component
     appointmentsDisplay: {
       title: "المواعيد",
@@ -2403,8 +2668,8 @@ export const dashboardTranslations = {
       overview: "نظرة عامة",
       appointments: "المواعيد",
       insurance: "التأمين",
-      auditLog: "سجل التدقيق",
-      clinicalNotes: "الملاحظات السريرية",
+      auditLog: "سجل تدقيق",
+      clinicalNotes: "سريرية",
       assignment: "التعيين",
       dateOfBirth: "تاريخ الميلاد",
       gender: "الجنس",
@@ -2473,6 +2738,94 @@ export const dashboardTranslations = {
       assisted: "مساعد",
       wheelchair: "كرسي متحرك",
       bedridden: "مقعد على السرير",
+      careTeamAssignmentTitle: "تعيين فريق الرعاية",
+      assignedNurseLabel: "الممرضة المعينة",
+      assignedDoctorLabel: "الطبيب المعين",
+      locationDetails: "تفاصيل الموقع",
+      patientBarcode: "باركود المريض",
+      scanBarcodeText: "امسح هذا الباركود لتحديد المريض",
+      mrnNotAvailable: "رقم السجل غير متوفر",
+      download: "تحميل",
+      print: "طباعة",
+      selectWard: "اختر الجناح",
+      selectDepartmentFirst: "اختر القسم أولاً",
+      selectDepartment: "اختر القسم",
+      selectRoom: "اختر الغرفة",
+      selectWardFirst: "اختر الجناح أولاً",
+      selectBed: "اختر السرير",
+    },
+
+    // Task List Component
+    taskList: {
+      title: "المهام",
+      subtitle: "مهام رعاية المريض والتعيينات",
+      createTask: "إنشاء مهمة",
+      noTasksYet: "لا توجد مهام بعد",
+      tasksDescription: "ستظهر المهام هنا عند تعيينها لهذا المريض.",
+      createFirstTask: "إنشاء أول مهمة",
+      failedToFetch: "فشل في جلب المهام",
+      status: {
+        pending: "معلق",
+        in_progress: "قيد التنفيذ",
+        completed: "مكتمل",
+        overdue: "متأخر"
+      },
+      priority: {
+        low: "منخفض",
+        medium: "متوسط",
+        high: "عالي",
+        urgent: "عاجل"
+      },
+      type: {
+        assessment: "تقييم",
+        medication: "أدوية",
+        vital_check: "فحص العلامات الحيوية",
+        documentation: "توثيق",
+        custom: "مخصص"
+      },
+      assignedTo: "معين إلى",
+      dueDate: "تاريخ الاستحقاق",
+      actions: "الإجراءات",
+      markComplete: "وضع علامة مكتمل",
+      viewDetails: "عرض التفاصيل",
+      noAssignee: "لا يوجد معين",
+      overdueBy: "متأخر بـ {days} أيام",
+      dueIn: "مستحق خلال {days} أيام",
+      dueToday: "مستحق اليوم",
+      completedOn: "تم إكماله في {date}",
+      createdBy: "أنشئ بواسطة {name}",
+      notes: "ملاحظات",
+      description: "الوصف",
+      stats: {
+        pending: "معلق",
+        completed: "مكتمل",
+        overdue: "متأخر",
+        urgent: "عاجل"
+      },
+      filters: {
+        statusPlaceholder: "الحالة",
+        priorityPlaceholder: "الأولوية",
+        searchPlaceholder: "البحث في المهام...",
+        status: {
+          all: "جميع الحالات",
+          pending: "معلق",
+          completed: "مكتمل",
+          overdue: "متأخر"
+        },
+        priority: {
+          all: "جميع الأولويات",
+          urgent: "عاجل",
+          high: "عالي",
+          medium: "متوسط",
+          low: "منخفض"
+        }
+      },
+      emptyState: {
+        noTasksFound: "لم يتم العثور على مهام",
+        tryAdjustingFilters: "جرب تعديل المرشحات",
+        allCaughtUp: "كل شيء على ما يرام! لا توجد مهام معلقة."
+      },
+      loadingTasks: "جارٍ تحميل المهام..."
     },
 
     // Appointments
@@ -3202,6 +3555,11 @@ export const dashboardTranslations = {
       title: "إدارة المستشفى",
       subtitle: "إدارة الأقسام والأجنحة والبنية التحتية للمستشفى",
       loading: "جارٍ تحميل بيانات المستشفى...",
+      createTask: "إنشاء مهمة مريض",
+      assignStaff: "تعيين موظفين",
+      createDepartment: "إضافة قسم جديد",
+      createWard: "إضافة جناح جديد",
+      assignNurse: "تعيين ممرضة",
       errors: {
         fetchFailed: "فشل في تحميل بيانات المستشفى",
         departmentDeactivated: "تم إلغاء تنشيط القسم بنجاح",
@@ -3217,13 +3575,17 @@ export const dashboardTranslations = {
         addWard: "إضافة جناح",
         view: "عرض",
         edit: "تعديل",
-        deactivate: "إلغاء التنشيط"
+        deactivate: "إلغاء التنشيط",
+        createTask: "إنشاء مهمة",
+        assignStaff: "تعيين موظفين",
+        assign: "تعيين"
       },
       stats: {
         departments: "الأقسام",
         totalWards: "إجمالي الأجنحة",
         totalBeds: "إجمالي الأسرة",
-        availableBeds: "الأسرة المتاحة"
+        availableBeds: "الأسرة المتاحة",
+        totalRooms: "إجمالي الغرف"
       },
       tabs: {
         departments: "الأقسام",
@@ -3251,13 +3613,92 @@ export const dashboardTranslations = {
         beds: "الأسرة:",
         location: "الموقع:",
         chargeNurse: "الممرضة المسؤولة:",
-        noDescription: "لا يوجد وصف"
+        noDescription: "لا يوجد وصف",
+        totalRooms: "إجمالي الغرف",
+        available: "متاح",
+        rooms: "غرف"
       },
       confirm: {
         deactivateDepartment: "هل أنت متأكد من أنك تريد إلغاء تنشيط هذا القسم؟",
         deactivateWard: "هل أنت متأكد من أنك تريد إلغاء تنشيط هذا الجناح؟"
       },
       modals: {
+        createTask: {
+          title: "إنشاء مهمة مريض",
+          patient: "المريض",
+          assignTo: "تعيين إلى",
+          taskTitle: "عنوان المهمة",
+          description: "الوصف",
+          taskType: "نوع المهمة",
+          priority: "الأولوية",
+          dueDateTime: "تاريخ ووقت الاستحقاق",
+          cancel: "إلغاء",
+          createTask: "إنشاء مهمة",
+          creating: "جارٍ الإنشاء...",
+          fillRequiredFields: "يرجى ملء جميع الحقول المطلوبة",
+          assignPermissionError: "يمكن تعيين المهام فقط للممرضات في نفس القسم أو الجناح كالمريض",
+          success: "تم إنشاء المهمة بنجاح",
+          failed: "فشل في إنشاء المهمة",
+          insufficientPermissions: "صلاحيات غير كافية لإنشاء المهام",
+          loading: "جارٍ تحميل المرضى والممرضات...",
+          selectPatient: "اختر مريضاً",
+          selectNurse: "اختر ممرضة",
+          taskTitlePlaceholder: "مثال: إعطاء مضادات حيوية وريدية",
+          descriptionPlaceholder: "تفاصيل إضافية أو تعليمات...",
+          taskTypes: {
+            assessment: "تقييم",
+            medication: "أدوية",
+            vital_check: "فحص العلامات الحيوية",
+            documentation: "توثيق",
+            custom: "مخصص"
+          },
+          priorities: {
+            low: "منخفض",
+            medium: "متوسط",
+            high: "عالي",
+            urgent: "عاجل"
+          }
+        },
+        wardDetails: {
+          title: "تفاصيل الجناح",
+          wardInformation: "معلومات الجناح",
+          name: "الاسم",
+          type: "النوع",
+          wardNumber: "رقم الجناح",
+          department: "القسم",
+          beds: "الأسرة",
+          chargeNurse: "الممرضة المسؤولة",
+          location: "الموقع",
+          assignedNurses: "الممرضات المعينات ({count})",
+          noNursesAssigned: "لا توجد ممرضات معينات لهذا الجناح",
+          assignFirstNurse: "تعيين أول ممرضة",
+          close: "إغلاق"
+        },
+        departmentDetails: {
+          title: "تفاصيل القسم",
+          departmentInformation: "معلومات القسم",
+          name: "الاسم",
+          status: "الحالة",
+          headOfDepartment: "رئيس القسم",
+          description: "الوصف",
+          specialties: "التخصصات",
+          assignedStaff: "الموظفين المعينين ({count})",
+          noStaffAssigned: "لا يوجد موظفين معينين لهذا القسم",
+          assignFirstStaff: "تعيين أول موظف",
+          close: "إغلاق"
+        },
+        assignStaff: {
+          title: "تعيين موظفين لـ {department}",
+          description: "اختر أعضاء الموظفين لتعيينهم لهذا القسم.",
+          selected: "محدد",
+          noStaffAvailable: "لا يوجد موظفين متاحين للتعيين."
+        },
+        assignNurses: {
+          title: "تعيين ممرضات لـ {ward}",
+          description: "اختر ممرضات لتعيينهن لهذا الجناح. يمكن تعيين الممرضات من نفس القسم فقط.",
+          selected: "محدد",
+          noNursesAvailable: "لا توجد ممرضات متاحات للتعيين في هذا القسم."
+        },
         addDepartment: {
           title: "إضافة قسم جديد",
           departmentName: "اسم القسم *",
@@ -3310,7 +3751,9 @@ export const dashboardTranslations = {
           extension: "الامتداد:",
           facilities: "المرافق",
           created: "تم الإنشاء",
-          close: "إغلاق"
+          close: "إغلاق",
+          active: "نشط",
+          inactive: "غير نشط"
         },
         editWard: {
           title: "تعديل الجناح",
@@ -3356,11 +3799,12 @@ export const dashboardTranslations = {
           specialties: "التخصصات",
           contactInfo: "معلومات الاتصال",
           created: "تم الإنشاء",
-          close: "إغلاق"
+          close: "إغلاق",
+          active: "نشط",
+          inactive: "غير نشط"
         }
       }
     },
-
     dispensePrescriptionModal: {
       title: "توزيع الوصفة",
       labels: {

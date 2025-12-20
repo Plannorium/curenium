@@ -33,6 +33,24 @@ export interface IShiftTracking extends Document {
   ward?: mongoose.Types.ObjectId;
   role: string; // e.g., 'matron_nurse', 'nurse', 'admin'
 
+  // Task tracking
+  tasks: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    type: 'medication' | 'vital_check' | 'assessment' | 'documentation' | 'custom';
+    patientId?: mongoose.Types.ObjectId;
+    prescriptionId?: mongoose.Types.ObjectId;
+    dueTime?: Date;
+    completedAt?: Date;
+    completedBy?: mongoose.Types.ObjectId;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    status: 'pending' | 'completed' | 'overdue' | 'cancelled';
+    notes?: string;
+    delegatedTo?: mongoose.Types.ObjectId; // CNA or other staff
+    reminderSent?: boolean;
+  }>;
+
   // Break tracking
   breaks: Array<{
     type: BreakType;
@@ -123,6 +141,64 @@ const ShiftTrackingSchema: Schema = new Schema(
       required: true,
       trim: true
     },
+
+    // Task tracking
+    tasks: [{
+      id: {
+        type: String,
+        required: true
+      },
+      title: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      description: {
+        type: String,
+        trim: true
+      },
+      type: {
+        type: String,
+        enum: ['medication', 'vital_check', 'assessment', 'documentation', 'custom'],
+        required: true
+      },
+      patientId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Patient'
+      },
+      prescriptionId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Prescription'
+      },
+      dueTime: Date,
+      completedAt: Date,
+      completedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      priority: {
+        type: String,
+        enum: ['low', 'medium', 'high', 'urgent'],
+        default: 'medium'
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'completed', 'overdue', 'cancelled'],
+        default: 'pending'
+      },
+      notes: {
+        type: String,
+        trim: true
+      },
+      delegatedTo: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      reminderSent: {
+        type: Boolean,
+        default: false
+      }
+    }],
 
     // Break tracking
     breaks: [{

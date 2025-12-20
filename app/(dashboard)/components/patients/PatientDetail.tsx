@@ -4,7 +4,7 @@ import { Patient } from "@/types/patient" ;
   import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar" ;
   import { Badge } from "@/components/ui/badge" ;
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs" ;
-  import { Cake, VenetianMask, Mail, Phone, FileText, Pill, Calendar, Activity, ClipboardCheck, ShieldCheck, Home, UserSquare, Share2, Stethoscope, Beaker, ArrowUp, ArrowUpRight, ExternalLink, Users, Building, UserCheck, Printer, Download } from 'lucide-react';
+  import { Cake, VenetianMask, Mail, Phone, FileText, Pill, Calendar, Activity, ClipboardCheck, ShieldCheck, Home, UserSquare, Share2, Stethoscope, Beaker, ArrowUp, ArrowUpRight, ExternalLink, Users, Building, UserCheck, Printer, Download, CheckSquare } from 'lucide-react';
   import Barcode from 'react-barcode';
 import DetailItem from "@/app/(dashboard)/components/patients/DetailItem";
 import EmptyTabContent from "@/app/(dashboard)/components/patients/EmptyTabContent";
@@ -12,6 +12,7 @@ import AppointmentsDisplay from "./AppointmentsDisplay";
 import InsuranceDisplay from "./InsuranceDisplay";
 import AuditLogDisplay from "./AuditLogDisplay";
 import { SharePatientModal } from "./SharePatientModal";
+import { TaskList } from "./TaskList";
   import { Button } from "@/components/ui/button";
   import { toast } from "sonner";
   import { motion } from "framer-motion" ;
@@ -55,10 +56,10 @@ import { SharePatientModal } from "./SharePatientModal";
      const [isShareModalOpen, setIsShareModalOpen] = useState(false);
      const [isEditingAssignment, setIsEditingAssignment] = useState(false);
    const [assignmentData, setAssignmentData] = useState({
-     assignedNurse: patient.assignedNurse ? patient.assignedNurse.toString() : 'unassigned',
-     assignedDoctor: patient.assignedDoctor ? patient.assignedDoctor.toString() : 'unassigned',
-     ward: patient.ward || '',
-     department: patient.department || '',
+     assignedNurse: patient.assignedNurse ? (typeof patient.assignedNurse === 'object' && (patient.assignedNurse as any)._id ? (patient.assignedNurse as any)._id : patient.assignedNurse.toString()) : 'unassigned',
+     assignedDoctor: patient.assignedDoctor ? (typeof patient.assignedDoctor === 'object' && (patient.assignedDoctor as any)._id ? (patient.assignedDoctor as any)._id : patient.assignedDoctor.toString()) : 'unassigned',
+     ward: patient.ward ? (typeof patient.ward === 'object' && (patient.ward as any)._id ? (patient.ward as any)._id : patient.ward.toString()) : '',
+     department: patient.department ? (typeof patient.department === 'object' && (patient.department as any)._id ? (patient.department as any)._id : patient.department.toString()) : '',
      roomNumber: patient.roomNumber || '',
      bedNumber: patient.bedNumber || '',
      admissionType: patient.admissionType || 'not-specified',
@@ -71,17 +72,66 @@ import { SharePatientModal } from "./SharePatientModal";
    });
    const [nurses, setNurses] = useState<User[]>([]);
    const [doctors, setDoctors] = useState<User[]>([]);
+   const [departments, setDepartments] = useState<any[]>([]);
+   const [wards, setWards] = useState<any[]>([]);
    const [isSavingAssignment, setIsSavingAssignment] = useState(false);
+   const [selectedWardDetails, setSelectedWardDetails] = useState<any>(null);
    const { data: session } = useSession();
    const barcodeRef = useRef<HTMLDivElement>(null);
 
-   // Fetch nurses and doctors
+   // Fetch departments, wards, nurses and doctors
    useEffect(() => {
-     const fetchStaff = async () => {
+     const fetchData = async () => {
        try {
+         // Fetch departments and wards
+         const [departmentsRes, wardsRes] = await Promise.all([
+           fetch('/api/departments'),
+           fetch('/api/wards')
+         ]);
+
+         if (departmentsRes.ok) {
+           const departmentsData = (await departmentsRes.json()) as any[];
+           setDepartments(departmentsData);
+         }
+
+         if (wardsRes.ok) {
+           const wardsData = (await wardsRes.json()) as any[];
+           setWards(wardsData);
+
+           // If patient already has a ward assigned, fetch its details
+           if (patient.ward) {
+             const wardId = typeof patient.ward === 'object' && (patient.ward as any)._id ? (patient.ward as any)._id : patient.ward;
+             const patientWard = wardsData.find(w => w._id === wardId);
+             if (patientWard) {
+               setSelectedWardDetails(patientWard);
+             }
+           }
+         }
+
+         // Build query parameters based on patient's department and ward
+         const nurseParams = new URLSearchParams();
+         nurseParams.append('role', 'nurse');
+         nurseParams.append('role', 'matron_nurse');
+         const doctorParams = new URLSearchParams({ role: 'doctor' });
+
+         const departmentId = patient.department && (typeof patient.department === 'object' && (patient.department as any)._id ? (patient.department as any)._id : patient.department);
+         const wardId = patient.ward && (typeof patient.ward === 'object' && (patient.ward as any)._id ? (patient.ward as any)._id : patient.ward);
+
+         // If a ward is selected, filter nurses by ward. Otherwise, filter by department.
+         if (wardId) {
+           nurseParams.append('ward', wardId.toString());
+         } else if (departmentId) {
+           nurseParams.append('department', departmentId.toString());
+         }
+
+         // Filter doctors by department.
+         if (departmentId) {
+           doctorParams.append('department', departmentId.toString());
+         }
+
          const [nursesRes, doctorsRes] = await Promise.all([
-           fetch('/api/users?role=nurse'),
-           fetch('/api/users?role=doctor')
+           fetch(`/api/users?${nurseParams.toString()}`),
+           fetch(`/api/users?${doctorParams.toString()}`)
          ]);
 
          if (nursesRes.ok) {
@@ -94,12 +144,58 @@ import { SharePatientModal } from "./SharePatientModal";
            setDoctors(doctorsData);
          }
        } catch (error) {
-         console.error('Failed to fetch staff:', error);
+         console.error('Failed to fetch data:', error);
        }
      };
 
-     fetchStaff();
-   }, []);
+     fetchData();
+   }, [patient.department, patient.ward]);
+
+   // Fetch staff based on current assignment selections during editing
+   useEffect(() => {
+     if (!isEditingAssignment) return;
+
+     const fetchStaffForAssignment = async () => {
+       try {
+         // Build query parameters based on current selections
+         const nurseParams = new URLSearchParams();
+         nurseParams.append('role', 'nurse');
+         nurseParams.append('role', 'matron_nurse');
+         const doctorParams = new URLSearchParams({ role: 'doctor' });
+
+         // Filter doctors by selected department
+         if (assignmentData.department && assignmentData.department !== '') {
+           doctorParams.append('department', assignmentData.department);
+         }
+
+         // If a ward is selected, filter nurses by ward. Otherwise, filter by department.
+         if (assignmentData.ward && assignmentData.ward !== '' && assignmentData.ward !== 'unassigned') {
+           nurseParams.append('ward', assignmentData.ward);
+         } else if (assignmentData.department && assignmentData.department !== '' && assignmentData.department !== 'unassigned') {
+           nurseParams.append('department', assignmentData.department);
+         }
+
+         const [nursesRes, doctorsRes] = await Promise.all([
+           fetch(`/api/users?${nurseParams.toString()}`),
+           fetch(`/api/users?${doctorParams.toString()}`)
+         ]);
+
+         if (nursesRes.ok) {
+           const nursesData = await nursesRes.json() as User[];
+           setNurses(nursesData);
+         }
+
+         if (doctorsRes.ok) {
+           const doctorsData = await doctorsRes.json() as User[];
+           setDoctors(doctorsData);
+         }
+       } catch (error) {
+         console.error('Failed to fetch staff for assignment:', error);
+       }
+     };
+
+     fetchStaffForAssignment();
+   }, [isEditingAssignment, assignmentData.department, assignmentData.ward]);
 
    const handleShare = () => {
     setIsShareModalOpen(true);
@@ -112,10 +208,14 @@ import { SharePatientModal } from "./SharePatientModal";
          ...assignmentData,
          assignedNurse: assignmentData.assignedNurse === 'unassigned' ? null : assignmentData.assignedNurse,
          assignedDoctor: assignmentData.assignedDoctor === 'unassigned' ? null : assignmentData.assignedDoctor,
+         ward: assignmentData.ward === 'unassigned' ? '' : assignmentData.ward,
+         department: assignmentData.department === 'unassigned' ? null : assignmentData.department,
          admissionType: assignmentData.admissionType === 'not-specified' ? '' : assignmentData.admissionType,
          careLevel: assignmentData.careLevel === 'not-specified' ? '' : assignmentData.careLevel,
          fallRisk: assignmentData.fallRisk === 'not-assessed' ? '' : assignmentData.fallRisk,
          mobilityStatus: assignmentData.mobilityStatus === 'not-assessed' ? '' : assignmentData.mobilityStatus,
+         roomNumber: assignmentData.roomNumber === 'not-assigned' ? '' : assignmentData.roomNumber || '',
+         bedNumber: assignmentData.bedNumber === 'not-assigned' ? '' : assignmentData.bedNumber || '',
          admissionDate: assignmentData.admissionDate ? new Date(assignmentData.admissionDate).toISOString() : null,
          dischargeDate: assignmentData.dischargeDate ? new Date(assignmentData.dischargeDate).toISOString() : null,
        };
@@ -135,10 +235,10 @@ import { SharePatientModal } from "./SharePatientModal";
 
          setAssignmentData(prev => ({
            ...prev,
-           assignedNurse: updated.assignedNurse ? String(updated.assignedNurse) : 'unassigned',
-           assignedDoctor: updated.assignedDoctor ? String(updated.assignedDoctor) : 'unassigned',
-           ward: updated.ward || '',
-           department: updated.department || '',
+           assignedNurse: updated.assignedNurse ? (typeof updated.assignedNurse === 'object' && (updated.assignedNurse as any)._id ? (updated.assignedNurse as any)._id : String(updated.assignedNurse)) : 'unassigned',
+           assignedDoctor: updated.assignedDoctor ? (typeof updated.assignedDoctor === 'object' && (updated.assignedDoctor as any)._id ? (updated.assignedDoctor as any)._id : String(updated.assignedDoctor)) : 'unassigned',
+           ward: updated.ward ? (typeof updated.ward === 'object' && (updated.ward as any)._id ? (updated.ward as any)._id : String(updated.ward)) : '',
+           department: updated.department ? (typeof updated.department === 'object' && (updated.department as any)._id ? (updated.department as any)._id : String(updated.department)) : '',
            roomNumber: updated.roomNumber || '',
            bedNumber: updated.bedNumber || '',
            admissionType: updated.admissionType || 'not-specified',
@@ -235,29 +335,33 @@ import { SharePatientModal } from "./SharePatientModal";
        {/* Tabs */} 
        <div className="p-0">
          <Tabs defaultValue="overview" className="w-full">
-         <TabsList className="grid grid-cols-6 lg:gap-x-2 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
-           <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+         <TabsList className="grid grid-cols-7 lg:gap-x-2.5 h-fit w-full bg-linear-to-r from-gray-50/80 to-white/60 dark:from-gray-900/60 dark:to-gray-950/40 px-1 sm:px-3 py-2 border-b border-gray-200 dark:border-gray-800 rounded-t-3xl backdrop-blur-lg overflow-x-auto">
+           <TabsTrigger value="overview" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
              <ClipboardCheck className="h-4 w-4 shrink-0" />
              <span className="hidden sm:inline">{t('patientDetail.overview')}</span>
            </TabsTrigger>
-           <TabsTrigger value="appointments" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <Calendar className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="appointments" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <Calendar className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.appointments')}</span>
            </TabsTrigger>
-           <TabsTrigger value="insurance" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <ShieldCheck className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="insurance" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <ShieldCheck className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.insurance')}</span>
            </TabsTrigger>
-           <TabsTrigger value="audit-log" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <FileText className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="audit-log" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <FileText className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.auditLog')}</span>
            </TabsTrigger>
-           <TabsTrigger value="clinical_notes" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <FileText className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="clinical_notes" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <FileText className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.clinicalNotes')}</span>
            </TabsTrigger>
-           <TabsTrigger value="assignment" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
-             <UserCheck className="h-4 w-4 shrink-0" />
+           <TabsTrigger value="tasks" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <CheckSquare className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
+             <span className="hidden sm:inline">{t('taskList.title')}</span>
+           </TabsTrigger>
+           <TabsTrigger value="assignment" className="flex items-center justify-center space-x-2 py-2 px-2 sm:py-2 sm:px-3 text-xs sm:text-sm font-semibold text-gray-500 dark:text-gray-400 rounded-xl transition-all hover:bg-gray-200/50 dark:hover:bg-gray-800/50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">
+             <UserCheck className={`h-4 ${language === "ar"? "w-7" : "w-5"} shrink-0`} />
              <span className="hidden sm:inline">{t('patientDetail.assignment')}</span>
            </TabsTrigger>
            </TabsList>
@@ -273,13 +377,94 @@ import { SharePatientModal } from "./SharePatientModal";
                 <DetailItem icon={UserSquare} label={t('patientDetail.emergencyContact')} value={patient.emergencyContact ? `${patient.emergencyContact.name} - ${patient.emergencyContact.phone}`: 'N/A'} />
              </div >
 
+             {/* Care Team Assignment Overview */}
+             <Card className="mt-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
+               <CardHeader>
+                 <CardTitle className="flex items-center text-lg">
+                   <Users className="h-5 w-5 mr-2 text-blue-500" />
+                   {t('patientDetail.careTeamAssignmentTitle')}
+                 </CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <Label className="text-sm font-semibold flex items-center">
+                       <Stethoscope className="h-4 w-4 mr-1 text-blue-500" />
+                       {t('patientDetail.assignedNurseLabel')}
+                     </Label>
+                     <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                      {assignmentData.assignedNurse && assignmentData.assignedNurse !== 'unassigned' ? (
+                         nurses.find(n => String((n as any)?._id) === String(assignmentData.assignedNurse))?.fullName || t('common.loading')
+                       ) : (
+                         <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
+                       )}
+                     </div>
+                   </div>
+
+                   <div className="space-y-2">
+                     <Label className="text-sm font-semibold flex items-center">
+                       <UserCheck className="h-4 w-4 mr-1 text-green-500" />
+                       {t('patientDetail.assignedDoctorLabel')}
+                     </Label>
+                     <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                       {assignmentData.assignedDoctor && assignmentData.assignedDoctor !== 'unassigned' ? (
+                         doctors.find(d => String((d as any)?._id) === String(assignmentData.assignedDoctor))?.fullName || t('common.loading')
+                       ) : (
+                         <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
+                       )}
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Location Information */}
+                 {(assignmentData.ward || assignmentData.department || assignmentData.roomNumber || assignmentData.bedNumber) && (
+                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                     <Label className="text-sm font-semibold flex items-center mb-2">
+                       <Building className="h-4 w-4 mr-1 text-purple-500" />
+                       {t('patientDetail.locationDetails')}
+                     </Label>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                       {assignmentData.ward && (
+                         <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-center">
+                           <div className="font-medium text-blue-700 dark:text-blue-300">{t('patientDetail.ward')}</div>
+                           <div className="text-blue-600 dark:text-blue-400">
+                             {wards.find(w => w._id === assignmentData.ward)?.name || assignmentData.ward}
+                           </div>
+                         </div>
+                       )}
+                       {assignmentData.department && (
+                         <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded text-center">
+                           <div className="font-medium text-green-700 dark:text-green-300">{t('patientDetail.department')}</div>
+                           <div className="text-green-600 dark:text-green-400">
+                             {departments.find(d => d._id === assignmentData.department)?.name || assignmentData.department}
+                           </div>
+                         </div>
+                       )}
+                       {assignmentData.roomNumber && (
+                         <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-center">
+                           <div className="font-medium text-purple-700 dark:text-purple-300">{t('patientDetail.room')}</div>
+                           <div className="text-purple-600 dark:text-purple-400">{assignmentData.roomNumber}</div>
+                         </div>
+                       )}
+                       {assignmentData.bedNumber && (
+                         <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-center">
+                           <div className="font-medium text-orange-700 dark:text-orange-300">{t('patientDetail.bed')}</div>
+                           <div className="text-orange-600 dark:text-orange-400">{assignmentData.bedNumber}</div>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 )}
+               </CardContent>
+             </Card>
+
              {/* Patient Barcode */}
              <Card className="mt-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
                <CardHeader>
                  <CardTitle className="flex items-center justify-between text-lg">
                    <div className="flex items-center">
                      <Printer className="h-5 w-5 mr-2 text-blue-500" />
-                     Patient Barcode
+                     {t('patientDetail.patientBarcode')}
                    </div>
                    <div className="flex space-x-2">
                      <Button
@@ -289,7 +474,7 @@ import { SharePatientModal } from "./SharePatientModal";
                        className="print:hidden"
                      >
                        <Download className="h-4 w-4 mr-2" />
-                       Download
+                       {t('patientDetail.download')}
                      </Button>
                      <Button
                        onClick={() => window.print()}
@@ -298,22 +483,22 @@ import { SharePatientModal } from "./SharePatientModal";
                        className="print:hidden"
                      >
                        <Printer className="h-4 w-4 mr-2" />
-                       Print
+                       {t('patientDetail.print')}
                      </Button>
                    </div>
                  </CardTitle>
                </CardHeader>
                <CardContent className="flex flex-col items-center space-y-4">
                  <div ref={barcodeRef} className="text-center" data-barcode>
-                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Scan this barcode for patient identification</p>
+                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t('patientDetail.scanBarcodeText')}</p>
                    <div className="bg-white p-4 rounded-lg border print:border-0 print:bg-transparent">
                      {patient.mrn ? (
                        <Barcode value={patient.mrn} width={2} height={60} fontSize={12} />
                      ) : (
-                       <p className="text-gray-500">MRN not available</p>
+                       <p className="text-gray-500">{t('patientDetail.mrnNotAvailable')}</p>
                      )}
                    </div>
-                   <p className="text-xs text-gray-500 mt-2 print:text-black">MRN: {patient.mrn || 'N/A'}</p>
+                   <p className="text-xs text-gray-500 mt-2 print:text-black">{t('patientDetail.mrn')}: {patient.mrn || 'N/A'}</p>
                  </div>
                </CardContent>
                <style jsx>{`
@@ -339,6 +524,12 @@ import { SharePatientModal } from "./SharePatientModal";
            </TabsContent>
           <TabsContent value="clinical_notes">
             <ClinicalNotesDisplay patientId={patient._id || ''} />
+          </TabsContent>
+          <TabsContent value="tasks" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl">
+            <TaskList
+              patientId={patient._id}
+              showAddTask={session?.user?.role === 'matron_nurse' || session?.user?.role === 'admin'}
+            />
           </TabsContent>
           <TabsContent value="assignment" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl">
             <div className="space-y-6">
@@ -380,14 +571,15 @@ import { SharePatientModal } from "./SharePatientModal";
                         <Select
                           value={assignmentData.assignedNurse}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, assignedNurse: value }))}
+                          disabled={!assignmentData.department || assignmentData.department === 'unassigned'}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('patientDetail.selectNurse')} />
+                            <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectNurse') : t('patientDetail.selectDepartmentFirst')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            <SelectItem value="unassigned">{t('patientDetail.unassigned')}</SelectItem>
                             {nurses.map((nurse) => (
-                              <SelectItem key={nurse._id.toString()} value={nurse._id.toString()}>
+                              <SelectItem key={String((nurse as any)._id)} value={String((nurse as any)._id)}>
                                 {nurse.fullName}
                               </SelectItem>
                             ))}
@@ -396,7 +588,7 @@ import { SharePatientModal } from "./SharePatientModal";
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                           {assignmentData.assignedNurse && assignmentData.assignedNurse !== 'unassigned' ? (
-                            nurses.find(n => n._id.toString() === assignmentData.assignedNurse)?.fullName || 'Loading...'
+                            nurses.find(n => String((n as any)?._id) === String(assignmentData.assignedNurse))?.fullName || t('common.loading')
                           ) : (
                             <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                           )}
@@ -410,14 +602,15 @@ import { SharePatientModal } from "./SharePatientModal";
                         <Select
                           value={assignmentData.assignedDoctor}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, assignedDoctor: value }))}
+                          disabled={!assignmentData.department || assignmentData.department === 'unassigned'}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder={t('patientDetail.selectDoctor')} />
+                            <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectDoctor') : t('patientDetail.selectDepartmentFirst')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            <SelectItem value="unassigned">{t('patientDetail.unassigned')}</SelectItem>
                             {doctors.map((doctor) => (
-                              <SelectItem key={doctor._id.toString()} value={doctor._id.toString()}>
+                              <SelectItem key={String((doctor as any)._id)} value={String((doctor as any)._id)}>
                                 {doctor.fullName}
                               </SelectItem>
                             ))}
@@ -426,7 +619,7 @@ import { SharePatientModal } from "./SharePatientModal";
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                           {assignmentData.assignedDoctor && assignmentData.assignedDoctor !== 'unassigned' ? (
-                            doctors.find(d => d._id.toString() === assignmentData.assignedDoctor)?.fullName || 'Loading...'
+                            doctors.find(d => String((d as any)?._id) === String(assignmentData.assignedDoctor))?.fullName || t('common.loading')
                           ) : (
                             <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
                           )}
@@ -441,39 +634,99 @@ import { SharePatientModal } from "./SharePatientModal";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <Building className="h-5 w-5 mr-2 text-green-500" />
-                      Location & Admission
+                      {t('patientDetail.locationAdmission')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="ward" className="text-sm font-semibold">Ward</Label>
+                        <Label htmlFor="ward" className="text-sm font-semibold">{t('patientDetail.ward')}</Label>
                         {isEditingAssignment ? (
-                          <Input
-                            id="ward"
+                          <Select
                             value={assignmentData.ward}
-                            onChange={(e) => setAssignmentData(prev => ({ ...prev, ward: e.target.value }))}
-                            placeholder="e.g., ICU, Ward 3A"
-                          />
+                            onValueChange={async (value) => {
+                              // Fetch ward details to get totalBeds for bed number options
+                              if (value && value !== 'unassigned') {
+                                try {
+                                  const wardResponse = await fetch(`/api/wards/${value}`);
+                                  if (wardResponse.ok) {
+                                    const wardDetails = await wardResponse.json();
+                                    setSelectedWardDetails(wardDetails);
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to fetch ward details:', error);
+                                }
+                              } else {
+                                setSelectedWardDetails(null);
+                              }
+
+                              setAssignmentData(prev => ({
+                                ...prev,
+                                ward: value,
+                                assignedNurse: 'unassigned', // Clear nurse when ward changes
+                                bedNumber: '', // Clear bed when ward changes
+                                roomNumber: '' // Clear room when ward changes
+                              }));
+                            }}
+                            disabled={!assignmentData.department || assignmentData.department === 'unassigned'}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={assignmentData.department && assignmentData.department !== 'unassigned' ? t('patientDetail.selectWard') : t('patientDetail.selectDepartmentFirst')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">{t('patientDetail.notAssigned')}</SelectItem>
+                              {wards
+                                .filter(ward => !assignmentData.department || assignmentData.department === 'unassigned' || ward.department?._id === assignmentData.department)
+                                .map((ward) => (
+                                  <SelectItem key={ward._id} value={ward._id}>
+                                    {ward.name} ({ward.wardNumber})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.ward || <span className="text-muted-foreground">Not assigned</span>}
+                            {assignmentData.ward ? (
+                              wards.find(w => w._id === assignmentData.ward)?.name || assignmentData.ward
+                            ) : (
+                              <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
+                            )}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="department" className="text-sm font-semibold">Department</Label>
+                        <Label htmlFor="department" className="text-sm font-semibold">{t('patientDetail.department')}</Label>
                         {isEditingAssignment ? (
-                          <Input
-                            id="department"
+                          <Select
                             value={assignmentData.department}
-                            onChange={(e) => setAssignmentData(prev => ({ ...prev, department: e.target.value }))}
-                            placeholder="e.g., Cardiology"
-                          />
+                            onValueChange={(value) => setAssignmentData(prev => ({
+                              ...prev,
+                              department: value,
+                              ward: 'unassigned', // Clear ward when department changes
+                              assignedDoctor: 'unassigned', // Clear doctor when department changes
+                              assignedNurse: 'unassigned' // Clear nurse when department changes
+                            }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('patientDetail.selectDepartment')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">{t('patientDetail.notAssigned')}</SelectItem>
+                              {departments.map((dept) => (
+                                <SelectItem key={dept._id} value={dept._id}>
+                                  {dept.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.department || <span className="text-muted-foreground">Not assigned</span>}
+                            {assignmentData.department ? (
+                              departments.find(d => d._id === assignmentData.department)?.name || assignmentData.department
+                            ) : (
+                              <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -481,33 +734,57 @@ import { SharePatientModal } from "./SharePatientModal";
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="roomNumber" className="text-sm font-semibold">Room</Label>
+                        <Label htmlFor="roomNumber" className="text-sm font-semibold">{t('patientDetail.room')}</Label>
                         {isEditingAssignment ? (
-                          <Input
-                            id="roomNumber"
+                          <Select
                             value={assignmentData.roomNumber}
-                            onChange={(e) => setAssignmentData(prev => ({ ...prev, roomNumber: e.target.value }))}
-                            placeholder="Room number"
-                          />
+                            onValueChange={(value) => setAssignmentData(prev => ({ ...prev, roomNumber: value }))}
+                            disabled={!assignmentData.ward || assignmentData.ward === 'unassigned'}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={assignmentData.ward && assignmentData.ward !== 'unassigned' ? t('patientDetail.selectRoom') : t('patientDetail.selectWardFirst')} />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-48 overflow-y-auto">
+                              <SelectItem value="not-assigned">{t('patientDetail.notAssigned')}</SelectItem>
+                              {/* Generate room options based on ward's totalRooms */}
+                              {selectedWardDetails && selectedWardDetails.totalRooms && Array.from({ length: selectedWardDetails.totalRooms }, (_, i) => (
+                                <SelectItem key={`room-${i + 1}`} value={`Room ${i + 1}`}>
+                                  Room {i + 1}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.roomNumber || <span className="text-muted-foreground">Not assigned</span>}
+                            {assignmentData.roomNumber || <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="bedNumber" className="text-sm font-semibold">Bed</Label>
+                        <Label htmlFor="bedNumber" className="text-sm font-semibold">{t('patientDetail.bed')}</Label>
                         {isEditingAssignment ? (
-                          <Input
-                            id="bedNumber"
+                          <Select
                             value={assignmentData.bedNumber}
-                            onChange={(e) => setAssignmentData(prev => ({ ...prev, bedNumber: e.target.value }))}
-                            placeholder="Bed number"
-                          />
+                            onValueChange={(value) => setAssignmentData(prev => ({ ...prev, bedNumber: value }))}
+                            disabled={!assignmentData.ward || assignmentData.ward === 'unassigned'}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={assignmentData.ward && assignmentData.ward !== 'unassigned' ? t('patientDetail.selectBed') : t('patientDetail.selectWardFirst')} />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-48 overflow-y-auto">
+                              <SelectItem value="not-assigned">{t('patientDetail.notAssigned')}</SelectItem>
+                              {/* Generate bed options based on ward's totalBeds */}
+                              {selectedWardDetails && Array.from({ length: selectedWardDetails.totalBeds }, (_, i) => (
+                                <SelectItem key={`bed-${i + 1}`} value={`Bed ${i + 1}`}>
+                                  Bed {i + 1}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.bedNumber || <span className="text-muted-foreground">Not assigned</span>}
+                            {assignmentData.bedNumber || <span className="text-muted-foreground">{t('patientDetail.notAssigned')}</span>}
                           </div>
                         )}
                       </div>
@@ -520,62 +797,62 @@ import { SharePatientModal } from "./SharePatientModal";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <Calendar className="h-5 w-5 mr-2 text-purple-500" />
-                      Admission Details
+                      {t('patientDetail.admissionDetails')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="admissionType" className="text-sm font-semibold">Admission Type</Label>
+                      <Label htmlFor="admissionType" className="text-sm font-semibold">{t('patientDetail.admissionType')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.admissionType}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, admissionType: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select admission type" />
+                            <SelectValue placeholder={t('patientDetail.selectAdmissionType')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-specified">Not specified</SelectItem>
-                            <SelectItem value="inpatient">Inpatient</SelectItem>
-                            <SelectItem value="outpatient">Outpatient</SelectItem>
-                            <SelectItem value="emergency">Emergency</SelectItem>
-                            <SelectItem value="day-surgery">Day Surgery</SelectItem>
+                            <SelectItem value="not-specified">{t('patientDetail.notSpecified')}</SelectItem>
+                            <SelectItem value="inpatient">{t('patientDetail.inpatient')}</SelectItem>
+                            <SelectItem value="outpatient">{t('patientDetail.outpatient')}</SelectItem>
+                            <SelectItem value="emergency">{t('patientDetail.emergency')}</SelectItem>
+                            <SelectItem value="day-surgery">{t('patientDetail.daySurgery')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.admissionType && assignmentData.admissionType !== 'not-specified' ? assignmentData.admissionType : <span className="text-muted-foreground">Not specified</span>}
+                          {assignmentData.admissionType && assignmentData.admissionType !== 'not-specified' ? assignmentData.admissionType : <span className="text-muted-foreground">{t('patientDetail.notSpecified')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="careLevel" className="text-sm font-semibold">Care Level</Label>
+                      <Label htmlFor="careLevel" className="text-sm font-semibold">{t('patientDetail.careLevel')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.careLevel}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, careLevel: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select care level" />
+                            <SelectValue placeholder={t('patientDetail.selectCareLevel')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-specified">Not specified</SelectItem>
-                            <SelectItem value="critical">Critical</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="basic">Basic</SelectItem>
+                            <SelectItem value="not-specified">{t('patientDetail.notSpecified')}</SelectItem>
+                            <SelectItem value="critical">{t('patientDetail.critical')}</SelectItem>
+                            <SelectItem value="intermediate">{t('patientDetail.intermediate')}</SelectItem>
+                            <SelectItem value="basic">{t('patientDetail.basic')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.careLevel && assignmentData.careLevel !== 'not-specified' ? assignmentData.careLevel : <span className="text-muted-foreground">Not specified</span>}
+                          {assignmentData.careLevel && assignmentData.careLevel !== 'not-specified' ? assignmentData.careLevel : <span className="text-muted-foreground">{t('patientDetail.notSpecified')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="admissionDate" className="text-sm font-semibold">Admission Date</Label>
+                        <Label htmlFor="admissionDate" className="text-sm font-semibold">{t('patientDetail.admissionDate')}</Label>
                         {isEditingAssignment ? (
                           <Input
                             id="admissionDate"
@@ -585,13 +862,13 @@ import { SharePatientModal } from "./SharePatientModal";
                           />
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.admissionDate ? new Date(assignmentData.admissionDate).toLocaleDateString() : <span className="text-muted-foreground">Not set</span>}
+                            {assignmentData.admissionDate ? new Date(assignmentData.admissionDate).toLocaleDateString() : <span className="text-muted-foreground">{t('patientDetail.notSet')}</span>}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="dischargeDate" className="text-sm font-semibold">Discharge Date</Label>
+                        <Label htmlFor="dischargeDate" className="text-sm font-semibold">{t('patientDetail.dischargeDate')}</Label>
                         {isEditingAssignment ? (
                           <Input
                             id="dischargeDate"
@@ -601,7 +878,7 @@ import { SharePatientModal } from "./SharePatientModal";
                           />
                         ) : (
                           <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            {assignmentData.dischargeDate ? new Date(assignmentData.dischargeDate).toLocaleDateString() : <span className="text-muted-foreground">Not set</span>}
+                            {assignmentData.dischargeDate ? new Date(assignmentData.dischargeDate).toLocaleDateString() : <span className="text-muted-foreground">{t('patientDetail.notSet')}</span>}
                           </div>
                         )}
                       </div>
@@ -614,79 +891,79 @@ import { SharePatientModal } from "./SharePatientModal";
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <ShieldCheck className="h-5 w-5 mr-2 text-orange-500" />
-                      Safety & Mobility
+                      {t('patientDetail.safetyMobility')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="isolationStatus" className="text-sm font-semibold">Isolation Status</Label>
+                      <Label htmlFor="isolationStatus" className="text-sm font-semibold">{t('patientDetail.isolationStatus')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.isolationStatus}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, isolationStatus: value as "none" | "contact" | "droplet" | "airborne" }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select isolation status" />
+                            <SelectValue placeholder={t('patientDetail.selectIsolationStatus')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="contact">Contact</SelectItem>
-                            <SelectItem value="droplet">Droplet</SelectItem>
-                            <SelectItem value="airborne">Airborne</SelectItem>
+                            <SelectItem value="none">{t('patientDetail.none')}</SelectItem>
+                            <SelectItem value="contact">{t('patientDetail.contact')}</SelectItem>
+                            <SelectItem value="droplet">{t('patientDetail.droplet')}</SelectItem>
+                            <SelectItem value="airborne">{t('patientDetail.airborne')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.isolationStatus || <span className="text-muted-foreground">None</span>}
+                          {assignmentData.isolationStatus || <span className="text-muted-foreground">{t('patientDetail.none')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fallRisk" className="text-sm font-semibold">Fall Risk</Label>
+                      <Label htmlFor="fallRisk" className="text-sm font-semibold">{t('patientDetail.fallRisk')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.fallRisk}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, fallRisk: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select fall risk level" />
+                            <SelectValue placeholder={t('patientDetail.selectFallRisk')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-assessed">Not assessed</SelectItem>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="not-assessed">{t('patientDetail.notAssessed')}</SelectItem>
+                            <SelectItem value="low">{t('patientDetail.low')}</SelectItem>
+                            <SelectItem value="medium">{t('patientDetail.medium')}</SelectItem>
+                            <SelectItem value="high">{t('patientDetail.high')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.fallRisk && assignmentData.fallRisk !== 'not-assessed' ? assignmentData.fallRisk : <span className="text-muted-foreground">Not assessed</span>}
+                          {assignmentData.fallRisk && assignmentData.fallRisk !== 'not-assessed' ? assignmentData.fallRisk : <span className="text-muted-foreground">{t('patientDetail.notAssessed')}</span>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="mobilityStatus" className="text-sm font-semibold">Mobility Status</Label>
+                      <Label htmlFor="mobilityStatus" className="text-sm font-semibold">{t('patientDetail.mobilityStatus')}</Label>
                       {isEditingAssignment ? (
                         <Select
                           value={assignmentData.mobilityStatus}
                           onValueChange={(value) => setAssignmentData(prev => ({ ...prev, mobilityStatus: value }))}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select mobility status" />
+                            <SelectValue placeholder={t('patientDetail.selectMobilityStatus')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="not-assessed">Not assessed</SelectItem>
-                            <SelectItem value="independent">Independent</SelectItem>
-                            <SelectItem value="assisted">Assisted</SelectItem>
-                            <SelectItem value="wheelchair">Wheelchair</SelectItem>
-                            <SelectItem value="bedridden">Bedridden</SelectItem>
+                            <SelectItem value="not-assessed">{t('patientDetail.notAssessed')}</SelectItem>
+                            <SelectItem value="independent">{t('patientDetail.independent')}</SelectItem>
+                            <SelectItem value="assisted">{t('patientDetail.assisted')}</SelectItem>
+                            <SelectItem value="wheelchair">{t('patientDetail.wheelchair')}</SelectItem>
+                            <SelectItem value="bedridden">{t('patientDetail.bedridden')}</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
                         <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg capitalize">
-                          {assignmentData.mobilityStatus && assignmentData.mobilityStatus !== 'not-assessed' ? assignmentData.mobilityStatus : <span className="text-muted-foreground">Not assessed</span>}
+                          {assignmentData.mobilityStatus && assignmentData.mobilityStatus !== 'not-assessed' ? assignmentData.mobilityStatus : <span className="text-muted-foreground">{t('patientDetail.notAssessed')}</span>}
                         </div>
                       )}
                     </div>

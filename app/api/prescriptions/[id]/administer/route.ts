@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import connectDB from "@/lib/dbConnect";
 import Prescription from "@/models/Prescription";
+import Task from "@/models/Task";
 import AuditLog from "@/models/AuditLog";
 import mongoose from "mongoose";
+import { getFrequencyHours, calculateNextMedicationDueTime, getMedicationPriority } from "@/lib/medication-utils";
 
 interface AdministerRequestBody {
   administeredAt: Date;
@@ -47,6 +49,52 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     prescription.administrations.push(administrationRecord);
     await prescription.save({ validateBeforeSave: false });
+
+    // Create next medication task if administered successfully
+    if (status === 'administered') {
+      try {
+        // Validate prescription status before creating next task
+        const now = new Date();
+        if (prescription.status !== 'active') {
+          console.log(`Skipping next task creation: prescription ${prescription._id} is not active (status: ${prescription.status})`);
+        } else if (prescription.endDate && new Date(prescription.endDate) <= now) {
+          console.log(`Skipping next task creation: prescription ${prescription._id} has ended (endDate: ${prescription.endDate})`);
+        } else {
+          const frequencyHours = getFrequencyHours(prescription.frequency);
+          if (frequencyHours > 0) {
+            const nextDueTime = calculateNextMedicationDueTime(prescription, frequencyHours, now);
+            // Improve task ID generation to avoid collisions by including a random component
+            const taskId = `med-${prescription._id}-${nextDueTime.getTime()}`;
+
+            // Check if task already exists
+            const existingTask = await Task.findOne({ id: taskId });
+            if (!existingTask) {
+              const priority = getMedicationPriority(prescription, nextDueTime, now);
+              const title = `Administer ${prescription.medication || prescription.medications?.join(', ')}`;
+
+              const newTask = new Task({
+                id: taskId,
+                orgId: prescription.orgId,
+                patientId: prescription.patientId,
+                title,
+                description: `${prescription.dose} ${prescription.route || ''} - ${prescription.frequency}`,
+                type: 'medication',
+                priority,
+                dueTime: nextDueTime,
+                status: 'pending',
+                notes: prescription.instructions || undefined,
+                prescriptionId: prescription._id,
+                createdBy: prescription.prescribedBy,
+              });
+              await newTask.save();
+            }
+          }
+        }
+      } catch (taskError) {
+        console.error("Failed to create next medication task:", taskError);
+        // Don't fail the administration if task creation fails
+      }
+    }
 
     await AuditLog.create({
       orgId: token.organizationId,

@@ -29,11 +29,6 @@ interface Department {
   name: string;
 }
 
-interface User {
-  _id: string;
-  fullName: string;
-  email: string;
-}
 
 interface AddWardModalProps {
   onWardAdded: () => void;
@@ -68,13 +63,13 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
     const [department, setDepartment] = useState("");
     const [description, setDescription] = useState("");
     const [totalBeds, setTotalBeds] = useState("");
+    const [totalRooms, setTotalRooms] = useState("");
     const [wardType, setWardType] = useState<'general' | 'icu' | 'emergency' | 'maternity' | 'pediatric' | 'surgical' | 'medical'>('general');
     const [floor, setFloor] = useState("");
     const [building, setBuilding] = useState("");
     const [phone, setPhone] = useState("");
     const [extension, setExtension] = useState("");
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -82,19 +77,11 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const [deptRes, userRes] = await Promise.all([
-            fetch("/api/departments"),
-            fetch("/api/users?role=nurse")
-          ]);
+          const deptRes = await fetch("/api/departments");
 
           if (deptRes.ok) {
             const deptData: Department[] = await deptRes.json();
             setDepartments(deptData || []);
-          }
-
-          if (userRes.ok) {
-            const userData: User[] = await userRes.json();
-            setUsers(userData || []);
           }
         } catch (error) {
           console.error("Failed to fetch data:", error);
@@ -121,6 +108,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
             department,
             description: description.trim() || undefined,
             totalBeds: parseInt(totalBeds),
+            totalRooms: totalRooms ? parseInt(totalRooms) : undefined,
             wardType,
             floor: floor.trim() || undefined,
             building: building.trim() || undefined,
@@ -140,6 +128,7 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
           setDepartment("");
           setDescription("");
           setTotalBeds("");
+          setTotalRooms("");
           setWardType('general');
           setFloor("");
           setBuilding("");
@@ -232,48 +221,67 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="totalBeds"
-                  className="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >
-                  {t('hospitalManagementPage.modals.addWard.totalBeds')}
-                </Label>
-                <Input
-                  id="totalBeds"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={totalBeds}
-                  onChange={(e) => setTotalBeds(e.target.value)}
-                  placeholder="Number of beds"
-                  className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
-                  required
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="space-y-2">
+                 <Label
+                   htmlFor="totalBeds"
+                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                 >
+                   {t('hospitalManagementPage.modals.addWard.totalBeds')}
+                 </Label>
+                 <Input
+                   id="totalBeds"
+                   type="number"
+                   min="1"
+                   max="100"
+                   value={totalBeds}
+                   onChange={(e) => setTotalBeds(e.target.value)}
+                   placeholder="Number of beds"
+                   className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                   required
+                 />
+               </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="wardType"
-                  className="text-sm font-semibold text-gray-700 dark:text-gray-300"
-                >
-                  {t('hospitalManagementPage.modals.addWard.wardType')}
-                </Label>
-                <Select value={wardType} onValueChange={(value: any) => setWardType(value)}>
-                  <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
-                    <SelectValue placeholder={t('hospitalManagementPage.modals.addWard.selectWardType')} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-950">
-                    {wardTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+               <div className="space-y-2">
+                 <Label
+                   htmlFor="totalRooms"
+                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                 >
+                   {t('hospitalManagementPage.modals.addWard.totalRooms')}
+                 </Label>
+                 <Input
+                   id="totalRooms"
+                   type="number"
+                   min="1"
+                   max="50"
+                   value={totalRooms}
+                   onChange={(e) => setTotalRooms(e.target.value)}
+                   placeholder="Number of rooms"
+                   className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60"
+                 />
+               </div>
+
+               <div className="space-y-2">
+                 <Label
+                   htmlFor="wardType"
+                   className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                 >
+                   {t('hospitalManagementPage.modals.addWard.wardType')}
+                 </Label>
+                 <Select value={wardType} onValueChange={(value: any) => setWardType(value)}>
+                   <SelectTrigger className="w-full bg-gray-50/80 dark:bg-gray-900/80 border-gray-300/70 dark:border-gray-700/60">
+                     <SelectValue placeholder={t('hospitalManagementPage.modals.addWard.selectWardType')} />
+                   </SelectTrigger>
+                   <SelectContent className="bg-white dark:bg-gray-950">
+                     {wardTypes.map((type) => (
+                       <SelectItem key={type.value} value={type.value}>
+                         {type.label}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
+             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

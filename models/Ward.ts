@@ -8,6 +8,7 @@ export interface IWard extends Document {
   description?: string;
   totalBeds: number;
   occupiedBeds: number;
+  totalRooms?: number;
   wardType: 'general' | 'icu' | 'emergency' | 'maternity' | 'pediatric' | 'surgical' | 'medical';
   floor?: string;
   building?: string;
@@ -63,6 +64,11 @@ const WardSchema: Schema = new Schema(
       type: Number,
       default: 0,
       min: 0
+    },
+    totalRooms: {
+      type: Number,
+      min: 1,
+      max: 50
     },
     wardType: {
       type: String,

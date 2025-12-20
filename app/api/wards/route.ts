@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       department: string;
       description?: string;
       totalBeds: number;
+      totalRooms?: number;
       wardType: 'general' | 'icu' | 'emergency' | 'maternity' | 'pediatric' | 'surgical' | 'medical';
       floor?: string;
       building?: string;
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       department,
       description,
       totalBeds,
+      totalRooms,
       wardType,
       floor,
       building,
@@ -95,6 +97,10 @@ export async function POST(req: NextRequest) {
 
     if (totalBeds < 1 || totalBeds > 100) {
       return NextResponse.json({ message: 'Total beds must be between 1 and 100' }, { status: 400 });
+    }
+
+    if (totalRooms !== undefined && (totalRooms < 1 || totalRooms > 50)) {
+      return NextResponse.json({ message: 'Total rooms must be between 1 and 50' }, { status: 400 });
     }
 
     // Check if department exists and belongs to organization
@@ -126,6 +132,7 @@ export async function POST(req: NextRequest) {
       organization: session.user.organizationId,
       description: description?.trim(),
       totalBeds,
+      totalRooms: totalRooms || undefined,
       wardType,
       floor: floor?.trim(),
       building: building?.trim(),
