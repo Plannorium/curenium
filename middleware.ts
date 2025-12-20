@@ -17,7 +17,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (pathname.startsWith("/dashboard/ehr/lab") && !["admin", "doctor", "pharmacist", "nurse"].includes(userRole)) {
+    if (pathname.startsWith("/dashboard/ehr/lab") && !["admin", "doctor", "labtech", "nurse"].includes(userRole)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
@@ -33,7 +33,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (pathname.startsWith("/dashboard/clinical") && !["admin", "doctor", "nurse"].includes(userRole)) {
+    if (pathname.startsWith("/dashboard/clinical") && !["admin", "doctor", "nurse", "labtech", "pharmacist"].includes(userRole)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 

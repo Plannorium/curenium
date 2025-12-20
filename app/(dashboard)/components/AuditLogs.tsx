@@ -9,7 +9,13 @@ import { Loader } from '@/components/ui/Loader';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
 
-const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
+const fetcher = async (url: string): Promise<any> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  }
+  return res.json();
+};
 
 const AuditLogs = () => {
   const { data: session } = useSession();

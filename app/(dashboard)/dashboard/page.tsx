@@ -41,7 +41,13 @@ interface User {
   online?: boolean;
 }
 
-const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
+const fetcher = async (url: string): Promise<any> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  }
+  return res.json();
+};
 
 const DashboardContent: React.FC = () => {
   const { data: session, status } = useSession();
