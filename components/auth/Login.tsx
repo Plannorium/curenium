@@ -12,7 +12,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/lib/translations';
 
-export const Login: React.FC = () => {
+export const Login = () => {
   const { theme } = useTheme();
   const { language } = useLanguage();
   const t = (key: string) => {
@@ -32,6 +32,7 @@ export const Login: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+  const { update } = useSession();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -93,9 +94,9 @@ export const Login: React.FC = () => {
     } else if (result?.ok) {
       // Successful login
       setIsSuccess(true);
+      await update();
       timeoutRef.current = setTimeout(() => {
-        router.push(callbackUrl);
-      }, 1500); // Brief delay to show success state
+        router.push(callbackUrl);      }, 1500); // Brief delay to show success state
     }
   };
 
