@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useTheme } from '@/components/ThemeProvider';
+import React from "react";
+import { useTheme } from "@/components/ThemeProvider";
 import {
   SunIcon,
   MoonIcon,
@@ -13,9 +13,9 @@ import {
   CreditCard,
   Settings,
   Users as UsersIcon,
-  PlusCircle
-} from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
+  PlusCircle,
+} from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,14 +26,14 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Notifications from './Notifications';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { dashboardTranslations } from '@/lib/dashboard-translations';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import Notifications from "./Notifications";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { dashboardTranslations } from "@/lib/dashboard-translations";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NavbarProps {
   toggleSidebar: () => void;
@@ -53,7 +53,9 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  const navbarT = dashboardTranslations[language as keyof typeof dashboardTranslations] || dashboardTranslations.en;
+  const navbarT =
+    dashboardTranslations[language as keyof typeof dashboardTranslations] ||
+    dashboardTranslations.en;
 
   useEffect(() => {
     setMounted(true);
@@ -62,13 +64,13 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch('/api/users/current');
+        const response = await fetch("/api/users/current");
         if (response.ok) {
           const data = (await response.json()) as { user: UserData };
           setUserData(data.user);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error("Error fetching user data:", error);
       }
     };
 
@@ -84,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className={`${language === 'ar' ? 'ml-4' : 'mr-4'} rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden`}
+          className={`${language === "ar" ? "ml-4" : "mr-4"} rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden`}
         >
           <MenuIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         </Button>
@@ -99,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       </div>
 
       <div className="flex items-center space-x-2">
-        {mounted && pathname && pathname.startsWith('/dashboard/ehr') && (
+        {mounted && pathname && pathname.startsWith("/dashboard/ehr") && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -110,9 +112,16 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                 <PlusCircle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" align="end">
-              <DropdownMenuItem>{navbarT.common.create} Patient</DropdownMenuItem>
-              <DropdownMenuItem>{navbarT.common.create} Appointment</DropdownMenuItem>
+            <DropdownMenuContent
+              className="w-48 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg"
+              align="end"
+            >
+              <DropdownMenuItem>
+                {navbarT.common.create} Patient
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                {navbarT.common.create} Appointment
+              </DropdownMenuItem>
               <DropdownMenuItem>{navbarT.common.create} Task</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -124,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           onClick={toggleTheme}
           className="rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
         >
-          {mounted && theme === 'dark' ? (
+          {mounted && theme === "dark" ? (
             <SunIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           ) : (
             <MoonIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -132,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
         </Button>
 
         <LanguageSwitcher />
-{/*
+        {/*
         <Button
           variant="ghost"
           size="icon"
@@ -163,38 +172,49 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="relative h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 p-0"
             >
               <Avatar className="h-9 w-9">
-                <AvatarImage 
-                  src={userData?.image ?? session?.user?.image ?? ''} 
-                  alt={userData?.fullName ?? session?.user?.name ?? session?.user?.email ?? ''} 
+                <AvatarImage
+                  src={userData?.image ?? session?.user?.image ?? ""}
+                  alt={
+                    userData?.fullName ??
+                    session?.user?.name ??
+                    session?.user?.email ??
+                    ""
+                  }
                 />
                 <AvatarFallback className="bg-primary text-white dark:text-black">
-                  {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
+                  {userData?.fullName?.[0] ||
+                    session?.user?.name?.[0] ||
+                    session?.user?.email?.[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            className="w-64 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg" 
+          <DropdownMenuContent
+            className="w-64 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-lg"
             align="end"
           >
             <DropdownMenuLabel className="font-normal p-4">
               <div className="flex items-center space-x-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage 
-                    src={userData?.image ?? session?.user?.image ?? ''} 
+                  <AvatarImage
+                    src={userData?.image ?? session?.user?.image ?? ""}
                   />
                   <AvatarFallback className="bg-primary text-white">
-                    {userData?.fullName?.[0] || session?.user?.name?.[0] || session?.user?.email?.[0]}
+                    {userData?.fullName?.[0] ||
+                      session?.user?.name?.[0] ||
+                      session?.user?.email?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {userData?.fullName || session?.user?.name || session?.user?.email}
+                    {userData?.fullName ||
+                      session?.user?.name ||
+                      session?.user?.email}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {userData?.email || session?.user?.email}
@@ -202,59 +222,69 @@ export const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                 </div>
               </div>
             </DropdownMenuLabel>
-            
+
             <DropdownMenuSeparator className="bg-gray-200 dark:border-gray-800" />
-            
+
             <DropdownMenuGroup className="p-1">
               <DropdownMenuItem asChild>
-                <Link 
+                <Link
                   href="/dashboard/settings/account"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <User className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
+                  <User
+                    className={`h-4 w-4 ${language === "ar" ? "ml-3" : "mr-3"} text-gray-500 dark:text-gray-400`}
+                  />
                   <span>{navbarT.common.view}</span>
                 </Link>
               </DropdownMenuItem>
-              
+
               <DropdownMenuItem asChild>
-                <Link 
+                <Link
                   href="/dashboard/settings/billing"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <CreditCard className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
-                  <span>{navbarT.common.view}</span>
+                  <CreditCard
+                    className={`h-4 w-4 ${language === "ar" ? "ml-3" : "mr-3"} text-gray-500 dark:text-gray-400`}
+                  />
+                  <span>{navbarT.common.billing}</span>
                 </Link>
               </DropdownMenuItem>
-              
+
               <DropdownMenuItem asChild>
-                <Link 
+                <Link
                   href="/dashboard/settings"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <Settings className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
-                  <span>{navbarT.sidebar.settings}</span>
+                  <Settings
+                    className={`h-4 w-4 ${language === "ar" ? "ml-3" : "mr-3"} text-gray-500 dark:text-gray-400`}
+                  />
+                  <span>{navbarT.common.settings}</span>
                 </Link>
               </DropdownMenuItem>
-              
+
               <DropdownMenuItem asChild>
-                <Link 
+                <Link
                   href="/dashboard/organization/team"
                   className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                 >
-                  <UsersIcon className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'} text-gray-500 dark:text-gray-400`} />
-                  <span>{navbarT.common.view}</span>
+                  <UsersIcon
+                    className={`h-4 w-4 ${language === "ar" ? "ml-3" : "mr-3"} text-gray-500 dark:text-gray-400`}
+                  />
+                  <span>{navbarT.common.team}</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            
+
             <DropdownMenuSeparator className="bg-gray-200 dark:border-gray-800" />
-            
+
             <div className="p-1">
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => signOut()}
                 className="flex items-center px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-600 dark:text-red-500 cursor-pointer"
               >
-                <LogOut className={`h-4 w-4 ${language === 'ar' ? 'ml-3' : 'mr-3'}`} />
+                <LogOut
+                  className={`h-4 w-4 ${language === "ar" ? "ml-3" : "mr-3"}`}
+                />
                 <span>{navbarT.sidebar.logout}</span>
               </DropdownMenuItem>
             </div>

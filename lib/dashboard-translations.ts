@@ -1,3 +1,5 @@
+import { se } from "date-fns/locale";
+
 export const dashboardTranslations = {
   en: {
     // Dashboard Page
@@ -287,6 +289,9 @@ export const dashboardTranslations = {
       delete: "Delete",
       edit: "Edit",
       view: "View Profile",
+      billing: "Billing",
+      settings: "Settings",
+      team: "Team",
       create: "Create",
       update: "Update",
       confirm: "Confirm",
@@ -2085,6 +2090,9 @@ export const dashboardTranslations = {
       delete: "حذف",
       edit: "تعديل",
       view: "عرض",
+      billing: "الفواتير",
+      settings: "الإعدادات",
+      team: "الفريق",
       create: "إنشاء",
       update: "تحديث",
       confirm: "تأكيد",
