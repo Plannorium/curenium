@@ -101,6 +101,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   });
   const [availableNurses, setAvailableNurses] = useState<any[]>([]);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isLoadingNurses, setIsLoadingNurses] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -172,10 +173,12 @@ export const TaskList: React.FC<TaskListProps> = ({
   useEffect(() => {
     if (showCreateTaskModal && session?.user?.organizationId) {
       // Fetch nurses for assignment
+      setIsLoadingNurses(true);
       fetch("/api/users?role=nurse&role=matron_nurse")
         .then((res) => res.json())
         .then((data: any[]) => setAvailableNurses(data))
-        .catch((err) => console.error("Failed to fetch nurses:", err));
+        .catch((err) => console.error("Failed to fetch nurses:", err))
+        .finally(() => setIsLoadingNurses(false));
     }
   }, [showCreateTaskModal, session?.user?.organizationId]);
 
@@ -357,12 +360,12 @@ export const TaskList: React.FC<TaskListProps> = ({
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="text-center py-2 bg-muted/50 rounded-md">
                 <div className="font-semibold">{stats.pending}</div>
-                <div className="text-muted-foreground">{t.status.pending}</div>
+                <div className="text-muted-foreground">{t.status?.pending ?? 'Pending'}</div>
               </div>
               <div className="text-center py-2 bg-muted/50 rounded-md">
                 <div className="font-semibold">{stats.completed}</div>
                 <div className="text-muted-foreground">
-                  {t.status.completed}
+                  {t.status?.completed ?? 'Completed'}
                 </div>
               </div>
             </div>
@@ -465,8 +468,10 @@ export const TaskList: React.FC<TaskListProps> = ({
                         <SelectTrigger>
                           <SelectValue
                             placeholder={
-                              createModalT.selectNursePlaceholder ||
-                              "Select nurse"
+                              isLoadingNurses
+                                ? "Loading nurses..."
+                                : createModalT.selectNursePlaceholder ||
+                                  "Select nurse"
                             }
                           />
                         </SelectTrigger>
