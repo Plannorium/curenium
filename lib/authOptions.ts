@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
                   role: user.role,
                   organizationId: user.organizationId.toString(),
                   image: user.image,
-                  token: jwt.sign({ id: user._id.toString(), email: user.email }, process.env.JWT_SECRET || 'default-secret', { expiresIn: '7d' }),
+                  token: jwt.sign({ id: user._id.toString(), email: user.email }, process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'default-secret', { expiresIn: '7d' }),
                 };
               }
         })

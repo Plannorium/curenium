@@ -230,10 +230,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   };
 
   const handleCreateTask = async () => {
-    if (
-      !session?.user?.role?.includes("matron") &&
-      !session?.user?.role?.includes("admin")
-    ) {
+    const role = session?.user?.role;
+    if (role !== 'matron_nurse' && role !== 'admin') {
       toast.error(
         createModalT.insufficientPermissions ||
           common.error ||
@@ -423,8 +421,8 @@ export const TaskList: React.FC<TaskListProps> = ({
           </Button>
           {showAddTask &&
             (onAddTask ||
-              session?.user?.role?.includes("matron") ||
-              session?.user?.role?.includes("admin")) &&
+              session?.user?.role === 'matron_nurse' ||
+              session?.user?.role === 'admin') &&
             (onAddTask ? (
               <Button size="sm" onClick={onAddTask}>
                 <Plus className="h-4 w-4 mr-1.5" />

@@ -528,7 +528,7 @@ import { TaskList } from "./TaskList";
           <TabsContent value="tasks" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl">
             <TaskList
               patientId={patient._id}
-              showAddTask={session?.user?.role?.includes('matron') || session?.user?.role?.includes('admin')}
+              showAddTask={session?.user?.role === 'matron_nurse' || session?.user?.role === 'admin'}
             />
           </TabsContent>
           <TabsContent value="assignment" className="p-4 sm:p-8 bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg rounded-b-3xl">

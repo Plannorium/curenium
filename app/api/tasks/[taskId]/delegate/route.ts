@@ -5,6 +5,7 @@ import connectToDB from "@/lib/dbConnect";
 import ShiftTracking from "@/models/ShiftTracking";
 import Prescription from "@/models/Prescription";
 import Task from "@/models/Task";
+import User from "@/models/User";
 import Notification from "@/models/Notification";
 import { sendWebSocketMessage } from "@/lib/websockets";
 import { canDelegateTasks } from "@/lib/rbac";
@@ -35,6 +36,18 @@ export async function PATCH(
     }
 
     await connectToDB();
+
+    const delegateUser = await User.findOne({
+      _id: delegatedTo,
+      organizationId: session.user.organizationId
+    });
+
+    if (!delegateUser) {
+      return NextResponse.json(
+        { message: "Delegate user not found or not in your organization" },
+        { status: 400 }
+      );
+    }
 
     let taskData: any = null;
     let shiftTracking: any = null;
@@ -115,6 +128,10 @@ export async function PATCH(
     }
 
     // Create audit log
+    const previousDelegatedTo = shiftTracking && taskIndex !== -1
+      ? shiftTracking.tasks[taskIndex].delegatedTo?.toString() ?? null
+      : (taskData.delegatedTo ?? taskData.assignedTo ?? null)?.toString() ?? null;
+
     await writeAudit({
       orgId: session.user.organizationId || '',
       userId: session.user.id || '',
@@ -122,7 +139,7 @@ export async function PATCH(
       action: 'task.delegate',
       targetType: taskData.type === 'medication' ? 'Task' : 'ShiftTracking',
       targetId: taskData._id?.toString() || (shiftTracking?._id as any)?.toString() || taskId,
-      before: { taskId, delegatedTo: null },
+      before: { taskId, delegatedTo: previousDelegatedTo },
       after: { taskId, delegatedTo },
       meta: { taskId, delegatedUserId: delegatedTo, taskType: taskData.type },
       ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
