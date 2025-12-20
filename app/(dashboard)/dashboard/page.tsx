@@ -86,10 +86,10 @@ const DashboardContent: React.FC = () => {
   );
 
   // Provide fallbacks for restricted data to prevent crashes
-  const effectiveShifts = shiftsError ? [] : shifts;
-  const effectiveAlerts = alertsError ? [] : alerts;
-  const effectiveAppointments = appointmentsError ? [] : appointments;
-  const effectiveUsers = usersError ? [] : users;
+  const effectiveShifts = shiftsError ? [] : (shifts ?? []);
+  const effectiveAlerts = alertsError ? [] : (alerts ?? []);
+  const effectiveAppointments = appointmentsError ? [] : (appointments ?? []);
+  const effectiveUsers = usersError ? [] : (users ?? []);
 
   useEffect(() => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));
@@ -202,7 +202,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-200 dark:text-primary-foreground/90">
-                  {!effectiveShifts ? (
+                  {!shifts && !shiftsError ? (
                     <div className="h-4 bg-white/20 rounded animate-pulse"></div>
                   ) : currentShift ? dashboardT.dashboard.currentShift : dashboardT.dashboard.upcomingShift}
                 </CardTitle>
@@ -211,7 +211,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!effectiveShifts ? (
+                {!shifts && !shiftsError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-white/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-white/10 rounded animate-pulse w-3/4"></div>
@@ -266,7 +266,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 dark:from-red-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
-                  {!effectiveAlerts ? (
+                  {!alerts && !alertsError ? (
                     <div className="h-4 bg-muted rounded animate-pulse"></div>
                   ) : dashboardT.dashboard.activeAlerts}
                 </CardTitle>
@@ -275,7 +275,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!effectiveAlerts ? (
+                {!alerts && !alertsError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-red-500/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-1/2"></div>
@@ -294,7 +294,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 dark:from-amber-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
-                  {!effectiveAppointments ? (
+                  {!appointments && !appointmentsError ? (
                     <div className="h-4 bg-muted rounded animate-pulse"></div>
                   ) : dashboardT.dashboard.pendingAppointments}
                 </CardTitle>
@@ -303,7 +303,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!effectiveAppointments ? (
+                {!appointments && !appointmentsError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-amber-500/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-2/3"></div>
@@ -324,7 +324,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 dark:from-green-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
-                  {!effectiveUsers ? (
+                  {!users && !usersError ? (
                     <div className="h-4 bg-muted rounded animate-pulse"></div>
                   ) : dashboardT.dashboard.activeStaff}
                 </CardTitle>
@@ -333,7 +333,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!effectiveUsers ? (
+                {!users && !usersError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-green-500/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4"></div>
