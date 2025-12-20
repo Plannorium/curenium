@@ -90,7 +90,7 @@ const AssignStaffModal = ({ department, onStaffAssigned, children }: AssignStaff
   };
 
   const handleAssignStaff = async () => {
-    if (!session?.user?.role?.includes('matron') && !session?.user?.role?.includes('admin')) {
+    if (session?.user?.role !== 'matron_nurse' && session?.user?.role !== 'admin') {
       toast.error('Insufficient permissions to assign staff');
       return;
     }

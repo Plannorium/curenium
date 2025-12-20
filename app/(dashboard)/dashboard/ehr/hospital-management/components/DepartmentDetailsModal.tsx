@@ -22,7 +22,7 @@ const DepartmentDetailsModal = ({ department, onDepartmentUpdated, children }: D
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
-  const isMatronOrAdmin = session?.user?.role?.includes('matron') || session?.user?.role?.includes('admin');
+  const isMatronOrAdmin = session?.user?.role === 'matron_nurse' || session?.user?.role === 'admin';
 
   const handleRemoveStaff = (staffId: string) => {
     setConfirmRemove(staffId);

@@ -29,11 +29,6 @@ interface Department {
   name: string;
 }
 
-interface User {
-  _id: string;
-  fullName: string;
-  email: string;
-}
 
 interface AddWardModalProps {
   onWardAdded: () => void;
@@ -75,7 +70,6 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
     const [phone, setPhone] = useState("");
     const [extension, setExtension] = useState("");
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -83,19 +77,11 @@ const AddWardModal: React.FC<AddWardModalProps> = React.memo(
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const [deptRes, userRes] = await Promise.all([
-            fetch("/api/departments"),
-            fetch("/api/users?role=nurse")
-          ]);
+          const deptRes = await fetch("/api/departments");
 
           if (deptRes.ok) {
             const deptData: Department[] = await deptRes.json();
             setDepartments(deptData || []);
-          }
-
-          if (userRes.ok) {
-            const userData: User[] = await userRes.json();
-            setUsers(userData || []);
           }
         } catch (error) {
           console.error("Failed to fetch data:", error);

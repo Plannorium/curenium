@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export const Login: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const urlError = searchParams?.get('error');
@@ -47,6 +48,14 @@ export const Login: React.FC = () => {
       }
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -84,7 +93,7 @@ export const Login: React.FC = () => {
     } else if (result?.ok) {
       // Successful login
       setIsSuccess(true);
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         router.push(callbackUrl);
       }, 1500); // Brief delay to show success state
     }

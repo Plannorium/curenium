@@ -9,10 +9,10 @@ export async function canCompleteTask(
 ): Promise<boolean> {
   if (!user || !task || !patient) return false;
 
-  const userRole = user.role || [];
+  const userRole = user.role;
 
   // Admins can do anything
-  if (userRole.includes('admin')) {
+  if (userRole === 'admin') {
     return true;
   }
 
@@ -29,7 +29,7 @@ export async function canCompleteTask(
     }
 
     // A matron nurse from the same ward as the patient can complete the task
-    if (userRole.includes('matron_nurse') && user.ward?.toString() === patient.ward?.toString()) {
+    if (userRole === 'matron_nurse' && user.ward?.toString() === patient.ward?.toString()) {
       return true;
     }
   }

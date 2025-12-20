@@ -105,7 +105,7 @@ export async function PATCH(
 
     // Update task in shift tracking if it exists there
     if (shiftTracking && taskIndex !== -1) {
-      shiftTracking.tasks[taskIndex].delegatedTo = taskData.assignedTo;
+      shiftTracking.tasks[taskIndex].delegatedTo = delegatedTo;
 
       if (notes) {
         shiftTracking.tasks[taskIndex].notes = notes;

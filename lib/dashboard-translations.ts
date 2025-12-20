@@ -1314,7 +1314,7 @@ export const dashboardTranslations = {
       loading: "Loading hospital data...",
       createTask: "Create Task",
       assignStaff: "Assign Staff",
-      aasigNurse: "Assign Nurse",
+      assignNurse: "Assign Nurse",
       errors: {
         fetchFailed: "Failed to fetch hospital data",
         departmentDeactivated: "Department deactivated successfully",

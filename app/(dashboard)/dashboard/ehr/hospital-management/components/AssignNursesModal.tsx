@@ -84,7 +84,7 @@ const AssignNursesModal = ({ ward, onNursesAssigned, children }: AssignNursesMod
 
         setAvailableNurses(availableNursesFiltered);
         // Pre-select currently assigned nurses
-        setSelectedNurses(ward.assignedNurses?.map(n => (n._id as any)?._id || n._id) || []);
+        setSelectedNurses(ward.assignedNurses?.map(n => n._id) || []);
       }
     } catch (error) {
       console.error('Failed to fetch nurses:', error);
@@ -95,7 +95,7 @@ const AssignNursesModal = ({ ward, onNursesAssigned, children }: AssignNursesMod
   };
 
   const handleAssignNurses = async () => {
-    if (!session?.user?.role?.includes('matron') && !session?.user?.role?.includes('admin')) {
+    if (session?.user?.role !== 'matron_nurse' && session?.user?.role !== 'admin') {
       toast.error('Insufficient permissions to assign nurses');
       return;
     }
@@ -161,7 +161,7 @@ const AssignNursesModal = ({ ward, onNursesAssigned, children }: AssignNursesMod
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
               {availableNurses.map((nurse, index) => {
                 const isSelected = selectedNurses.includes(nurse._id);
-                const isCurrentlyAssigned = ward.assignedNurses?.some(n => ((n._id as any)?._id || n._id) === nurse._id);
+                const isCurrentlyAssigned = ward.assignedNurses?.some(n => n._id === nurse._id);
 
                 return (
                   <Card

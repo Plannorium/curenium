@@ -55,7 +55,7 @@ const HospitalManagement = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("departments");
 
-  const isMatronOrAdmin = session?.user?.role?.includes('matron') || session?.user?.role?.includes('admin');
+  const isMatronOrAdmin = session?.user?.role === 'matron_nurse' || session?.user?.role === 'admin';
 
   useEffect(() => {
     fetchData();

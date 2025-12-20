@@ -169,7 +169,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 flex-shrink-0"
+              className="h-8 w-8 shrink-0"
               onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
             >
               <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />

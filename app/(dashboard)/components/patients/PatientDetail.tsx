@@ -100,7 +100,8 @@ import { TaskList } from "./TaskList";
 
            // If patient already has a ward assigned, fetch its details
            if (patient.ward) {
-             const patientWard = wardsData.find(w => w._id === patient.ward);
+             const wardId = typeof patient.ward === 'object' && (patient.ward as any)._id ? (patient.ward as any)._id : patient.ward;
+             const patientWard = wardsData.find(w => w._id === wardId);
              if (patientWard) {
                setSelectedWardDetails(patientWard);
              }

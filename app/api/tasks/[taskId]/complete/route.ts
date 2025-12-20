@@ -8,6 +8,26 @@ import Patient from "@/models/Patient";
 import { writeAudit } from "@/lib/audit";
 import { canCompleteTask } from "@/lib/task-permissions";
 
+interface ShiftTrackingTask {
+  id: string;
+  patientId: any;
+  assignedTo?: any;
+  status: string;
+  type: string;
+  completedAt?: Date | string;
+  completedBy?: string | null;
+  notes?: string;
+  _id?: string;
+  title?: string;
+}
+
+interface ShiftTrackingDoc {
+  _id: any;
+  tasks: ShiftTrackingTask[];
+  user: { fullName: string };
+  save(): Promise<any>;
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ taskId: string }> }
@@ -24,8 +44,8 @@ export async function PATCH(
 
     await connectToDB();
 
-    let task: any = null;
-    let shiftTracking: any = null;
+    let task: ITask | ShiftTrackingTask | null = null;
+    let shiftTracking: ShiftTrackingDoc | null = null;
     let taskIndex = -1;
 
     // First, try to find the task in the Task collection
@@ -35,10 +55,10 @@ export async function PATCH(
       // If not found in Task collection, check ShiftTracking
       shiftTracking = await ShiftTracking.findOne({
         'tasks.id': taskId
-      }).populate('user', 'fullName');
+      }).populate('user', 'fullName') as ShiftTrackingDoc | null;
 
       if (shiftTracking) {
-        taskIndex = shiftTracking.tasks.findIndex((t: any) => t.id === taskId);
+        taskIndex = shiftTracking.tasks.findIndex((t: ShiftTrackingTask) => t.id === taskId);
         if (taskIndex !== -1) {
           task = shiftTracking.tasks[taskIndex];
           // Create a virtual task object for permission checking
@@ -82,7 +102,7 @@ export async function PATCH(
                 assignedTo: undefined as any,
                 status: 'pending',
                 type: 'medication'
-              } as any as ITask, patient as any);
+              } as unknown as ITask, patient as any);
 
               if (!hasPermission) {
                 return NextResponse.json({ message: "Forbidden: You do not have permission to complete this task." }, { status: 403 });
@@ -100,7 +120,7 @@ export async function PATCH(
                 createdBy: session.user.id as any,
                 prescriptionId: prescription._id as any,
               });
-              await task.save();
+              await (task as ITask).save();
             }
           } catch (error) {
             console.warn('Failed to find prescription for medication task:', error);
@@ -125,7 +145,7 @@ export async function PATCH(
             assignedTo: undefined as any,
             status: 'pending',
             type: 'assessment'
-          } as any as ITask, patient as any);
+          } as unknown as ITask, patient as any);
 
           if (!hasPermission) {
             return NextResponse.json({ message: "Forbidden: You do not have permission to complete this task." }, { status: 403 });
@@ -143,7 +163,7 @@ export async function PATCH(
             status: 'pending',
             createdBy: session.user.id,
           });
-          await task.save();
+          await (task as ITask).save();
         }
       }
     }
@@ -157,7 +177,7 @@ export async function PATCH(
       return NextResponse.json({ message: "Patient not found for this task" }, { status: 404 });
     }
 
-    const hasPermission = await canCompleteTask(session.user as any, task, patient as any);
+    const hasPermission = await canCompleteTask(session.user as any, task as ITask, patient as any);
     if (!hasPermission) {
       return NextResponse.json({ message: "Forbidden: You do not have permission to complete this task." }, { status: 403 });
     }
@@ -192,15 +212,15 @@ export async function PATCH(
       userRole: session.user.role || 'user',
       action: 'task.complete',
       targetType: shiftTracking ? 'ShiftTracking' : 'Task',
-      targetId: task._id?.toString() || shiftTracking?._id?.toString() || taskId,
+      targetId: task?._id?.toString() || shiftTracking?._id?.toString() || taskId,
       meta: {
-        patientId: task.patientId?.toString() || '',
-        taskTitle: task.title || 'Unknown Task',
+        patientId: task?.patientId?.toString() || '',
+        taskTitle: task!.title || 'Unknown Task',
       },
       ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     });
 
-    return NextResponse.json(task);
+    return NextResponse.json(task!);
 
   } catch (error) {
     console.error("Failed to complete task:", error);

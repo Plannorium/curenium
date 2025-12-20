@@ -90,6 +90,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [taskFormData, setTaskFormData] = useState({
     assignedTo: "",
     title: "",
@@ -143,6 +144,14 @@ export const TaskList: React.FC<TaskListProps> = ({
       filtered = filtered.filter((task) => task.type === typeFilter);
 
     filtered.sort((a, b) => {
+      // First by status: pending/overdue first, completed last
+      const statusOrder = { pending: 1, overdue: 1, completed: 2 };
+      const aStatus = statusOrder[a.status as keyof typeof statusOrder] || 1;
+      const bStatus = statusOrder[b.status as keyof typeof statusOrder] || 1;
+
+      if (aStatus !== bStatus) return aStatus - bStatus;
+
+      // Then by priority
       const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
       const aPriority = priorityOrder[a.priority] || 0;
       const bPriority = priorityOrder[b.priority] || 0;
@@ -737,27 +746,74 @@ export const TaskList: React.FC<TaskListProps> = ({
             <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
             <p className="mt-2 text-muted-foreground">{t.loadingTasks}</p>
           </Card>
-        ) : filteredTasks.length > 0 ? (
-          <AnimatePresence>
-            {filteredTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                onComplete={handleTaskComplete}
-                showPatientInfo={!patientId}
-              />
-            ))}
-          </AnimatePresence>
         ) : (
-          <Card className="p-12 text-center border">
-            <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-medium mb-1">{t.emptyState.noTasksFound}</h3>
-            <p className="text-sm text-muted-foreground">
-              {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-                ? t.emptyState.tryAdjustingFilters
-                : t.emptyState.allCaughtUp}
-            </p>
-          </Card>
+          <>
+            {(() => {
+              const pendingTasks = filteredTasks.filter(t => t.status !== 'completed');
+              const completedTasks = filteredTasks.filter(t => t.status === 'completed');
+
+              return (
+                <>
+                  {pendingTasks.length > 0 && (
+                    <AnimatePresence>
+                      {pendingTasks.map((task) => (
+                        <TaskItem
+                          key={task.id}
+                          task={task}
+                          onComplete={handleTaskComplete}
+                          showPatientInfo={!patientId}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  )}
+
+                  {completedTasks.length > 0 && (
+                    <div className="space-y-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        className="w-full justify-between"
+                      >
+                        <span>
+                          {showCompleted ? 'Hide' : 'Show'} Completed Tasks ({completedTasks.length})
+                        </span>
+                        {showCompleted ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+
+                      {showCompleted && (
+                        <AnimatePresence>
+                          {completedTasks.map((task) => (
+                            <TaskItem
+                              key={task.id}
+                              task={task}
+                              onComplete={handleTaskComplete}
+                              showPatientInfo={!patientId}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      )}
+                    </div>
+                  )}
+
+                  {pendingTasks.length === 0 && completedTasks.length === 0 && (
+                    <Card className="p-12 text-center border">
+                      <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="font-medium mb-1">{t.emptyState.noTasksFound}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
+                          ? t.emptyState.tryAdjustingFilters
+                          : t.emptyState.allCaughtUp}
+                      </p>
+                    </Card>
+                  )}
+                </>
+              );
+            })()}
+          </>
         )}
       </div>
     </div>

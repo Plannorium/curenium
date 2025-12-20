@@ -23,7 +23,12 @@ export async function PATCH(
     }
 
     const { id: wardId } = await params;
-    const { nurseIds }: { nurseIds: string[] } = await req.json();
+    const body = await req.json();
+    const { nurseIds } = body as { nurseIds: string[] };
+
+    if (!Array.isArray(nurseIds) || !nurseIds.every(id => typeof id === 'string')) {
+      return NextResponse.json({ message: "nurseIds must be an array of strings" }, { status: 400 });
+    }
 
     await connectToDB();
 
@@ -49,7 +54,7 @@ export async function PATCH(
     }
 
     // Get currently assigned nurse IDs
-    const currentNurseIds = ward.assignedNurses?.map(n => (n._id as any)?._id || n._id) || [];
+    const currentNurseIds = ward.assignedNurses?.map(n => String(n._id)) || [];
 
     // Capture before state for audit
     const beforeAssignedNurses = [...(ward.assignedNurses || [])];
