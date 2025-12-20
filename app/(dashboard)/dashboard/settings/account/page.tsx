@@ -179,7 +179,7 @@ export default function AccountSettingsPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-xl pointer-events-none"></div>
           <div className="relative p-6">
             <div className="flex items-center mb-6">
-              <div className="p-2 bg-primary/10 rounded-lg mr-3 border border-primary/20">
+              <div className={`p-2 bg-primary/10 rounded-lg ${language === "ar" ? "ml-3" : "mr-3"} border border-primary/20`}>
                 <User className="h-5 w-5 text-primary" />
               </div>
               <h2 className="text-xl font-bold text-foreground">{t('account.profileInformation')}</h2>
@@ -218,7 +218,7 @@ export default function AccountSettingsPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-primary/5 rounded-xl pointer-events-none"></div>
           <div className="relative p-6">
             <div className="flex items-center mb-6">
-              <div className="p-2 bg-amber-500/10 rounded-lg mr-3 border border-amber-500/20">
+              <div className={`p-2 bg-amber-500/10 rounded-lg ${language === "ar" ? "ml-3" : "mr-3"} border border-amber-500/20`}>
                 <Lock className="h-5 w-5 text-amber-600 dark:text-amber-500" />
               </div>
               <h2 className="text-xl font-bold text-foreground">{t('account.changePassword')}</h2>
@@ -272,7 +272,7 @@ export default function AccountSettingsPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 rounded-xl pointer-events-none"></div>
           <div className="relative p-6">
             <div className="flex items-center mb-6">
-              <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
+              <div className={`p-2 bg-blue-500/10 rounded-lg ${language === "ar" ? "ml-3" : "mr-3"} border border-blue-500/20`}>
                 <Link2 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
               </div>
               <h2 className="text-xl font-bold text-foreground">{t('account.linkAccounts')}</h2>
@@ -318,7 +318,7 @@ export default function AccountSettingsPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-red-500/10 rounded-xl pointer-events-none"></div>
           <div className="relative p-6">
             <div className="flex items-center mb-6">
-              <div className="p-2 bg-red-500/10 rounded-lg mr-3 border border-red-500/20">
+              <div className={`p-2 bg-red-500/10 rounded-lg ${language === "ar" ? "ml-3" : "mr-3"} border border-red-500/20`}>
                 <Shield className="h-5 w-5 text-red-500" />
               </div>
               <h2 className="text-xl font-bold text-foreground">{t('account.dangerZone')}</h2>

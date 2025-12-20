@@ -170,7 +170,7 @@ const LabDashboard = () => {
                     </CardHeader>
                     <CardContent className="grow">
                       <div>
-                        <div className="font-semibold flex items-center mb-2 text-md">
+                        <div className="font-semibold flex items-center mb-2 text-md gap-x-2">
                           <FileText className="mr-2 h-5 w-5 text-primary" />
                           <span>{t('labDashboard.labels.testsRequested')}</span>
                         </div>
@@ -185,7 +185,7 @@ const LabDashboard = () => {
                         </div>
                       )}
                       <div>
-                        <div className="font-semibold flex items-center mt-4 mb-2 text-md">
+                        <div className="font-semibold flex items-center mt-4 mb-2 text-md gap-x-2">
                           <Clock className="mr-2 h-5 w-5 text-primary" />
                           <span>{t('labDashboard.labels.requestedOn')}</span>
                         </div>
@@ -193,7 +193,7 @@ const LabDashboard = () => {
                       </div>
                       {order.status === 'Completed' && order.updatedAt && (
                         <div>
-                          <div className="font-semibold flex items-center mt-4 mb-2 text-md">
+                          <div className="font-semibold flex items-center mt-4 mb-2 text-md gap-x-2">
                             <CheckCircle className="mr-2 h-5 w-5 text-green-500" />
                             <span>{t('labDashboard.labels.submittedOn')}</span>
                           </div>

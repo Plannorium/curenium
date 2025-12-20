@@ -41,7 +41,13 @@ interface User {
   online?: boolean;
 }
 
-const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
+const fetcher = async (url: string): Promise<any> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  }
+  return res.json();
+};
 
 const DashboardContent: React.FC = () => {
   const { data: session, status } = useSession();
@@ -85,6 +91,12 @@ const DashboardContent: React.FC = () => {
     { revalidateOnMount: true, dedupingInterval: 30000, refreshInterval: 60000 }
   );
 
+  // Provide fallbacks for restricted data to prevent crashes
+  const effectiveShifts = shiftsError ? [] : (shifts ?? []);
+  const effectiveAlerts = alertsError ? [] : (alerts ?? []);
+  const effectiveAppointments = appointmentsError ? [] : (appointments ?? []);
+  const effectiveUsers = usersError ? [] : (users ?? []);
+
   useEffect(() => {
     setCurrentDate(format(new Date(), 'eeee, MMMM d'));
   }, []);
@@ -103,7 +115,7 @@ const DashboardContent: React.FC = () => {
   const isAdmin = session?.user?.role === 'admin';
 
   // Filter shifts based on user role
-  const userShifts = isAdmin ? shifts : shifts?.filter(shift => shift.user?.fullName === session?.user?.name);
+  const userShifts = isAdmin ? effectiveShifts : effectiveShifts?.filter(shift => shift.user?.fullName === session?.user?.name);
 
   const currentShift = userShifts?.find(shift =>
     new Date(shift.scheduledStart) <= new Date() &&
@@ -116,32 +128,32 @@ const DashboardContent: React.FC = () => {
   );
 
   // Get all current shifts for display (for admin)
-  const allCurrentShifts = shifts?.filter(shift =>
+  const allCurrentShifts = effectiveShifts?.filter(shift =>
     new Date(shift.scheduledStart) <= new Date() &&
     new Date(shift.scheduledEnd) >= new Date() &&
     shift.status === 'active'
   ) || [];
-  const allUpcomingShifts = shifts?.filter(shift =>
+  const allUpcomingShifts = effectiveShifts?.filter(shift =>
     new Date(shift.scheduledStart) > new Date() &&
     shift.status === 'scheduled'
   ) || [];
 
-  const criticalAlerts = alerts?.filter(alert => alert.level === 'critical').length || 0;
-  const urgentAlerts = alerts?.filter(alert => alert.level === 'urgent').length || 0;
+  const criticalAlerts = effectiveAlerts?.filter(alert => alert.level === 'critical').length || 0;
+  const urgentAlerts = effectiveAlerts?.filter(alert => alert.level === 'urgent').length || 0;
 
-  const pendingAppointments = appointments?.filter(appointment =>
+  const pendingAppointments = effectiveAppointments?.filter(appointment =>
     new Date(appointment.date) > new Date() &&
     (appointment.status === 'scheduled' || appointment.status === 'confirmed')
   ).length || 0;
-  const overdueAppointments = appointments?.filter(appointment =>
+  const overdueAppointments = effectiveAppointments?.filter(appointment =>
     new Date(appointment.date) < new Date() &&
     appointment.status !== 'completed' &&
     appointment.status !== 'cancelled' &&
     appointment.status !== 'no_show'
   ).length || 0;
 
-  const activeStaff = users?.filter(user => user.online === true).length || 0;
-  const totalStaff = users?.length || 0;
+  const activeStaff = effectiveUsers?.filter(user => user.online === true).length || 0;
+  const totalStaff = effectiveUsers?.length || 0;
 
   // Show loading state while session is loading
   if (status === 'loading') {
@@ -196,7 +208,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-200 dark:text-primary-foreground/90">
-                  {!shifts ? (
+                  {!shifts && !shiftsError ? (
                     <div className="h-4 bg-white/20 rounded animate-pulse"></div>
                   ) : currentShift ? dashboardT.dashboard.currentShift : dashboardT.dashboard.upcomingShift}
                 </CardTitle>
@@ -205,7 +217,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!shifts ? (
+                {!shifts && !shiftsError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-white/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-white/10 rounded animate-pulse w-3/4"></div>
@@ -260,7 +272,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 dark:from-red-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
-                  {!alerts ? (
+                  {!alerts && !alertsError ? (
                     <div className="h-4 bg-muted rounded animate-pulse"></div>
                   ) : dashboardT.dashboard.activeAlerts}
                 </CardTitle>
@@ -269,7 +281,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!alerts ? (
+                {!alerts && !alertsError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-red-500/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-1/2"></div>
@@ -288,7 +300,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 dark:from-amber-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
-                  {!appointments ? (
+                  {!appointments && !appointmentsError ? (
                     <div className="h-4 bg-muted rounded animate-pulse"></div>
                   ) : dashboardT.dashboard.pendingAppointments}
                 </CardTitle>
@@ -297,7 +309,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!appointments ? (
+                {!appointments && !appointmentsError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-amber-500/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-2/3"></div>
@@ -318,7 +330,7 @@ const DashboardContent: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 dark:from-green-500/10 to-transparent pointer-events-none"></div>
               <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-foreground dark:text-white">
-                  {!users ? (
+                  {!users && !usersError ? (
                     <div className="h-4 bg-muted rounded animate-pulse"></div>
                   ) : dashboardT.dashboard.activeStaff}
                 </CardTitle>
@@ -327,7 +339,7 @@ const DashboardContent: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent className="relative">
-                {!users ? (
+                {!users && !usersError ? (
                   <div className="space-y-2">
                     <div className="h-8 bg-green-500/20 rounded animate-pulse"></div>
                     <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4"></div>
@@ -366,7 +378,7 @@ const DashboardContent: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 dark:from-blue-500/10 via-transparent to-purple-500/5 dark:to-purple-500/10 rounded-xl pointer-events-none"></div>
                 <CardHeader className="relative">
                   <CardTitle className="flex items-center text-lg font-semibold text-foreground dark:text-white">
-                    <div className="p-2 bg-blue-500/10 rounded-lg mr-3 border border-blue-500/20">
+                    <div className={`p-2 bg-blue-500/10 rounded-lg ${language === "en" ? "mr-3" : "ml-3"} border border-blue-500/20`}>
                       <ClipboardListIcon className="h-5 w-5 text-blue-500" />
                     </div>
                     {dashboardT.dashboard.recentAuditLogs}

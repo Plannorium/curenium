@@ -9,7 +9,13 @@ import { Loader } from '@/components/ui/Loader';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
 
-const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json());
+const fetcher = async (url: string): Promise<any> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+  }
+  return res.json();
+};
 
 const AuditLogs = () => {
   const { data: session } = useSession();
@@ -28,10 +34,13 @@ const AuditLogs = () => {
     return value || key;
   };
 
-  if (error) return <div className="text-sm text-muted-foreground">{t('auditLogs.failedToLoad')}</div>;
+  if (error) {
+    console.error('Failed to load audit logs:', error);
+    return null;
+  }
   if (!auditLogs) return <Loader variant="minimal" />;
 
-  const recentLogs = auditLogs.slice(0, 4); // Show only recent 5
+  const recentLogs = auditLogs.slice(0, 4); // Show only recent 4
 
   return (
     <div className="space-y-4">

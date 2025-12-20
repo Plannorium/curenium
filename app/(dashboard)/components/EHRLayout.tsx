@@ -55,7 +55,7 @@ const EHRLayout = ({ children }: { children: React.ReactNode }) => {
     role === "nurse" ||
     role === "admin" ||
     role === "doctor" ||
-    role === "lab-technician"
+    role === "labtech"
   ) {
     menuItems.push({ href: "/dashboard/ehr/lab", label: t('sidebar.lab') });
   }
