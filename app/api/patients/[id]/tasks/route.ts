@@ -105,8 +105,6 @@ export async function GET(
 
     // Commented out: Auto-generation of tasks on fetch to prevent duplicates
     // Tasks are now only created by cron job and administer route
-
-    /*
     // 3. Get patient's prescriptions for auto-generation
     const prescriptions = await Prescription.find({
       patientId,
@@ -207,7 +205,6 @@ export async function GET(
         tasks.push(normalizeTask(newTask));
       }
     }
-    */
 
     // 7. Sort tasks
     tasks.sort((a, b) => {

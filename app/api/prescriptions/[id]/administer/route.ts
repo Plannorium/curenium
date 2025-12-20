@@ -64,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           if (frequencyHours > 0) {
             const nextDueTime = calculateNextMedicationDueTime(prescription, frequencyHours, now);
             // Improve task ID generation to avoid collisions by including a random component
-            const taskId = `med-${prescription._id}-${nextDueTime.getTime()}-${Math.random().toString(36).substr(2, 9)}`;
+            const taskId = `med-${prescription._id}-${nextDueTime.getTime()}`;
 
             // Check if task already exists
             const existingTask = await Task.findOne({ id: taskId });
