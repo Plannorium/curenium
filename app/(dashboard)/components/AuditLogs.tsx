@@ -34,10 +34,13 @@ const AuditLogs = () => {
     return value || key;
   };
 
-  if (error) return null;
+  if (error) {
+    console.error('Failed to load audit logs:', error);
+    return null;
+  }
   if (!auditLogs) return <Loader variant="minimal" />;
 
-  const recentLogs = auditLogs.slice(0, 4); // Show only recent 5
+  const recentLogs = auditLogs.slice(0, 4); // Show only recent 4
 
   return (
     <div className="space-y-4">
