@@ -507,7 +507,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )
               }
               className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
-                activeRoom === `${currentUser._id}-${currentUser._id}`
+                activeRoom === `${currentUser._id}--${currentUser._id}`
                   ? "bg-primary/10 text-primary border border-primary/20 shadow-sm hover:shadow-md"
                   : "hover:bg-accent/50 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground"
               }`}
