@@ -99,6 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [channels, setChannels] = useState<Channel[]>([]);
   const { recentDms } = useChatContext();
   const [searchQuery, setSearchQuery] = useState("");
+  const [dialogSearchQuery, setDialogSearchQuery] = useState("");
   const [managingChannel, setManagingChannel] = useState<Channel | null>(null);
   const [isCreateChannelModalOpen, setCreateChannelModalOpen] = useState(false);
   const [isNewChatDialogOpen, setIsNewChatDialogOpen] = useState(false);
@@ -127,10 +128,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const filteredUsers = useMemo(() => {
     return users.filter(user =>
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      user.fullName.toLowerCase().includes(dialogSearchQuery.toLowerCase()) ||
+      (user.email && user.email.toLowerCase().includes(dialogSearchQuery.toLowerCase()))
     );
-  }, [users, searchQuery]);
+  }, [users, dialogSearchQuery]);
 
   const getInitials = (name: string | undefined) => {
     if (!name) return "";
@@ -502,7 +503,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={() =>
                 handleRoomChange(
-                  `${currentUser._id}-${currentUser._id}`
+                  `${currentUser._id}--${currentUser._id}`
                 )
               }
               className={`group cursor-pointer flex items-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.01] ${
@@ -744,11 +745,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       onOpenChange={(isOpen) => {
         setIsNewChatDialogOpen(isOpen);
         if (!isOpen) {
-          setSearchQuery("");
+          setDialogSearchQuery("");
         }
       }}
     >
-      <DialogContent className="max-w-md g-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl rounded-2xl">
+      <DialogContent className="max-w-md bg-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl rounded-2xl">
         <DialogHeader className="text-left">
           <DialogTitle className="text-xl font-bold">
             {t("chat.newMessage")}
@@ -764,8 +765,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Input
               placeholder="Search by name..."
               className="w-full bg-transparent border-2 border-border/30 focus:border-primary/50 transition-all duration-300 rounded-xl pl-10 pr-4 py-2.5 text-base"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={dialogSearchQuery}
+              onChange={(e) => setDialogSearchQuery(e.target.value)}
             />
           </div>
 
