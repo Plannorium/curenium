@@ -16,6 +16,7 @@ import {
   Briefcase,
   PencilIcon,
   SearchIcon,
+  Search,
   Users,
   Plus,
 } from "lucide-react";
@@ -31,6 +32,15 @@ import { generateRoomId } from "@/lib/roomIdGenerator";
 import type { IUser } from "@/models/User";
 import { CreateChannelModal } from "./CreateChannelModal";
 import { ManageChannelModal } from "./ManageChannelModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -58,6 +68,7 @@ interface User {
   fullName: string;
   image?: string;
   online?: boolean;
+  email?: string;
 }
 
 interface DM {
@@ -113,6 +124,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (!session?.user?._id || !users.length) return null;
     return users.find((u) => u._id === session?.user?._id);
   }, [session?.user?._id, users]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user =>
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [users, searchQuery]);
 
   const getInitials = (name: string | undefined) => {
     if (!name) return "";
@@ -394,7 +412,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
         <h3
-          className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
+          className={`px-4 pt-2 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
         >
           {sidebarT.sidebar.channels}
         </h3>
@@ -461,7 +479,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             ))}
-          <div className="px-3 cursor-pointer mt-5">
+          <div className="px-3 cursor-pointer mt-3 mb-1.5">
             <button
               onClick={() => setCreateChannelModalOpen(true)}
               className="group flex items-center justify-center w-full px-3 py-2.5 text-sm rounded-xl font-medium transition-all duration-300 border border-dashed border-border/50 hover:border-primary/50 bg-background/20 hover:bg-accent/50 dark:border-gray-700/50 dark:hover:border-primary/50 dark:bg-gray-800/20 dark:hover:bg-gray-800/50 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transform hover:-translate-y-0.5 cursor-pointer"
@@ -475,7 +493,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
         <h3
-          className={`px-4 pt-4 pb-2 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
+          className={`px-4 pt-3 pb-1 text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wider ${isCollapsed ? "lg:text-center" : ""}`}
         >
           {sidebarT.sidebar.directMessages}
         </h3>
@@ -600,7 +618,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <>
+    <div>
       <aside
       className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 shadow-lg transition-all duration-300 ease-in-out flex flex-col
       ${isCollapsed ? "lg:w-24" : "lg:w-64"}
@@ -633,7 +651,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             onClick={toggleSidebar}
-            className="lg:hidden ml-auto flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
+            className="lg:hidden ml-auto flex items-center justify-center p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-200"
           >
             <XIcon
               size={20}
@@ -720,6 +738,93 @@ export const Sidebar: React.FC<SidebarProps> = ({
       allUsers={users}
       onChannelUpdated={fetchChannels}
     />
-    </>
+
+    <Dialog
+      open={isNewChatDialogOpen}
+      onOpenChange={(isOpen) => {
+        setIsNewChatDialogOpen(isOpen);
+        if (!isOpen) {
+          setSearchQuery("");
+        }
+      }}
+    >
+      <DialogContent className="max-w-md g-background/80 dark:bg-slate-900/95 border-border/30 shadow-2xl rounded-2xl">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-xl font-bold">
+            {t("chat.newMessage")}
+          </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            {t("chat.searchPeople")}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="px-1 pt-0">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name..."
+              className="w-full bg-transparent border-2 border-border/30 focus:border-primary/50 transition-all duration-300 rounded-xl pl-10 pr-4 py-2.5 text-base"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-4 space-y-1.5 max-h-[50vh] overflow-y-auto no-scrollbar">
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <button
+                  key={user._id}
+                  onClick={() => {
+                    const room = [session?.user?._id, user._id]
+                      .sort()
+                      .join("--");
+                    handleRoomChange(room);
+                    setIsNewChatDialogOpen(false);
+                  }}
+                  className="w-full flex items-center p-2.5 rounded-xl hover:bg-accent/50 dark:hover:bg-gray-800/50 transition-all duration-200 text-left cursor-pointer"
+                >
+                  <div
+                    className={`relative ${language === "ar" ? "ml-3" : "mr-3"}`}
+                  >
+                    <Avatar className="h-9 w-9 border-2 border-border/20 dark:border-gray-700/50">
+                      <AvatarImage src={user.image || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                        {user.fullName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {user.online && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background shadow-sm"></span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-base text-foreground">
+                      {user.fullName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <h3 className="mt-4 text-lg font-semibold text-foreground">
+                  {t("chat.noUsersFound")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("chat.adjustSearchOrInvite")}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </div>
   );
 };
