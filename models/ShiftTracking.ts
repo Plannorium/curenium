@@ -132,7 +132,7 @@ const ShiftTrackingSchema: Schema = new Schema(
     // Status and tracking
     status: {
       type: String,
-      enum: ['scheduled', 'active', 'on_break', 'completed', 'absent', 'cancelled'],
+      enum: ['scheduled', 'active', 'on_break', 'on_call', 'completed', 'absent', 'cancelled'],
       default: 'scheduled'
     },
     department: {

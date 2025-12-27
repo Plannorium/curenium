@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
 import { ShiftHandoff } from '../../../models/ShiftHandoff';
+import { User } from '../../../models/User';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -20,15 +21,20 @@ export async function GET(req: NextRequest) {
   await dbConnect();
 
   try {
+    const user = await User.findById(session.user.id).select('ward department role');
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
     const query: any = {
       organizationId: session.user.organizationId
     };
 
     // Role-based filtering
     if (session.user.role !== 'admin') {
-      // Non-admin users can only see handoffs from their ward/department
-      if (wardId) query.wardId = wardId;
-      if (departmentId) query.departmentId = departmentId;
+      // Non-admin users can only see handoffs from their assigned ward/department
+      if (user.ward) query.wardId = user.ward;
+      if (user.department) query.departmentId = user.department;
     } else {
       // Admins can filter by ward/department if specified
       if (wardId) query.wardId = wardId;
@@ -75,30 +81,6 @@ export async function POST(req: NextRequest) {
       voiceRecordings
     } = body;
 
-    // Debug: show current schema options for overview (helps confirm if running model marks it required)
-    try {
-      const overviewPath = (ShiftHandoff as any).schema.path('overview');
-      console.log('ShiftHandoff.schema.overview.options:', overviewPath?.options || null);
-      // Defensive runtime patch: if the loaded schema still marks overview as required,
-      // relax it to allow voice-only submissions (this handles hot-reload/cached model issues).
-      if (overviewPath) {
-        console.log('Overview validators before patch:', overviewPath.validators);
-        // Remove any 'required' validators that may still be attached to the path
-        if (Array.isArray(overviewPath.validators) && overviewPath.validators.length > 0) {
-          overviewPath.validators = overviewPath.validators.filter((v: any) => v.type !== 'required');
-        }
-        // Also relax options if set
-        if (overviewPath.options && overviewPath.options.required) {
-          overviewPath.options.required = false;
-        }
-        if (overviewPath.options) {
-          overviewPath.options.default = overviewPath.options.default ?? '';
-        }
-        console.log('Overview validators after patch:', overviewPath.validators);
-      }
-    } catch (e) {
-      console.log('Could not read ShiftHandoff.schema.path("overview")', e);
-    }
 
     // Allow voice-only submissions: overview text is not required if a voice recording for overview is provided
     // If the server is still using an older compiled model (required:true), this check will surface that in the logs above.

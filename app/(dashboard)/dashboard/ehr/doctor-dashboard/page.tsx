@@ -1,6 +1,6 @@
  "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,8 @@ const DoctorDashboard = () => {
   const [wardName, setWardName] = useState<string>('');
   const [wardNumber, setWardNumber] = useState<string>('');
 
+  const patientIdRef = useRef<string | null>(null);
+
   // Fetch patients when search query changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -202,11 +204,15 @@ const DoctorDashboard = () => {
   };
 
   const fetchDepartmentName = async (departmentId: string) => {
+    const currentPatientId = patientIdRef.current;
     try {
       const response = await fetch(`/api/departments/${departmentId}`);
       if (response.ok) {
         const department: any = await response.json();
-        setDepartmentName(department.name);
+        // Only update if we're still on the same patient
+        if (patientIdRef.current === currentPatientId) {
+          setDepartmentName(department.name);
+        }
       }
     } catch (error) {
       console.error('Error fetching department:', error);
@@ -214,12 +220,16 @@ const DoctorDashboard = () => {
   };
 
   const fetchWardName = async (wardId: string) => {
+    const currentPatientId = patientIdRef.current;
     try {
       const response = await fetch(`/api/wards/${wardId}`);
       if (response.ok) {
         const ward: any = await response.json();
-        setWardName(ward.name);
-        setWardNumber(ward.wardNumber);
+        // Only update if we're still on the same patient
+        if (patientIdRef.current === currentPatientId) {
+          setWardName(ward.name);
+          setWardNumber(ward.wardNumber);
+        }
       }
     } catch (error) {
       console.error('Error fetching ward:', error);
@@ -227,6 +237,7 @@ const DoctorDashboard = () => {
   };
 
   const handlePatientSelect = (patient: Patient) => {
+    patientIdRef.current = patient._id;
     setSelectedPatient(patient);
     setCurrentStep('workflow');
     setActiveWorkflowStep('assessment');
@@ -603,7 +614,9 @@ const DoctorDashboard = () => {
                     {selectedPatient.ward && wardName && (
                       <div>
                         <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.ward')}</Label>
-                        <p className="text-gray-900 dark:text-white">{wardName} ({wardNumber})</p>
+                        <p className="text-gray-900 dark:text-white">
+                          {wardName}{wardNumber ? ` (${wardNumber})` : ''}
+                        </p>
                       </div>
                     )}
                   </div>

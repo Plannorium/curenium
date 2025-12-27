@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
-import HandoffReport from '@/models/HandoffNote';
+import { HandoffReport } from '@/models/HandoffReport';
 import Patient from '@/models/Patient';
 import ShiftTracking from '@/models/ShiftTracking';
 import { jsPDF } from 'jspdf';
@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const query: any = {
-      // Model uses `orgId` as the organization reference
-      orgId: session.user.organizationId,
+      // Model uses `organizationId` as the organization reference
+      organizationId: session.user.organizationId,
     };
 
     if (patientId) {
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const reports = await HandoffReport.find(query)
       .populate('patientId', 'firstName lastName mrn')
       .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
-      .populate('author', 'fullName role')
+      .populate('createdBy', 'fullName role')
       .sort({ createdAt: -1 });
 
     return NextResponse.json(reports, { status: 200 });
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (patientId) {
       const patient = await Patient.findOne({
         _id: patientId,
-        organizationId: session.user.organizationId
+        orgId: session.user.organizationId
       });
       if (!patient) {
         return NextResponse.json({ message: 'Patient not found' }, { status: 404 });
@@ -97,9 +97,9 @@ export async function POST(req: NextRequest) {
       patientId,
       shiftId,
       sbar,
-      // Model expects `author` and `orgId`
-      author: session.user.id,
-      orgId: session.user.organizationId,
+      // Model expects `createdBy` and `organizationId`
+      createdBy: session.user.id,
+      organizationId: session.user.organizationId,
     });
 
     await newReport.save();
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
     const populatedReport = await HandoffReport.findById(newReport._id)
       .populate('patientId', 'firstName lastName mrn')
       .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
-      .populate('author', 'fullName role');
+      .populate('createdBy', 'fullName role');
 
     return NextResponse.json(populatedReport, { status: 201 });
   } catch (error) {

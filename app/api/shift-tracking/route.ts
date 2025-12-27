@@ -28,10 +28,9 @@ export async function GET(req: NextRequest) {
     // Role-based filtering
     if (session.user.role !== 'admin') {
       query.user = session.user.id; // Non-admin users can only see their own shifts
+    } else if (userId) {
+      query.user = userId; // Admins can filter by specific user
     }
-    // Admins can see all shifts in their organization
-
-    if (userId) query.user = userId;
     if (status) query.status = status;
     if (department) query.department = department;
 

@@ -61,19 +61,29 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+  const lastTranscriptLengthRef = useRef(0);
 
   useEffect(() => {
-    if (transcript && currentField) {
-      setSbar(prev => ({
-        ...prev,
-        [currentField]: prev[currentField] + ' ' + transcript
-      }));
-    }
+    if (!currentField) return;
+    const delta = transcript.slice(lastTranscriptLengthRef.current);
+    lastTranscriptLengthRef.current = transcript.length;
+    if (!delta.trim()) return;
+    setSbar(prev => ({
+      ...prev,
+      [currentField]: `${prev[currentField]} ${delta}`.trim()
+    }));
   }, [transcript, currentField]);
+
+  useEffect(() => {
+    if (!isOpen && isListening) {
+      stopListening();
+      resetTranscript();
+    }
+  }, [isOpen, isListening]);
 
   const startListening = (field: keyof SBARData) => {
     if (!browserSupportsSpeechRecognition) {
-      toast.error('Browser does not support speech recognition');
+      toast.error(t('handoff.browserNotSupportSpeech'));
       return;
     }
     setCurrentField(field);
@@ -104,9 +114,9 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
       const qrData = JSON.stringify(reportData);
       const url = await QRCode.toDataURL(qrData);
       setQrCodeUrl(url);
-      toast.success('QR code generated successfully');
+      toast.success(t('handoff.qrGenerated'));
     } catch (error) {
-      toast.error('Failed to generate QR code');
+      toast.error(t('handoff.failedToGenerateQR'));
     } finally {
       setIsGeneratingQR(false);
     }
@@ -114,7 +124,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
 
   const shareViaChat = async () => {
     if (!qrCodeUrl) {
-      toast.error('Generate QR code first');
+      toast.error(t('handoff.generateQRFirst'));
       return;
     }
 
@@ -137,12 +147,12 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
         const { url } = data;
         // Use the chat hook's combined message sender
         await sendCombinedMessage(`Handoff Report QR Code: ${url}`);
-        toast.success('QR code shared in chat');
+        toast.success(t('handoff.qrSharedInChat'));
       } else {
-        toast.error('Failed to upload QR code');
+        toast.error(t('handoff.failedToUploadQR'));
       }
     } catch (error) {
-      toast.error('Failed to share QR code');
+      toast.error(t('handoff.failedToShareQR'));
     }
   };
 
@@ -171,18 +181,18 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        toast.success('PDF exported successfully');
+        toast.success(t('handoff.pdfExported'));
       } else {
-        toast.error('Failed to export PDF');
+        toast.error(t('handoff.failedToExportPDF'));
       }
     } catch (error) {
-      toast.error('Error exporting PDF');
+      toast.error(t('handoff.errorExportingPDF'));
     }
   };
 
   const handleSubmit = async () => {
     if (!sbar.situation || !sbar.background || !sbar.assessment || !sbar.recommendation) {
-      toast.error('All SBAR fields are required');
+      toast.error(t('handoff.allSBARRequired'));
       return;
     }
 
@@ -200,7 +210,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
       });
 
       if (response.ok) {
-        toast.success('Handoff report added successfully');
+        toast.success(t('handoff.reportAdded'));
         onReportAdded();
         onClose();
         // Reset form
@@ -212,10 +222,10 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
         });
         setQrCodeUrl('');
       } else {
-        toast.error('Failed to add handoff report');
+        toast.error(t('handoff.failedToAddReport'));
       }
     } catch (error) {
-      toast.error('Error adding handoff report');
+      toast.error(t('handoff.errorAddingReport'));
     }
   };
 
@@ -251,10 +261,10 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl p-10 rounded-2xl">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-linear-to-br from-green-500 to-green-600 rounded-lg shadow-lg">
+            <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
               {t('handoff.modalTitle')}
             </DialogTitle>
           </div>
@@ -332,7 +342,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
           <Button
             type="button"
             onClick={handleSubmit}
-            className="bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
           >
             {t('handoff.saveReport')}
           </Button>

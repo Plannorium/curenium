@@ -110,11 +110,11 @@ const ShiftHandoffsDisplay = ({
         const data: ShiftHandoff[] = await response.json();
         setHandoffs(data);
       } else {
-        toast.error('Failed to fetch handoff reports');
+        toast.error(t('shiftHandoff.failedToFetch'));
       }
     } catch (error) {
       console.error('Error fetching handoffs:', error);
-      toast.error(t('shiftHandoff.failedToCreate'));
+      toast.error(t('shiftHandoff.failedToFetch'));
     } finally {
       setLoading(false);
     }

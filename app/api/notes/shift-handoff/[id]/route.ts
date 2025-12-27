@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
@@ -119,22 +120,6 @@ export async function PUT(
       voiceRecordings
     } = body;
 
-    // Debug: log schema options for overview to confirm runtime model state
-    try {
-      const overviewPath = (ShiftHandoff as any).schema.path('overview');
-      console.log('[PUT] ShiftHandoff.schema.overview.options:', overviewPath?.options || null);
-      if (overviewPath) {
-        console.log('[PUT] Overview validators before patch:', overviewPath.validators);
-        if (Array.isArray(overviewPath.validators) && overviewPath.validators.length > 0) {
-          overviewPath.validators = overviewPath.validators.filter((v: any) => v.type !== 'required');
-        }
-        if (overviewPath.options && overviewPath.options.required) overviewPath.options.required = false;
-        if (overviewPath.options) overviewPath.options.default = overviewPath.options.default ?? '';
-        console.log('[PUT] Overview validators after patch:', overviewPath.validators);
-      }
-    } catch (e) {
-      console.log('[PUT] Could not read ShiftHandoff.schema.path("overview")', e);
-    }
 
     // Update fields if provided. Allow voice-only updates: if overview text isn't provided
     // but a voice recording is included, ensure the textual field exists (empty string).

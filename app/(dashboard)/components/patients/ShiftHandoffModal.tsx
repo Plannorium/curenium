@@ -316,7 +316,7 @@ const ShiftHandoffModal = ({ children, wardId, departmentId, type, onHandoffCrea
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {t('shiftHandoff.cancel')}
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || isUploadingVoice}>
               {loading ? t('shiftHandoff.creating') : t('shiftHandoff.createReport')}
             </Button>
           </div>

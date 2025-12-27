@@ -286,7 +286,7 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={report.author.image} />
                       <AvatarFallback className="text-xs">
-                        {report.author.initials || report.author.fullName.split(' ').map(n => n[0]).join('')}
+                        {report.author.initials || report.author.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || '?'}
                       </AvatarFallback>
                     </Avatar>
                     <div>

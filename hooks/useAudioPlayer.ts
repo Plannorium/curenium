@@ -142,9 +142,10 @@ export function useAudioPlayer() {
       try {
         existing.audio.pause();
         existing.index = 0;
+        existing.currentField = '0';
         existing.audio.src = existing.queue[0];
         await existing.audio.play();
-        notify({ id, field: existing.currentField ?? null, isPlaying: true });
+        notify({ id, field: '0', isPlaying: true });
       } catch (e) {
         console.error('Error restarting sequence', e);
         notify({ id: null, isPlaying: false });

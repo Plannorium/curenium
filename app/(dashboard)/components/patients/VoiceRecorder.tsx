@@ -64,6 +64,37 @@ export function VoiceRecorder({ onRecordingComplete, onRecordingCanceled, maxDur
     animationFrameRef.current = requestAnimationFrame(visualize);
   }, []);
 
+  // Stop recording
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+
+      // Stop all tracks
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+    }
+
+    // Clean up
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    setAudioData([]);
+  }, [isRecording]);
+
   // Start recording
   const startRecording = useCallback(async () => {
     try {
@@ -120,38 +151,7 @@ export function VoiceRecorder({ onRecordingComplete, onRecordingCanceled, maxDur
       console.error('Error starting recording:', error);
       toast.error('Failed to start recording');
     }
-  }, [initAudioContext, visualize, onRecordingComplete, maxDuration, warningTime, showWarning]);
-
-  // Stop recording
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-
-      // Stop all tracks
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      }
-    }
-
-    // Clean up
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-
-    setAudioData([]);
-  }, [isRecording]);
+  }, [initAudioContext, visualize, onRecordingComplete, maxDuration, warningTime, showWarning, stopRecording]);
 
   // Play recorded audio
   const playAudio = useCallback(() => {
@@ -306,30 +306,32 @@ export function VoiceRecorder({ onRecordingComplete, onRecordingCanceled, maxDur
       </div>
 
       {/* Audio Visualization */}
-      {(isRecording || audioData.length > 0) && (
+      {(isRecording || audioData.length > 0 || (audioUrl && !isRecording)) && (
         <div className="flex items-end gap-1 h-12 bg-gray-100 dark:bg-gray-800 rounded p-2">
-          {audioData.map((value, index) => {
-            // Determine color based on recording time
-            let barColor = 'bg-green-400'; // Default light green
-            if (isRecording && recordingTime >= warningTime) {
-              barColor = 'bg-red-500'; // Red when approaching limit
-            } else if (!isRecording) {
-              barColor = 'bg-blue-500'; // Blue for recorded audio
-            }
+          {audioData.length > 0 ? (
+            audioData.map((value, index) => {
+              // Determine color based on recording time
+              let barColor = 'bg-green-400'; // Default light green
+              if (isRecording && recordingTime >= warningTime) {
+                barColor = 'bg-red-500'; // Red when approaching limit
+              } else if (!isRecording) {
+                barColor = 'bg-blue-500'; // Blue for recorded audio
+              }
 
-            return (
-              <div
-                key={index}
-                className={`${barColor} rounded-sm transition-all duration-75`}
-                style={{
-                  height: `${Math.max(4, (value / 255) * 40)}px`,
-                  width: '4px',
-                  opacity: isRecording ? 1 : 0.7
-                }}
-              />
-            );
-          })}
-          {!isRecording && audioData.length === 0 && audioUrl && (
+              return (
+                <div
+                  key={index}
+                  className={`${barColor} rounded-sm transition-all duration-75`}
+                  style={{
+                    height: `${Math.max(4, (value / 255) * 40)}px`,
+                    width: '4px',
+                    opacity: isRecording ? 1 : 0.7
+                  }}
+                />
+              );
+            })
+          ) : (
+            // Recorded Audio Summary
             <div className="flex items-center justify-center w-full text-sm text-muted-foreground">
               Audio recorded - {audioBlob ? `${(audioBlob.size / 1024 / 1024).toFixed(2)} MB` : ''}
             </div>
