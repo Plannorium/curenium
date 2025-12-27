@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,16 +72,26 @@ interface HandoffReportsDisplayProps {
   allowedTypes?: ('ward' | 'department' | 'shift' | 'patient')[];
 }
 
+const getReportVoiceUrls = (report: HandoffNote) => [
+  { field: 'situation', url: report.situationVoiceRecording },
+  { field: 'background', url: report.backgroundVoiceRecording },
+  { field: 'assessment', url: report.assessmentVoiceRecording },
+  { field: 'recommendation', url: report.recommendationVoiceRecording }
+].filter(item => item.url) as { field: string; url: string }[];
+
+const getAuthorInitials = (author: { fullName: string; initials?: string }) =>
+  author.initials || author.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || '?';
+
 export default function HandoffReportsDisplay({ patientId, shiftId, wardId, departmentId, type, allowedTypes }: HandoffReportsDisplayProps) {
   const { language } = useLanguage();
-  const t = (key: string) => {
+  const t = useCallback((key: string) => {
     const keys = key.split('.');
     let value: any = dashboardTranslations[language as keyof typeof dashboardTranslations];
     for (const k of keys) {
       value = value?.[k];
     }
     return value || key;
-  };
+  }, [language]);
 
   const [reports, setReports] = useState<HandoffNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,12 +201,7 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
     const report = reports.find(r => r._id === reportId);
     if (!report) return;
 
-    const voiceUrls = [
-      { field: 'situation', url: report.situationVoiceRecording },
-      { field: 'background', url: report.backgroundVoiceRecording },
-      { field: 'assessment', url: report.assessmentVoiceRecording },
-      { field: 'recommendation', url: report.recommendationVoiceRecording }
-    ].filter(item => item.url) as { field: string; url: string }[];
+    const voiceUrls = getReportVoiceUrls(report);
 
     if (voiceUrls.length === 0) return;
 
@@ -210,12 +214,7 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
   const restartAudioPlayback = (reportId: string) => {
     const report = reports.find(r => r._id === reportId);
     if (!report) return;
-    const voiceUrls = [
-      { field: 'situation', url: report.situationVoiceRecording },
-      { field: 'background', url: report.backgroundVoiceRecording },
-      { field: 'assessment', url: report.assessmentVoiceRecording },
-      { field: 'recommendation', url: report.recommendationVoiceRecording }
-    ].filter(item => item.url) as { field: string; url: string }[];
+    const voiceUrls = getReportVoiceUrls(report);
     if (voiceUrls.length === 0) return;
     const urls = voiceUrls.map(v => v.url);
     reportFieldsRef.current[reportId] = voiceUrls.map(v => v.field);
@@ -286,7 +285,7 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={report.author.image} />
                       <AvatarFallback className="text-xs">
-                        {report.author.initials || report.author.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || '?'}
+                        {getAuthorInitials(report.author)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -458,10 +457,6 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
       <HandoffReportModal
         patientId={patientId}
         shiftId={shiftId}
-        wardId={wardId}
-        departmentId={departmentId}
-        defaultType={type}
-        allowedTypes={allowedTypes}
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onReportAdded={handleReportAdded}

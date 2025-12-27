@@ -2,9 +2,23 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 
 type UpdateCallback = (payload: { id: string | null; field?: string | null; isPlaying: boolean }) => void;
 
+type AudioEntry =
+  | {
+      audio: HTMLAudioElement;
+      isSequence: false;
+      field?: string;
+    }
+  | {
+      audio: HTMLAudioElement;
+      isSequence: true;
+      queue: string[];
+      index: number;
+      currentField: string | null;
+    };
+
 export function useAudioPlayer() {
   // map of id -> { audio, queue?, index, isSequence }
-  const mapRef = useRef(new Map<string, any>());
+  const mapRef = useRef(new Map<string, AudioEntry>());
   const updateCbRef = useRef<UpdateCallback | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
@@ -44,7 +58,6 @@ export function useAudioPlayer() {
       try {
         if (existing.audio.paused) {
           await existing.audio.play();
-          notify({ id, field: existing.field ?? null, isPlaying: true });
         } else {
           existing.audio.pause();
           notify({ id: null, field: existing.field ?? null, isPlaying: false });
@@ -59,7 +72,7 @@ export function useAudioPlayer() {
     // create new audio and play
     try {
       const audio = new Audio(url);
-      const entry = { audio, isSequence: false, field: undefined };
+      const entry: AudioEntry = { audio, isSequence: false, field: undefined };
       audio.addEventListener('ended', () => {
         cleanupEntry(id);
         notify({ id: null, isPlaying: false });
@@ -68,7 +81,6 @@ export function useAudioPlayer() {
       audio.addEventListener('pause', () => notify({ id: null, field: undefined, isPlaying: false }));
       mapRef.current.set(id, entry);
       await audio.play();
-      notify({ id, field: undefined, isPlaying: true });
     } catch (e) {
       console.error('Audio play error', e);
       notify({ id: null, isPlaying: false });
@@ -81,7 +93,6 @@ export function useAudioPlayer() {
       try {
         if (existing.audio.paused) {
           await existing.audio.play();
-          notify({ id, field: existing.currentField ?? null, isPlaying: true });
         } else {
           existing.audio.pause();
           notify({ id: null, field: existing.currentField ?? null, isPlaying: false });
@@ -98,7 +109,7 @@ export function useAudioPlayer() {
     try {
       let index = 0;
       const audio = new Audio(urls[index]);
-      const entry: any = { audio, isSequence: true, queue: urls.slice(), index, currentField: null };
+      const entry: AudioEntry = { audio, isSequence: true, queue: urls.slice(), index, currentField: null };
 
       const playIndex = async (i: number) => {
         if (!entry.queue[i]) return;
@@ -108,7 +119,6 @@ export function useAudioPlayer() {
           // derive field as position string; caller can map index->field if needed
           entry.currentField = String(i);
           await entry.audio.play();
-          notify({ id, field: entry.currentField, isPlaying: true });
         } catch (e) {
           console.error('Error playing sequence item', e);
           notify({ id: null, isPlaying: false });
@@ -145,7 +155,6 @@ export function useAudioPlayer() {
         existing.currentField = '0';
         existing.audio.src = existing.queue[0];
         await existing.audio.play();
-        notify({ id, field: '0', isPlaying: true });
       } catch (e) {
         console.error('Error restarting sequence', e);
         notify({ id: null, isPlaying: false });
@@ -160,7 +169,7 @@ export function useAudioPlayer() {
   useEffect(() => {
     return () => {
       // cleanup all
-      mapRef.current.forEach((entry: any, key: string) => {
+      mapRef.current.forEach((entry: AudioEntry, key: string) => {
         try { entry.audio.pause(); } catch (e) {}
       });
       mapRef.current.clear();

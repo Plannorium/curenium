@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,10 +18,6 @@ import { useChat } from '@/hooks/useChat';
 interface HandoffReportModalProps {
   patientId?: string;
   shiftId?: string;
-  wardId?: string;
-  departmentId?: string;
-  defaultType?: 'ward' | 'department' | 'shift' | 'patient';
-  allowedTypes?: ('ward' | 'department' | 'shift' | 'patient')[];
   isOpen: boolean;
   onClose: () => void;
   onReportAdded: () => void;
@@ -74,12 +70,19 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
     }));
   }, [transcript, currentField]);
 
+  const stopListening = useCallback(() => {
+    setIsListening(false);
+    setCurrentField(null);
+    SpeechRecognition.stopListening();
+  }, []);
+
+
   useEffect(() => {
     if (!isOpen && isListening) {
       stopListening();
       resetTranscript();
     }
-  }, [isOpen, isListening]);
+  }, [isOpen, isListening, stopListening, resetTranscript]);
 
   const startListening = (field: keyof SBARData) => {
     if (!browserSupportsSpeechRecognition) {
@@ -89,13 +92,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
     setCurrentField(field);
     setIsListening(true);
     resetTranscript();
-    SpeechRecognition.startListening({ continuous: true });
-  };
-
-  const stopListening = () => {
-    setIsListening(false);
-    setCurrentField(null);
-    SpeechRecognition.stopListening();
+    SpeechRecognition.startListening({ continuous: true, interimResults: true });
   };
 
   const generateQRCode = async () => {
@@ -261,10 +258,10 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white/90 dark:bg-gray-950/90 backdrop-blur-lg border border-gray-200/50 dark:border-gray-800/50 shadow-2xl p-10 rounded-2xl">
         <DialogHeader className="pb-4">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg">
+            <div className="p-2 bg-linear-to-br from-green-500 to-green-600 rounded-lg shadow-lg">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+            <DialogTitle className="text-xl font-bold bg-linear-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
               {t('handoff.modalTitle')}
             </DialogTitle>
           </div>
@@ -342,7 +339,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
           <Button
             type="button"
             onClick={handleSubmit}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
+            className="bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-6"
           >
             {t('handoff.saveReport')}
           </Button>

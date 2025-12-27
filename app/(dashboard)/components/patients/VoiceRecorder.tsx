@@ -111,7 +111,7 @@ export function VoiceRecorder({ onRecordingComplete, onRecordingCanceled, maxDur
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
+        const blob = new Blob(chunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         onRecordingComplete(blob);
@@ -129,20 +129,20 @@ export function VoiceRecorder({ onRecordingComplete, onRecordingCanceled, maxDur
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => {
           const newTime = prev + 1;
-
+      
           // Show warning when approaching limit
-          if (newTime >= warningTime && !showWarning) {
+          if (newTime === warningTime) {
             setShowWarning(true);
             toast.warning(`Recording will stop in ${maxDuration - newTime} seconds`);
           }
-
+      
           // Stop recording when limit reached
           if (newTime >= maxDuration) {
             stopRecording();
             toast.info('Recording stopped - maximum duration reached');
             return maxDuration;
           }
-
+      
           return newTime;
         });
       }, 1000);

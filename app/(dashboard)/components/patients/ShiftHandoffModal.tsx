@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Mic, MicOff, Play, Pause, Square, RotateCcw, Download, Share2, FileText, Clock, User, MapPin } from "lucide-react";
+import { FileText, Clock, User, MapPin } from "lucide-react";
 import {VoiceRecorder} from "./VoiceRecorder";
 import { useSession } from "next-auth/react";
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -39,8 +37,6 @@ interface ShiftHandoffData {
     incidentsOccurred?: string;
     recommendations?: string;
   };
-  createdBy: string;
-  createdAt: string;
 }
 
 const ShiftHandoffModal = ({ children, wardId, departmentId, type, onHandoffCreated }: ShiftHandoffModalProps) => {
@@ -89,8 +85,6 @@ const ShiftHandoffModal = ({ children, wardId, departmentId, type, onHandoffCrea
           incidentsOccurred: voiceRecordings.incidentsOccurred?.url,
           recommendations: voiceRecordings.recommendations?.url,
         },
-        createdBy: session.user.id,
-        createdAt: new Date().toISOString()
       };
 
       const response = await fetch('/api/notes/shift-handoff', {

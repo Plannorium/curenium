@@ -93,6 +93,15 @@ interface UserData {
   lastName: string;
 }
 
+interface Department {
+  name: string;
+}
+
+interface Ward {
+  name: string;
+  wardNumber: string;
+}
+
 const DoctorDashboard = () => {
   const { language } = useLanguage();
   const t = (key: string) => {
@@ -208,14 +217,16 @@ const DoctorDashboard = () => {
     try {
       const response = await fetch(`/api/departments/${departmentId}`);
       if (response.ok) {
-        const department: any = await response.json();
+        const department: Department = await response.json();
         // Only update if we're still on the same patient
         if (patientIdRef.current === currentPatientId) {
           setDepartmentName(department.name);
         }
+      } else {
+        toast.error("Failed to fetch department name");
       }
     } catch (error) {
-      console.error('Error fetching department:', error);
+      toast.error("Error fetching department name");
     }
   };
 
@@ -411,7 +422,7 @@ const DoctorDashboard = () => {
           <Button
             variant="ghost"
             onClick={handleBackToPatientSelection}
-            className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
           >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:block">
@@ -428,7 +439,7 @@ const DoctorDashboard = () => {
         <div className="flex items-center justify-center lg:justify-start space-x-3">
           <div className="hidden lg:block h-8 w-px bg-gray-300 dark:bg-gray-700"></div>
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10 flex-shrink-0">
+            <Avatar className="h-10 w-10 shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {selectedPatient?.firstName[0]}{selectedPatient?.lastName[0]}
               </AvatarFallback>
@@ -683,7 +694,7 @@ const DoctorDashboard = () => {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-3 flex-1">
-                            <Avatar className="h-10 w-10 flex-shrink-0">
+                            <Avatar className="h-10 w-10 shrink-0">
                               <AvatarImage src={diagnosis.documentedBy.image} />
                               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                                 {diagnosis.documentedBy.firstName[0]}{diagnosis.documentedBy.lastName[0]}
@@ -717,7 +728,7 @@ const DoctorDashboard = () => {
                               </div>
                             </div>
                           </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                          <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                         </div>
                       </CardContent>
                     </Card>

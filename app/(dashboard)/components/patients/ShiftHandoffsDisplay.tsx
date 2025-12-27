@@ -90,7 +90,6 @@ const ShiftHandoffsDisplay = ({
   const [handoffs, setHandoffs] = useState<ShiftHandoff[]>([]);
   const [loading, setLoading] = useState(true);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const audioFieldsRef = useRef<Record<string, string[]>>({});
   const { playingId, setOnUpdate, togglePlay, restartSequence, stop } = useAudioPlayer();
 
   useEffect(() => {

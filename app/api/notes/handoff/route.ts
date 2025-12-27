@@ -7,6 +7,9 @@ import Patient from '@/models/Patient';
 import ShiftTracking from '@/models/ShiftTracking';
 import { jsPDF } from 'jspdf';
 
+// Maximum allowed length for each SBAR field to prevent PDF layout issues
+const MAX_SBAR_FIELD_LENGTH = 2000;
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 

@@ -5,6 +5,50 @@ import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
 import { ShiftHandoff } from '../../../../models/ShiftHandoff';
 import QRCode from 'qrcode';
+import mongoose from 'mongoose';
+
+type ShiftHandoffType = {
+  _id: mongoose.Types.ObjectId;
+  type: 'ward' | 'department' | 'shift';
+  wardId?: mongoose.Types.ObjectId;
+  departmentId?: mongoose.Types.ObjectId;
+  shiftId?: mongoose.Types.ObjectId;
+  overview: string;
+  situationsManaged: string;
+  incidentsOccurred: string;
+  recommendations: string;
+  additionalNotes: string;
+  voiceRecordings: {
+    overview?: string;
+    situationsManaged?: string;
+    incidentsOccurred?: string;
+    recommendations?: string;
+  };
+  createdBy: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type PopulatedShiftHandoff = ShiftHandoffType & {
+  createdBy: { fullName: string; image: string; role: string };
+  wardId?: { name: string; wardNumber: string };
+  departmentId?: { name: string };
+};
+
+interface UpdateShiftHandoffBody {
+  overview?: string;
+  situationsManaged?: string;
+  incidentsOccurred?: string;
+  recommendations?: string;
+  additionalNotes?: string;
+  voiceRecordings?: {
+    overview?: string;
+    situationsManaged?: string;
+    incidentsOccurred?: string;
+    recommendations?: string;
+  };
+}
 
 export async function GET(
   req: NextRequest,
@@ -109,8 +153,8 @@ export async function PUT(
     if (handoff.createdBy.toString() !== session.user.id && session.user.role !== 'admin') {
       return NextResponse.json({ message: 'Forbidden: You can only update your own handoff reports' }, { status: 403 });
     }
+const body: UpdateShiftHandoffBody = await req.json();
 
-    const body: any = await req.json();
     const {
       overview,
       situationsManaged,
