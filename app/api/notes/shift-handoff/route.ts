@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
 import { ShiftHandoff } from '../../../models/ShiftHandoff';
-import { User } from '../../../models/User';
+import User from '../../../../models/User';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);

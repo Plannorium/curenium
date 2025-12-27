@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
-import { HandoffReport } from '@/models/HandoffReport';
+import HandoffReport  from '@/models/HandoffNote';
 import Patient from '@/models/Patient';
 import ShiftTracking from '@/models/ShiftTracking';
 import { jsPDF } from 'jspdf';
