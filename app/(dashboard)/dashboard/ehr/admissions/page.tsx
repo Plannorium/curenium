@@ -28,6 +28,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
 
 // Types
+type AdmissionAction =
+  | { action: 'approve'; department?: string }
+  | { action: 'assign'; ward: string; bedNumber: string }
+  | { action: 'cancel' };
+
 interface Admission {
   _id: string;
   patient: {
@@ -129,26 +134,26 @@ const AdmissionsPage = () => {
     }
   };
 
-  const handleAdmissionAction = async (admissionId: string, action: string, data?: any) => {
+  const handleAdmissionAction = async (admissionId: string, actionData: AdmissionAction) => {
     try {
       const response = await fetch(`/api/admissions/${admissionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ action, ...data }),
+        body: JSON.stringify(actionData),
       });
 
       if (response.ok) {
-        toast.success(`Admission ${action} successfully`);
+        toast.success(`Admission ${actionData.action} successfully`);
         fetchAdmissions();
       } else {
         const error = await response.json() as { message?: string };
-        toast.error(error.message || `Failed to ${action} admission`);
+        toast.error(error.message || `Failed to ${actionData.action} admission`);
       }
     } catch (error) {
-      console.error(`Failed to ${action} admission:`, error);
-      toast.error(`An error occurred while ${action}ing admission`);
+      console.error(`Failed to ${actionData.action} admission:`, error);
+      toast.error(`An error occurred while ${actionData.action}ing admission`);
     }
   };
 
@@ -381,7 +386,10 @@ const AdmissionsPage = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleAdmissionAction(admission._id, 'approve')}
+                                onClick={() => handleAdmissionAction(admission._id, {
+                                  action: 'approve',
+                                  department: admission.department?._id
+                                })}
                                 className="flex-1 sm:flex-none"
                               >
                                 <CheckCircle className="h-4 w-4 sm:mr-1" />
@@ -393,7 +401,8 @@ const AdmissionsPage = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleAdmissionAction(admission._id, 'assign', {
+                                onClick={() => handleAdmissionAction(admission._id, {
+                                  action: 'assign',
                                   ward: 'ward_id', // This would come from a ward selection modal
                                   bedNumber: 'B001'
                                 })}
@@ -408,7 +417,7 @@ const AdmissionsPage = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleAdmissionAction(admission._id, 'cancel')}
+                                onClick={() => handleAdmissionAction(admission._id, { action: 'cancel' })}
                                 className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                               >
                                 <XCircle className="h-4 w-4 sm:mr-1" />

@@ -1,6 +1,6 @@
  "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ import AuditLogDisplay from "../../../components/patients/AuditLogDisplay";
 import { AddPrescriptionModal } from "../../../components/patients/AddPrescriptionModal";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
+import { Department, Ward } from '@/types/schema';
 
 // Types
 interface Patient {
@@ -61,7 +62,8 @@ interface Patient {
   };
   admissionDate?: string;
   admissionType?: string;
-  department?: string;
+  department?: string; // ID from patient data
+  ward?: string; // ID from patient data
 }
 
 // Workflow steps
@@ -113,6 +115,11 @@ const DoctorDashboard = () => {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<Diagnosis | null>(null);
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
   const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
+  const [departmentName, setDepartmentName] = useState<string>('');
+  const [wardName, setWardName] = useState<string>('');
+  const [wardNumber, setWardNumber] = useState<string>('');
+
+  const patientIdRef = useRef<string | null>(null);
 
   // Fetch patients when search query changes
   useEffect(() => {
@@ -197,11 +204,65 @@ const DoctorDashboard = () => {
     }
   };
 
+  const fetchDepartmentName = async (departmentId: string) => {
+    const currentPatientId = patientIdRef.current;
+    try {
+      const response = await fetch(`/api/departments/${departmentId}`);
+      if (response.ok) {
+        const department: Department = await response.json();
+        // Only update if we're still on the same patient
+        if (patientIdRef.current === currentPatientId) {
+          setDepartmentName(department.name);
+        }
+      } else {
+        toast.error("Failed to fetch department name");
+      }
+    } catch (error) {
+      console.error('Error fetching department name:', error);
+      toast.error("Error fetching department name");
+    }
+  };
+
+  const fetchWardName = async (wardId: string) => {
+    const currentPatientId = patientIdRef.current;
+    try {
+      const response = await fetch(`/api/wards/${wardId}`);
+      if (response.ok) {
+        const ward: Ward = await response.json();
+        // Only update if we're still on the same patient
+        if (patientIdRef.current === currentPatientId) {
+          setWardName(ward.name);
+          setWardNumber(ward.wardNumber);
+        }
+      } else {
+        toast.error("Failed to fetch ward name");
+      }
+    } catch (error) {
+      console.error('Error fetching ward:', error);
+      toast.error("Error fetching ward name");
+    }
+  };
+
   const handlePatientSelect = (patient: Patient) => {
+    patientIdRef.current = patient._id;
     setSelectedPatient(patient);
     setCurrentStep('workflow');
     setActiveWorkflowStep('assessment');
     fetchDiagnoses(patient._id);
+
+    // Fetch department and ward names
+    if (patient.department) {
+      fetchDepartmentName(patient.department);
+    } else {
+      setDepartmentName('');
+    }
+
+    if (patient.ward) {
+      fetchWardName(patient.ward);
+    } else {
+      setWardName('');
+      setWardNumber('');
+    }
   };
 
   const handleBackToPatientSelection = () => {
@@ -357,7 +418,7 @@ const DoctorDashboard = () => {
           <Button
             variant="ghost"
             onClick={handleBackToPatientSelection}
-            className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
           >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:block">
@@ -374,7 +435,7 @@ const DoctorDashboard = () => {
         <div className="flex items-center justify-center lg:justify-start space-x-3">
           <div className="hidden lg:block h-8 w-px bg-gray-300 dark:bg-gray-700"></div>
           <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10 flex-shrink-0">
+            <Avatar className="h-10 w-10 shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {selectedPatient?.firstName[0]}{selectedPatient?.lastName[0]}
               </AvatarFallback>
@@ -551,10 +612,18 @@ const DoctorDashboard = () => {
                         </Badge>
                       </div>
                     )}
-                    {selectedPatient.department && (
+                    {selectedPatient.department && departmentName && (
                       <div>
                         <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.department')}</Label>
-                        <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.department}</p>
+                        <p className="text-gray-900 dark:text-white">{departmentName}</p>
+                      </div>
+                    )}
+                    {selectedPatient.ward && wardName && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.ward')}</Label>
+                        <p className="text-gray-900 dark:text-white">
+                          {wardName}{wardNumber ? ` (${wardNumber})` : ''}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -621,7 +690,7 @@ const DoctorDashboard = () => {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-3 flex-1">
-                            <Avatar className="h-10 w-10 flex-shrink-0">
+                            <Avatar className="h-10 w-10 shrink-0">
                               <AvatarImage src={diagnosis.documentedBy.image} />
                               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                                 {diagnosis.documentedBy.firstName[0]}{diagnosis.documentedBy.lastName[0]}
@@ -655,7 +724,7 @@ const DoctorDashboard = () => {
                               </div>
                             </div>
                           </div>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                          <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                         </div>
                       </CardContent>
                     </Card>

@@ -13,6 +13,7 @@ import '@/models/DMRoom';
 import '@/models/Department';
 import '@/models/Discharge';
 import '@/models/Encounter';
+import '@/models/HandoffReport';
 import '@/models/Insurance';
 import '@/models/Invite';
 import '@/models/LabOrder';

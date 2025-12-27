@@ -33,9 +33,9 @@ export async function GET(
       return NextResponse.json({ message: 'Shift not found' }, { status: 404 });
     }
 
-    // Check permissions
-    if (session.user.role === 'matron_nurse' && shift.user.toString() !== session.user.id) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    // Check permissions - users can view their own shifts, admins can view all
+    if (session.user.role !== 'admin' && shift.user.toString() !== session.user.id) {
+      return NextResponse.json({ message: 'Forbidden: You can only view your own shifts' }, { status: 403 });
     }
 
     return NextResponse.json(shift, { status: 200 });
@@ -61,7 +61,7 @@ export async function PUT(
 
   try {
     const body = await req.json() as {
-      action: 'clock_in' | 'clock_out' | 'start_break' | 'end_break' | 'update_notes' | 'cancel' | 'modify' | 'mark_absent';
+      action: 'clock_in' | 'clock_out' | 'start_break' | 'end_break' | 'go_on_call' | 'go_off_call' | 'update_notes' | 'cancel' | 'modify' | 'mark_absent';
       breakType?: 'lunch' | 'rest' | 'meeting' | 'emergency' | 'other';
       breakNotes?: string;
       shiftNotes?: string;
@@ -73,6 +73,7 @@ export async function PUT(
       patientInteractions?: number;
       location?: string;
       modificationReason?: string;
+      onCallNotes?: string;
     };
 
     const shift = await ShiftTracking.findOne({
@@ -97,7 +98,8 @@ export async function PUT(
 
     switch (action) {
       case 'clock_in':
-        if (!isOwner) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        // Allow any user to clock in to their own shift
+        if (!isOwner) return NextResponse.json({ message: 'Forbidden: You can only clock in to your own shifts' }, { status: 403 });
         if (shift.status !== 'scheduled') {
           return NextResponse.json({ message: 'Cannot clock in to this shift' }, { status: 400 });
         }
@@ -111,7 +113,8 @@ export async function PUT(
         break;
 
       case 'clock_out':
-        if (!isOwner) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        // Allow any user to clock out of their own shift
+        if (!isOwner) return NextResponse.json({ message: 'Forbidden: You can only clock out of your own shifts' }, { status: 403 });
         if (shift.status !== 'active' && shift.status !== 'on_break') {
           return NextResponse.json({ message: 'Cannot clock out of this shift' }, { status: 400 });
         }
@@ -125,7 +128,8 @@ export async function PUT(
         break;
 
       case 'start_break':
-        if (!isOwner) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        // Allow any user to start breaks on their own shift
+        if (!isOwner) return NextResponse.json({ message: 'Forbidden: You can only manage breaks on your own shifts' }, { status: 403 });
         if (shift.status !== 'active') {
           return NextResponse.json({ message: 'Cannot start break in current shift status' }, { status: 400 });
         }
@@ -143,7 +147,8 @@ export async function PUT(
         break;
 
       case 'end_break':
-        if (!isOwner) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+        // Allow any user to end breaks on their own shift
+        if (!isOwner) return NextResponse.json({ message: 'Forbidden: You can only manage breaks on your own shifts' }, { status: 403 });
         if (shift.status !== 'on_break') {
           return NextResponse.json({ message: 'Not currently on break' }, { status: 400 });
         }
@@ -182,6 +187,36 @@ export async function PUT(
         // Allow admin to modify shift details
         if (data.modificationReason) shift.modificationReason = data.modificationReason;
         shift.modifiedBy = session.user.id as any;
+        break;
+
+      case 'go_on_call':
+        // Allow any user to go on call (can be done during or outside regular shifts)
+        if (!isOwner && !isAdmin) return NextResponse.json({ message: 'Forbidden: You can only manage on-call status for your own shifts' }, { status: 403 });
+        shift.status = 'on_call';
+        shift.onCallStart = now;
+        shift.onCallNotes = data.onCallNotes?.trim();
+        shift.loginEvents.push({
+          timestamp: now,
+          action: 'on_call_start',
+          notes: data.onCallNotes
+        });
+        break;
+
+      case 'go_off_call':
+        // Allow any user to go off call
+        if (!isOwner && !isAdmin) return NextResponse.json({ message: 'Forbidden: You can only manage on-call status for your own shifts' }, { status: 403 });
+        if (shift.status !== 'on_call') {
+          return NextResponse.json({ message: 'Not currently on call' }, { status: 400 });
+        }
+        shift.status = shift.actualStart ? 'active' : 'scheduled'; // Return to previous status
+        if (shift.onCallStart) {
+          shift.onCallDuration = Math.round((now.getTime() - shift.onCallStart.getTime()) / (1000 * 60)); // minutes
+        }
+        shift.onCallEnd = now;
+        shift.loginEvents.push({
+          timestamp: now,
+          action: 'on_call_end'
+        });
         break;
 
       case 'mark_absent':

@@ -29,6 +29,7 @@ import VitalsDisplay from "../../../components/patients/VitalsDisplay";
 import PrescriptionsDisplay from "../../../components/patients/PrescriptionsDisplay";
 import AppointmentsDisplay from "../../../components/patients/AppointmentsDisplay";
 import ClinicalNotesDisplay from "../../../components/patients/ClinicalNotesDisplay";
+import HandoffReportsDisplay from "../../../components/patients/HandoffReportsDisplay";
 import LabOrdersDisplay from "../../../components/patients/LabOrdersDisplay";
 import LabResultsDisplay from "../../../components/patients/LabResultsDisplay";
 import NursingCarePlanDisplay from "../../../components/patients/NursingCarePlanDisplay";
@@ -50,8 +51,8 @@ interface Patient {
   };
   status?: string;
   assignedNurse?: string;
-  ward?: string;
-  department?: string;
+  ward?: string; // ID from patient data
+  department?: string; // ID from patient data
   admissionType?: string;
   careLevel?: string;
 }
@@ -85,6 +86,9 @@ const NursesDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeWorkflowStep, setActiveWorkflowStep] = useState('assessment');
+  const [departmentName, setDepartmentName] = useState<string>('');
+  const [wardName, setWardName] = useState<string>('');
+  const [wardNumber, setWardNumber] = useState<string>('');
 
   // Fetch patients when search query changes
   useEffect(() => {
@@ -174,12 +178,51 @@ const NursesDashboard = () => {
     return fullName.includes(query) || mrn.includes(query);
   });
 
+  const fetchDepartmentName = async (departmentId: string) => {
+    try {
+      const response = await fetch(`/api/departments/${departmentId}`);
+      if (response.ok) {
+        const department: any = await response.json();
+        setDepartmentName(department.name);
+      }
+    } catch (error) {
+      console.error('Error fetching department:', error);
+    }
+  };
+
+  const fetchWardName = async (wardId: string) => {
+    try {
+      const response = await fetch(`/api/wards/${wardId}`);
+      if (response.ok) {
+        const ward: any = await response.json();
+        setWardName(ward.name);
+        setWardNumber(ward.wardNumber);
+      }
+    } catch (error) {
+      console.error('Error fetching ward:', error);
+    }
+  };
+
   const handlePatientSelect = (patient: Patient) => {
     setPreviousView(currentView as 'overview' | 'patient-search' | 'assigned-patients');
     setSelectedPatient(patient);
     setCurrentView('patient-care');
     setActiveWorkflowStep('assessment');
     fetchAssignedPatients(); // Re-fetch assigned patients
+
+    // Fetch department and ward names
+    if (patient.department) {
+      fetchDepartmentName(patient.department);
+    } else {
+      setDepartmentName('');
+    }
+
+    if (patient.ward) {
+      fetchWardName(patient.ward);
+    } else {
+      setWardName('');
+      setWardNumber('');
+    }
   };
 
   const handleBack = () => {
@@ -692,10 +735,16 @@ const NursesDashboard = () => {
                         </Badge>
                       </div>
                     )}
-                    {selectedPatient.department && (
+                    {selectedPatient.department && departmentName && (
                       <div>
                         <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.department')}</p>
-                        <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.department}</p>
+                        <p className="text-gray-900 dark:text-white">{departmentName}</p>
+                      </div>
+                    )}
+                    {selectedPatient.ward && wardName && (
+                      <div>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('nurseDashboard.ward')}</p>
+                        <p className="text-gray-900 dark:text-white">{wardName} ({wardNumber})</p>
                       </div>
                     )}
                   </div>
@@ -747,6 +796,10 @@ const NursesDashboard = () => {
               </p>
             </div>
             <ClinicalNotesDisplay patientId={selectedPatient._id} />
+            <HandoffReportsDisplay
+              patientId={selectedPatient._id}
+              allowedTypes={['patient']}
+            />
           </div>
         );
 

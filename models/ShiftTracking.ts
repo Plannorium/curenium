@@ -4,6 +4,7 @@ export type ShiftStatus =
   | 'scheduled'      // Shift scheduled but not started
   | 'active'         // Currently on shift
   | 'on_break'       // On break during shift
+  | 'on_call'        // On call (can be during or outside shift)
   | 'completed'      // Shift completed successfully
   | 'absent'         // No-show or absent
   | 'cancelled';     // Shift cancelled
@@ -60,6 +61,12 @@ export interface IShiftTracking extends Document {
     notes?: string;
   }>;
 
+  // On-call tracking
+  onCallStart?: Date;
+  onCallEnd?: Date;
+  onCallDuration?: number; // minutes
+  onCallNotes?: string;
+
   // Notes and handover
   shiftNotes?: string;
   handoverNotes?: string;
@@ -80,7 +87,7 @@ export interface IShiftTracking extends Document {
   // Audit trail
   loginEvents: Array<{
     timestamp: Date;
-    action: 'login' | 'logout' | 'break_start' | 'break_end';
+    action: 'login' | 'logout' | 'break_start' | 'break_end' | 'on_call_start' | 'on_call_end';
     location?: string;
     notes?: string;
   }>;
@@ -125,7 +132,7 @@ const ShiftTrackingSchema: Schema = new Schema(
     // Status and tracking
     status: {
       type: String,
-      enum: ['scheduled', 'active', 'on_break', 'completed', 'absent', 'cancelled'],
+      enum: ['scheduled', 'active', 'on_break', 'on_call', 'completed', 'absent', 'cancelled'],
       default: 'scheduled'
     },
     department: {
@@ -286,7 +293,7 @@ const ShiftTrackingSchema: Schema = new Schema(
       },
       action: {
         type: String,
-        enum: ['login', 'logout', 'break_start', 'break_end'],
+        enum: ['login', 'logout', 'break_start', 'break_end', 'on_call_start', 'on_call_end'],
         required: true
       },
       location: {
