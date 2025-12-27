@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
     };
 
     // Role-based filtering
-    if (session.user.role !== 'admin' && session.user.role !== 'matron_nurse') {
+    if (session.user.role !== 'admin') {
       query.user = session.user.id; // Non-admin users can only see their own shifts
     }
-    // Admins and Matron Nurses can see all shifts in their organization
+    // Admins can see all shifts in their organization
 
     if (userId) query.user = userId;
     if (status) query.status = status;

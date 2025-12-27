@@ -61,7 +61,8 @@ interface Patient {
   };
   admissionDate?: string;
   admissionType?: string;
-  department?: string;
+  department?: string; // ID from patient data
+  ward?: string; // ID from patient data
 }
 
 // Workflow steps
@@ -113,6 +114,9 @@ const DoctorDashboard = () => {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<Diagnosis | null>(null);
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
   const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
+  const [departmentName, setDepartmentName] = useState<string>('');
+  const [wardName, setWardName] = useState<string>('');
+  const [wardNumber, setWardNumber] = useState<string>('');
 
   // Fetch patients when search query changes
   useEffect(() => {
@@ -197,11 +201,50 @@ const DoctorDashboard = () => {
     }
   };
 
+  const fetchDepartmentName = async (departmentId: string) => {
+    try {
+      const response = await fetch(`/api/departments/${departmentId}`);
+      if (response.ok) {
+        const department: any = await response.json();
+        setDepartmentName(department.name);
+      }
+    } catch (error) {
+      console.error('Error fetching department:', error);
+    }
+  };
+
+  const fetchWardName = async (wardId: string) => {
+    try {
+      const response = await fetch(`/api/wards/${wardId}`);
+      if (response.ok) {
+        const ward: any = await response.json();
+        setWardName(ward.name);
+        setWardNumber(ward.wardNumber);
+      }
+    } catch (error) {
+      console.error('Error fetching ward:', error);
+    }
+  };
+
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
     setCurrentStep('workflow');
     setActiveWorkflowStep('assessment');
     fetchDiagnoses(patient._id);
+
+    // Fetch department and ward names
+    if (patient.department) {
+      fetchDepartmentName(patient.department);
+    } else {
+      setDepartmentName('');
+    }
+
+    if (patient.ward) {
+      fetchWardName(patient.ward);
+    } else {
+      setWardName('');
+      setWardNumber('');
+    }
   };
 
   const handleBackToPatientSelection = () => {
@@ -551,10 +594,16 @@ const DoctorDashboard = () => {
                         </Badge>
                       </div>
                     )}
-                    {selectedPatient.department && (
+                    {selectedPatient.department && departmentName && (
                       <div>
                         <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.department')}</Label>
-                        <p className="text-gray-900 dark:text-white capitalize">{selectedPatient.department}</p>
+                        <p className="text-gray-900 dark:text-white">{departmentName}</p>
+                      </div>
+                    )}
+                    {selectedPatient.ward && wardName && (
+                      <div>
+                        <Label className="text-sm font-semibold text-gray-600 dark:text-gray-400">{t('doctorDashboard.ward')}</Label>
+                        <p className="text-gray-900 dark:text-white">{wardName} ({wardNumber})</p>
                       </div>
                     )}
                   </div>

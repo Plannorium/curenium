@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus,
   Clock,
@@ -27,6 +28,8 @@ import { Loader } from "@/components/ui/Loader";
 import AddShiftModal from "@/app/(dashboard)/components/AddShiftModal";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
+import ShiftHandoffsDisplay from '../../../components/patients/ShiftHandoffsDisplay';
+import BreakModal from '../../../components/BreakModal';
 
 // Types
 interface ShiftTracking {
@@ -101,9 +104,15 @@ const ShiftTrackingPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("today");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [userWard, setUserWard] = useState<string | null>(null);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [selectedHandoffType, setSelectedHandoffType] = useState<'ward' | 'department' | 'shift'>('ward');
+  const [breakModalOpen, setBreakModalOpen] = useState(false);
+  const [selectedShiftForBreak, setSelectedShiftForBreak] = useState<string | null>(null);
 
   useEffect(() => {
     fetchShifts();
+    fetchUserDetails();
     // Update current time every minute
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
@@ -124,6 +133,23 @@ const ShiftTrackingPage = () => {
       toast.error(t('shiftTrackingPage.errors.fetchError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserDetails = async () => {
+    try {
+      const response = await fetch('/api/auth/session');
+      if (response.ok) {
+        const session: any = await response.json();
+        if (session?.user) {
+          // Get user's ward and department from their profile
+          // This would typically come from the user model or a separate API
+          setUserWard((session.user as any)?.ward || null);
+          setUserDepartment((session.user as any)?.department || null);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
     }
   };
 
@@ -193,33 +219,41 @@ const ShiftTrackingPage = () => {
   });
 
   const canClockIn = (shift: ShiftTracking) => {
-    return session?.user?.role === 'matron_nurse' &&
-           shift.user._id === session.user.id &&
-           shift.status === 'scheduled' &&
-           new Date(shift.scheduledStart) <= currentTime;
+    return shift.user._id === session?.user?.id &&
+            shift.status === 'scheduled' &&
+            new Date(shift.scheduledStart) <= currentTime;
   };
 
   const canClockOut = (shift: ShiftTracking) => {
-    return session?.user?.role === 'matron_nurse' &&
-           shift.user._id === session.user.id &&
-           (shift.status === 'active' || shift.status === 'on_break');
+    return shift.user._id === session?.user?.id &&
+            (shift.status === 'active' || shift.status === 'on_break');
   };
 
   const canStartBreak = (shift: ShiftTracking) => {
-    return session?.user?.role === 'matron_nurse' &&
-           shift.user._id === session.user.id &&
-           shift.status === 'active';
+    return shift.user._id === session?.user?.id &&
+            shift.status === 'active';
   };
 
   const canEndBreak = (shift: ShiftTracking) => {
-    return session?.user?.role === 'matron_nurse' &&
-           shift.user._id === session.user.id &&
-           shift.status === 'on_break';
+    return shift.user._id === session?.user?.id &&
+            shift.status === 'on_break';
   };
 
   const getCurrentBreakType = (shift: ShiftTracking) => {
     const currentBreak = shift.breaks.find(b => !b.endTime);
     return currentBreak?.type || 'rest';
+  };
+
+  const handleStartBreak = (shiftId: string, breakType: string, breakNotes: string) => {
+    handleShiftAction(shiftId, 'start_break', {
+      breakType,
+      breakNotes
+    });
+  };
+
+  const openBreakModal = (shiftId: string) => {
+    setSelectedShiftForBreak(shiftId);
+    setBreakModalOpen(true);
   };
 
   if (loading) {
@@ -332,7 +366,7 @@ const ShiftTrackingPage = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1">
+            <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 h-auto p-1">
               <TabsTrigger value="today" className="text-xs sm:text-sm">{t('shiftTrackingPage.tabs.today')}</TabsTrigger>
               <TabsTrigger value="week" className="text-xs sm:text-sm hidden sm:inline-flex">{t('shiftTrackingPage.tabs.week')}</TabsTrigger>
               <TabsTrigger value="active" className="text-xs sm:text-sm">{t('shiftTrackingPage.tabs.active')}</TabsTrigger>
@@ -341,6 +375,7 @@ const ShiftTrackingPage = () => {
                 <span className="sm:hidden">Miss</span>
               </TabsTrigger>
               <TabsTrigger value="completed" className="text-xs sm:text-sm hidden sm:inline-flex">{t('shiftTrackingPage.tabs.completed')}</TabsTrigger>
+              <TabsTrigger value="handoffs" className="text-xs sm:text-sm">Handoffs</TabsTrigger>
               <TabsTrigger value="all" className="text-xs sm:text-sm">{t('shiftTrackingPage.tabs.all')}</TabsTrigger>
             </TabsList>
 
@@ -502,10 +537,7 @@ const ShiftTrackingPage = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleShiftAction(shift._id, 'start_break', {
-                                  breakType: 'lunch',
-                                  breakNotes: 'Lunch break'
-                                })}
+                                onClick={() => openBreakModal(shift._id)}
                                 className="text-yellow-600 hover:text-yellow-700 flex-1 sm:flex-none"
                               >
                                 <Coffee className="h-4 w-4 sm:mr-1" />
@@ -546,9 +578,90 @@ const ShiftTrackingPage = () => {
                 ))
               )}
             </div>
+
+            {/* Handoffs Tab Content */}
+            <TabsContent value="handoffs" className="mt-6">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Shift Handoff Reports
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Ward status updates, situations managed, and recommendations for next shift
+                  </p>
+                </div>
+
+                {/* Handoff Type Selector */}
+                <div className="flex justify-center">
+                  <div className="w-full max-w-xs">
+                    <Select value={selectedHandoffType} onValueChange={(value: 'ward' | 'department' | 'shift') => setSelectedHandoffType(value)}>
+                      <SelectTrigger className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg border-gray-200/50 dark:border-gray-800/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ward">
+                          <div className="flex items-center">
+                            <span className="text-lg mr-2">🏥</span>
+                            Ward Handoffs
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="department">
+                          <div className="flex items-center">
+                            <span className="text-lg mr-2">🏢</span>
+                            Department Handoffs
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="shift">
+                          <div className="flex items-center">
+                            <span className="text-lg mr-2">⏰</span>
+                            Shift Handoffs
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Unified Handoffs Display */}
+                <Card className="bg-white/70 dark:bg-gray-950/60 backdrop-blur-lg border-gray-200/50 dark:border-gray-800/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-lg">
+                      {selectedHandoffType === 'ward' && <span className="text-2xl mr-2">🏥</span>}
+                      {selectedHandoffType === 'department' && <span className="text-2xl mr-2">🏢</span>}
+                      {selectedHandoffType === 'shift' && <span className="text-2xl mr-2">⏰</span>}
+                      {selectedHandoffType === 'ward' && 'Ward Handoffs'}
+                      {selectedHandoffType === 'department' && 'Department Handoffs'}
+                      {selectedHandoffType === 'shift' && 'Shift Handoffs'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ShiftHandoffsDisplay
+                      wardId={selectedHandoffType === 'ward' ? (userWard || undefined) : undefined}
+                      departmentId={selectedHandoffType === 'department' ? (userDepartment || undefined) : undefined}
+                      type={selectedHandoffType}
+                      allowedTypes={['ward', 'department', 'shift']}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Break Modal */}
+      <BreakModal
+        isOpen={breakModalOpen}
+        onClose={() => {
+          setBreakModalOpen(false);
+          setSelectedShiftForBreak(null);
+        }}
+        onStartBreak={(breakType, breakNotes) => {
+          if (selectedShiftForBreak) {
+            handleStartBreak(selectedShiftForBreak, breakType, breakNotes);
+          }
+        }}
+      />
     </div>
   );
 };

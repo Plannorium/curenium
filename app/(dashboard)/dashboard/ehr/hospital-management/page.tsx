@@ -397,9 +397,9 @@ const HospitalManagement = () => {
                     <CardTitle className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                       {ward.name}
                     </CardTitle>
-                    <Badge className={`${getWardTypeColor(ward.wardType)} shadow-sm border-0 font-semibold`}>
+                    {/* <Badge className={`${getWardTypeColor(ward.wardType)} shadow-sm border-0 font-semibold`}>
                       {getWardTypeLabel(ward.wardType)}
-                    </Badge>
+                    </Badge> */}
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>

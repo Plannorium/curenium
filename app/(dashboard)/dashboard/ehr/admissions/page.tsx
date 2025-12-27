@@ -381,7 +381,9 @@ const AdmissionsPage = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleAdmissionAction(admission._id, 'approve')}
+                                onClick={() => handleAdmissionAction(admission._id, 'approve', {
+                                  department: admission.department?._id
+                                })}
                                 className="flex-1 sm:flex-none"
                               >
                                 <CheckCircle className="h-4 w-4 sm:mr-1" />

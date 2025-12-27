@@ -32,6 +32,7 @@ export { default as ProblemList, type IProblemList } from './ProblemList';
 export { default as Allergy, type IAllergy } from './Allergy';
 export { default as CarePlanTemplate, type ICarePlanTemplate } from './CarePlanTemplate';
 export { default as NursingNote, type INursingNote } from './NursingNote';
+export { default as HandoffNote, type IHandoffNote } from './HandoffNote';
 export { default as DischargeSummary, type IDischargeSummary } from './DischargeSummary';
 export { default as ConsentForm, type IConsentForm } from './ConsentForm';
 export { default as Task, type ITask } from './Task';
