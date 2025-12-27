@@ -168,22 +168,22 @@ const body: UpdateShiftHandoffBody = await req.json();
     // Update fields if provided. Allow voice-only updates: if overview text isn't provided
     // but a voice recording is included, ensure the textual field exists (empty string).
     if (overview !== undefined) {
-      (handoff as any).overview = overview.trim();
+      handoff.set('overview', overview.trim());
     } else if (voiceRecordings && voiceRecordings.overview) {
       // ensure the field exists to avoid possible validators that require the path
-      (handoff as any).overview = (handoff as any).overview || '';
+      handoff.set('overview', handoff.get('overview') || '');
     }
-    if (situationsManaged !== undefined) (handoff as any).situationsManaged = situationsManaged?.trim() || '';
-    if (incidentsOccurred !== undefined) (handoff as any).incidentsOccurred = incidentsOccurred?.trim() || '';
-    if (recommendations !== undefined) (handoff as any).recommendations = recommendations?.trim() || '';
-    if (additionalNotes !== undefined) (handoff as any).additionalNotes = additionalNotes?.trim() || '';
+    if (situationsManaged !== undefined) handoff.set('situationsManaged', situationsManaged?.trim() || '');
+    if (incidentsOccurred !== undefined) handoff.set('incidentsOccurred', incidentsOccurred?.trim() || '');
+    if (recommendations !== undefined) handoff.set('recommendations', recommendations?.trim() || '');
+    if (additionalNotes !== undefined) handoff.set('additionalNotes', additionalNotes?.trim() || '');
     if (voiceRecordings !== undefined) {
-      (handoff as any).voiceRecordings = voiceRecordings || {};
+      handoff.set('voiceRecordings', voiceRecordings || {});
       // Set empty strings for any missing textual fields when voice recordings are present
-      if (voiceRecordings.overview && !(handoff as any).overview) (handoff as any).overview = '';
-      if (voiceRecordings.situationsManaged && !(handoff as any).situationsManaged) (handoff as any).situationsManaged = '';
-      if (voiceRecordings.incidentsOccurred && !(handoff as any).incidentsOccurred) (handoff as any).incidentsOccurred = '';
-      if (voiceRecordings.recommendations && !(handoff as any).recommendations) (handoff as any).recommendations = '';
+      if (voiceRecordings.overview && !handoff.get('overview')) handoff.set('overview', '');
+      if (voiceRecordings.situationsManaged && !handoff.get('situationsManaged')) handoff.set('situationsManaged', '');
+      if (voiceRecordings.incidentsOccurred && !handoff.get('incidentsOccurred')) handoff.set('incidentsOccurred', '');
+      if (voiceRecordings.recommendations && !handoff.get('recommendations')) handoff.set('recommendations', '');
     }
 
     await handoff.save();

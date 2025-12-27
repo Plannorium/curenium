@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
-import HandoffReport  from '@/models/HandoffNote';
+import HandoffNote from '@/models/HandoffNote';
 import Patient from '@/models/Patient';
 import ShiftTracking from '@/models/ShiftTracking';
 import { jsPDF } from 'jspdf';
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       query.shiftId = shiftId;
     }
 
-    const reports = await HandoffReport.find(query)
+    const reports = await HandoffNote.find(query)
       .populate('patientId', 'firstName lastName mrn')
       .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
       .populate('createdBy', 'fullName role')
@@ -67,10 +67,11 @@ export async function POST(req: NextRequest) {
         assessment: string;
         recommendation: string;
       };
+      type?: string;
       exportPDF?: boolean;
     };
 
-    const { patientId, shiftId, sbar, exportPDF } = body;
+    const { patientId, shiftId, sbar, type, exportPDF } = body;
 
     await dbConnect();
 
@@ -96,10 +97,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const newReport = new HandoffReport({
+    const newReport = new HandoffNote({
       patientId,
       shiftId,
       sbar,
+      type: type || 'patient', // Default to patient if not provided
       // Model expects `createdBy` and `organizationId`
       createdBy: session.user.id,
       organizationId: session.user.organizationId,
@@ -137,12 +139,12 @@ export async function POST(req: NextRequest) {
 
       let yPosition = 85;
 
-      // SBAR sections
+      // SBAR sections - truncate content to prevent layout issues
       const sections = [
-        { title: 'S - Situation', content: sbar.situation },
-        { title: 'B - Background', content: sbar.background },
-        { title: 'A - Assessment', content: sbar.assessment },
-        { title: 'R - Recommendation', content: sbar.recommendation }
+        { title: 'S - Situation', content: sbar.situation.substring(0, MAX_SBAR_FIELD_LENGTH) },
+        { title: 'B - Background', content: sbar.background.substring(0, MAX_SBAR_FIELD_LENGTH) },
+        { title: 'A - Assessment', content: sbar.assessment.substring(0, MAX_SBAR_FIELD_LENGTH) },
+        { title: 'R - Recommendation', content: sbar.recommendation.substring(0, MAX_SBAR_FIELD_LENGTH) }
       ];
 
       sections.forEach(section => {
@@ -179,7 +181,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const populatedReport = await HandoffReport.findById(newReport._id)
+    const populatedReport = await HandoffNote.findById(newReport._id)
       .populate('patientId', 'firstName lastName mrn')
       .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
       .populate('createdBy', 'fullName role');

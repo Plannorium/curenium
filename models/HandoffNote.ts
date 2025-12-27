@@ -2,8 +2,8 @@ import mongoose, { Schema, Document, models, Model } from 'mongoose';
 import { auditPlugin } from '@/lib/mongooseAuditPlugin';
 
 export interface IHandoffNote extends Document {
-  orgId: mongoose.Types.ObjectId;
-  author: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
   authorRole: string;
   type: 'ward' | 'department' | 'shift' | 'patient'; // Type of handoff
   shiftId?: mongoose.Types.ObjectId; // Optional link to shift
@@ -27,13 +27,13 @@ export interface IHandoffNote extends Document {
 
 const HandoffNoteSchema = new Schema<IHandoffNote>(
   {
-    orgId: {
+    organizationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization',
       required: true,
       index: true,
     },
-    author: {
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -84,7 +84,7 @@ const HandoffNoteSchema = new Schema<IHandoffNote>(
 
 HandoffNoteSchema.plugin(auditPlugin);
 
-HandoffNoteSchema.index({ orgId: 1, createdAt: -1 });
+HandoffNoteSchema.index({ organizationId: 1, createdAt: -1 });
 HandoffNoteSchema.index({ shiftId: 1 });
 HandoffNoteSchema.index({ patientId: 1 });
 HandoffNoteSchema.index({ wardId: 1 });

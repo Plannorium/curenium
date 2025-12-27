@@ -36,7 +36,9 @@ export function useAudioPlayer() {
     if (!entry) return;
     try {
       entry.audio.pause();
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error pausing audio during cleanup:', e);
+    }
     mapRef.current.delete(id);
   };
 
@@ -46,7 +48,9 @@ export function useAudioPlayer() {
       try {
         entry.audio.pause();
         entry.audio.currentTime = 0;
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error stopping audio:', e);
+      }
       mapRef.current.delete(id);
     }
     notify({ id: null, isPlaying: false });
@@ -170,7 +174,7 @@ export function useAudioPlayer() {
     return () => {
       // cleanup all
       mapRef.current.forEach((entry: AudioEntry, key: string) => {
-        try { entry.audio.pause(); } catch (e) {}
+        try { entry.audio.pause(); } catch (e) { console.error('Error pausing audio during cleanup:', e); }
       });
       mapRef.current.clear();
     };

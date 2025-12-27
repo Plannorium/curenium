@@ -98,19 +98,34 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
   const generateQRCode = async () => {
     setIsGeneratingQR(true);
     try {
-      const reportData = {
-        type: 'handoff_report',
-        patientId,
-        shiftId,
-        sbar,
-        createdBy: session?.user?.id,
-        createdAt: new Date().toISOString(),
-        organizationId: session?.user?.organizationId
-      };
+      // First, save the report to get an ID
+      const saveResponse = await fetch('/api/notes/handoff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patientId,
+          shiftId,
+          sbar,
+          type: 'patient'
+        }),
+      });
 
-      const qrData = JSON.stringify(reportData);
-      const url = await QRCode.toDataURL(qrData);
-      setQrCodeUrl(url);
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save report');
+      }
+
+      const savedReport = await saveResponse.json() as { _id: string };
+      const reportId = savedReport._id;
+
+      // Notify that a report was added
+      onReportAdded();
+
+      // Generate QR code with URL instead of full data
+      const handoffUrl = `${window.location.origin}/api/notes/handoff/${reportId}`;
+      const qrDataUrl = await QRCode.toDataURL(handoffUrl);
+      setQrCodeUrl(qrDataUrl);
       toast.success(t('handoff.qrGenerated'));
     } catch (error) {
       toast.error(t('handoff.failedToGenerateQR'));
@@ -164,6 +179,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
           patientId,
           shiftId,
           sbar,
+          type: 'patient',
           exportPDF: true
         }),
       });
@@ -202,7 +218,8 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
         body: JSON.stringify({
           patientId,
           shiftId,
-          sbar
+          sbar,
+          type: 'patient'
         }),
       });
 

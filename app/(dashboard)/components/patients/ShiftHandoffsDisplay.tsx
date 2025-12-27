@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,11 +92,7 @@ const ShiftHandoffsDisplay = ({
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const { playingId, setOnUpdate, togglePlay, restartSequence, stop } = useAudioPlayer();
 
-  useEffect(() => {
-    fetchHandoffs();
-  }, [wardId, departmentId, type]);
-
-  const fetchHandoffs = async () => {
+  const fetchHandoffs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -117,7 +113,11 @@ const ShiftHandoffsDisplay = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [wardId, departmentId, type, language]);
+
+  useEffect(() => {
+    fetchHandoffs();
+  }, [wardId, departmentId, type, fetchHandoffs]);
 
   // Wire hook updates to playingAudio state
   useEffect(() => {

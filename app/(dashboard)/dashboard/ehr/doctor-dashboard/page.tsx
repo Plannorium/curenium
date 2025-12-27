@@ -46,6 +46,7 @@ import AuditLogDisplay from "../../../components/patients/AuditLogDisplay";
 import { AddPrescriptionModal } from "../../../components/patients/AddPrescriptionModal";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
+import { Department, Ward } from '@/types/schema';
 
 // Types
 interface Patient {
@@ -91,15 +92,6 @@ interface Diagnosis {
 interface UserData {
   firstName: string;
   lastName: string;
-}
-
-interface Department {
-  name: string;
-}
-
-interface Ward {
-  name: string;
-  wardNumber: string;
 }
 
 const DoctorDashboard = () => {
@@ -235,7 +227,7 @@ const DoctorDashboard = () => {
     try {
       const response = await fetch(`/api/wards/${wardId}`);
       if (response.ok) {
-        const ward: any = await response.json();
+        const ward: Ward = await response.json();
         // Only update if we're still on the same patient
         if (patientIdRef.current === currentPatientId) {
           setWardName(ward.name);
