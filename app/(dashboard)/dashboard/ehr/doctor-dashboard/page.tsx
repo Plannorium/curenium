@@ -218,6 +218,7 @@ const DoctorDashboard = () => {
         toast.error("Failed to fetch department name");
       }
     } catch (error) {
+      console.error('Error fetching department name:', error);
       toast.error("Error fetching department name");
     }
   };
@@ -233,9 +234,12 @@ const DoctorDashboard = () => {
           setWardName(ward.name);
           setWardNumber(ward.wardNumber);
         }
+      } else {
+        toast.error("Failed to fetch ward name");
       }
     } catch (error) {
       console.error('Error fetching ward:', error);
+      toast.error("Error fetching ward name");
     }
   };
 

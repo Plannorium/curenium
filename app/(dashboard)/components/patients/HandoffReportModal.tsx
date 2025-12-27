@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
-import { FileText, Mic, MicOff, QrCode, Download } from 'lucide-react';
+import { FileText, Mic, MicOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import QRCode from 'qrcode';
 import { useChat } from '@/hooks/useChat';
+import { VoiceRecorder } from './VoiceRecorder';
 
 interface HandoffReportModalProps {
   patientId?: string;
@@ -51,10 +51,10 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
     assessment: '',
     recommendation: ''
   });
+  const [voiceRecordings, setVoiceRecordings] = useState<{[K in keyof SBARData]?: { blob?: Blob; url?: string; publicId?: string }}>({});
+  const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [currentField, setCurrentField] = useState<keyof SBARData | null>(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
   const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
   const lastTranscriptLengthRef = useRef(0);
@@ -95,78 +95,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
     SpeechRecognition.startListening({ continuous: true, interimResults: true });
   };
 
-  const generateQRCode = async () => {
-    setIsGeneratingQR(true);
-    try {
-      // First, save the report to get an ID
-      const saveResponse = await fetch('/api/notes/handoff', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientId,
-          shiftId,
-          sbar,
-          type: 'patient'
-        }),
-      });
 
-      if (!saveResponse.ok) {
-        throw new Error('Failed to save report');
-      }
-
-      const savedReport = await saveResponse.json() as { _id: string };
-      const reportId = savedReport._id;
-
-      // Notify that a report was added
-      onReportAdded();
-
-      // Generate QR code with URL instead of full data
-      const handoffUrl = `${window.location.origin}/api/notes/handoff/${reportId}`;
-      const qrDataUrl = await QRCode.toDataURL(handoffUrl);
-      setQrCodeUrl(qrDataUrl);
-      toast.success(t('handoff.qrGenerated'));
-    } catch (error) {
-      toast.error(t('handoff.failedToGenerateQR'));
-    } finally {
-      setIsGeneratingQR(false);
-    }
-  };
-
-  const shareViaChat = async () => {
-    if (!qrCodeUrl) {
-      toast.error(t('handoff.generateQRFirst'));
-      return;
-    }
-
-    try {
-      // Upload QR code image to get a URL
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: JSON.stringify({
-          file: qrCodeUrl,
-          fileName: `handoff-qr-${Date.now()}.png`,
-          fileType: 'image/png'
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as { url: string };
-        const { url } = data;
-        // Use the chat hook's combined message sender
-        await sendCombinedMessage(`Handoff Report QR Code: ${url}`);
-        toast.success(t('handoff.qrSharedInChat'));
-      } else {
-        toast.error(t('handoff.failedToUploadQR'));
-      }
-    } catch (error) {
-      toast.error(t('handoff.failedToShareQR'));
-    }
-  };
 
   const exportPDF = async () => {
     try {
@@ -204,9 +133,13 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
   };
 
   const handleSubmit = async () => {
-    if (!sbar.situation || !sbar.background || !sbar.assessment || !sbar.recommendation) {
-      toast.error(t('handoff.allSBARRequired'));
-      return;
+    // Validate that each SBAR field has either typed text or a voice recording
+    const fields: (keyof SBARData)[] = ['situation', 'background', 'assessment', 'recommendation'];
+    for (const f of fields) {
+      if (!sbar[f] && !voiceRecordings[f]?.url) {
+        toast.error(t('handoff.fieldRequired'));
+        return;
+      }
     }
 
     try {
@@ -219,29 +152,87 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
           patientId,
           shiftId,
           sbar,
-          type: 'patient'
+          voiceRecordings: {
+            situation: voiceRecordings.situation?.url,
+            background: voiceRecordings.background?.url,
+            assessment: voiceRecordings.assessment?.url,
+            recommendation: voiceRecordings.recommendation?.url,
+          }
         }),
       });
 
       if (response.ok) {
-        toast.success(t('handoff.reportAdded'));
+        toast.success(t('handoff.reportSaved'));
         onReportAdded();
         onClose();
         // Reset form
-        setSbar({
-          situation: '',
-          background: '',
-          assessment: '',
-          recommendation: ''
-        });
-        setQrCodeUrl('');
+        setSbar({ situation: '', background: '', assessment: '', recommendation: '' });
+        setVoiceRecordings({});
       } else {
-        toast.error(t('handoff.failedToAddReport'));
+        toast.error(t('handoff.saveFailed'));
       }
     } catch (error) {
-      toast.error(t('handoff.errorAddingReport'));
+      console.error('Error adding handoff report', error);
+      toast.error(t('handoff.saveFailed'));
     }
   };
+
+  // Upload voice blob for a specific SBAR field
+  const handleVoiceRecording = async (field: keyof SBARData, audioBlob: Blob, transcript?: string) => {
+    try {
+      setIsUploadingVoice(true);
+      const fd = new FormData();
+      fd.append('file', audioBlob, `handoff-${field}-${Date.now()}.webm`);
+
+      const res = await fetch('/api/upload-voice', {
+        method: 'POST',
+        body: fd,
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data: any = await res.json();
+
+      setVoiceRecordings(prev => ({ ...prev, [field]: { blob: audioBlob, url: data.url, publicId: data.publicId } }));
+
+      // If transcript provided and field empty, set text
+      if (transcript && !sbar[field]) {
+        setSbar(prev => ({ ...prev, [field]: transcript }));
+      }
+
+      toast.success(t('handoff.voiceUploadSuccess'));
+    } catch (err) {
+      console.error('Voice upload error', err);
+      toast.error(t('handoff.voiceUploadFailed'));
+    } finally {
+      setIsUploadingVoice(false);
+    }
+  };
+
+  const handleVoiceRecordingCanceled = async (field: keyof SBARData) => {
+    const recording = voiceRecordings[field];
+    if (recording?.publicId) {
+      try {
+        await fetch('/api/upload-voice', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ publicId: recording.publicId }),
+        });
+      } catch (error) {
+        console.error('Error deleting voice recording from Cloudinary:', error);
+        toast.error(t('handoff.voiceDeleteFailed'));
+        return;
+      }
+    }
+    setVoiceRecordings(prev => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    toast.info(t('handoff.voiceRemoved'));
+  };
+  
 
   const renderField = (field: keyof SBARData, label: string, placeholder: string) => (
     <div className="space-y-2">
@@ -266,6 +257,12 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
         onChange={(e) => setSbar(prev => ({ ...prev, [field]: e.target.value }))}
         rows={4}
         className="bg-gray-50/80 dark:bg-gray-900/80 border-gray-200/70 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 rounded-xl resize-none transition-all duration-200"
+      />
+      <VoiceRecorder
+        fieldName={`${t(`handoff.${field}Label`)} Voice Recording`}
+        onRecordingComplete={(audioBlob, transcript) => handleVoiceRecording(field, audioBlob, transcript)}
+        onRecordingCanceled={() => handleVoiceRecordingCanceled(field)}
+        maxDuration={300}
       />
     </div>
   );
@@ -293,55 +290,7 @@ export function HandoffReportModal({ patientId, shiftId, isOpen, onClose, onRepo
           {renderField('assessment', 'A - Assessment', 'What do I think the problem is?')}
           {renderField('recommendation', 'R - Recommendation', 'What should be done next?')}
 
-          {/* QR Code Section */}
-          <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <Label className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                {t('handoff.qrSection')}
-              </Label>
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={generateQRCode}
-                  disabled={isGeneratingQR}
-                  className="flex items-center space-x-2"
-                >
-                  <QrCode className="h-4 w-4" />
-                  <span>{isGeneratingQR ? t('handoff.generating') : t('handoff.generateQR')}</span>
-                </Button>
-                {qrCodeUrl && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={shareViaChat}
-                      className="flex items-center space-x-2"
-                    >
-                      <span>{t('handoff.shareInChat')}</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={exportPDF}
-                      className="flex items-center space-x-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>{t('handoff.exportPDF')}</span>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-            {qrCodeUrl && (
-              <div className="flex justify-center">
-                <img src={qrCodeUrl} alt="Handoff Report QR Code" className="max-w-32 max-h-32" />
-              </div>
-            )}
-          </div>
+
         </div>
 
         <DialogFooter className="pt-4 border-t border-gray-200/50 dark:border-gray-700/50">

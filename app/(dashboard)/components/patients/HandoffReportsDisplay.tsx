@@ -25,6 +25,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { dashboardTranslations } from '@/lib/dashboard-translations';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { HandoffReportModal } from './HandoffReportModal';
+import QRCode from 'qrcode';
 
 interface HandoffNote {
   _id: string;
@@ -39,8 +40,9 @@ interface HandoffNote {
   assessmentVoiceRecording?: string;
   recommendationVoiceRecording?: string;
   visibility: 'team' | 'private' | 'public';
-  author: {
+  createdBy: {
     fullName: string;
+    role: string;
     image?: string;
     initials?: string;
   };
@@ -79,8 +81,20 @@ const getReportVoiceUrls = (report: HandoffNote) => [
   { field: 'recommendation', url: report.recommendationVoiceRecording }
 ].filter(item => item.url) as { field: string; url: string }[];
 
-const getAuthorInitials = (author: { fullName: string; initials?: string }) =>
-  author.initials || author.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || '?';
+const getAuthorInitials = (createdBy: { fullName: string; initials?: string }) =>
+  createdBy.initials || createdBy.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || '?';
+
+const dataURLToBlob = (dataURL: string) => {
+  const arr = dataURL.split(',');
+  const mime = arr[0].match(/:(.*?);/)![1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
 
 export default function HandoffReportsDisplay({ patientId, shiftId, wardId, departmentId, type, allowedTypes }: HandoffReportsDisplayProps) {
   const { language } = useLanguage();
@@ -97,6 +111,7 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<{ reportId: string; field: string; isPlaying: boolean } | null>(null);
+  const [generatingQR, setGeneratingQR] = useState<Set<string>>(new Set());
   const reportFieldsRef = useRef<Record<string, string[]>>({});
   const { playingId, setOnUpdate, toggleSequence, restartSequence, stop } = useAudioPlayer();
 
@@ -178,6 +193,55 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
     } catch (error) {
       console.error('Error downloading QR code:', error);
       toast.error('Error downloading QR code');
+    }
+  };
+
+  const generateQRCode = async (reportId: string) => {
+    setGeneratingQR(prev => new Set(prev).add(reportId));
+
+    try {
+      const report = reports.find(r => r._id === reportId);
+      if (!report) {
+        toast.error('Report not found');
+        return;
+      }
+
+      // Generate QR code data URL
+      const qrData = `${window.location.origin}/handoff/${reportId}`;
+      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      // Update the report with the QR code
+      const response = await fetch(`/api/notes/handoff?id=${reportId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qrCode: qrCodeDataURL }),
+      });
+
+      if (response.ok) {
+        const updatedReport = await response.json();
+        setReports(prev => prev.map(r => r._id === reportId ? updatedReport as HandoffNote : r));
+        toast.success('QR code generated successfully');
+      } else {
+        toast.error('Failed to update report with QR code');
+      }
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      toast.error('Error generating QR code');
+    } finally {
+      setGeneratingQR(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reportId);
+        return newSet;
+      });
     }
   };
 
@@ -283,13 +347,13 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={report.author.image} />
+                      <AvatarImage src={report.createdBy?.image} />
                       <AvatarFallback className="text-xs">
-                        {getAuthorInitials(report.author)}
+                        {report.createdBy ? getAuthorInitials(report.createdBy) : '?'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-sm">{report.author.fullName}</p>
+                      <p className="font-medium text-sm">{report.createdBy?.fullName || 'Unknown'}</p>
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         <span>{new Date(report.createdAt).toLocaleString()}</span>
@@ -355,6 +419,18 @@ export default function HandoffReportsDisplay({ patientId, shiftId, wardId, depa
                               </Button>
                             )}
                           </div>
+                        )}
+                        {!report.qrCode && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => generateQRCode(report._id)}
+                            disabled={generatingQR.has(report._id)}
+                            className="h-8 w-8 p-0"
+                            title="Generate QR Code"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
                         )}
                         {report.qrCode && (
                           <>

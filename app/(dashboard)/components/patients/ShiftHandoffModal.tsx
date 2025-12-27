@@ -124,12 +124,12 @@ const ShiftHandoffModal = ({ children, wardId, departmentId, type, onHandoffCrea
       setIsUploadingVoice(true);
 
       // Upload to Cloudinary
-      const formData = new FormData();
-      formData.append('file', audioBlob, `voice-${field}-${Date.now()}.wav`);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', audioBlob, `voice-${field}-${Date.now()}.wav`);
 
       const response = await fetch('/api/upload-voice', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
       });
 
       if (response.ok) {
@@ -139,13 +139,13 @@ const ShiftHandoffModal = ({ children, wardId, departmentId, type, onHandoffCrea
           [field]: { blob: audioBlob, url: result.url }
         }));
 
-        toast.success(`Voice recording for ${field} uploaded successfully`);
+        toast.success(t('shiftHandoff.voiceUploaded').replace('{field}', field));
       } else {
         throw new Error('Upload failed');
       }
     } catch (error) {
       console.error('Voice upload error:', error);
-      toast.error('Failed to upload voice recording');
+      toast.error(t('shiftHandoff.voiceUploadFailed'));
     } finally {
       setIsUploadingVoice(false);
     }
@@ -157,7 +157,7 @@ const ShiftHandoffModal = ({ children, wardId, departmentId, type, onHandoffCrea
       delete newRecordings[field];
       return newRecordings;
     });
-    toast.info(`Voice recording for ${field} removed`);
+    toast.info(t('shiftHandoff.voiceRemoved').replace('{field}', field));
   };
 
   return (

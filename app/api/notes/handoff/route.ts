@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
-import HandoffNote from '@/models/HandoffNote';
+import HandoffReport from '@/models/HandoffReport';
 import Patient from '@/models/Patient';
 import ShiftTracking from '@/models/ShiftTracking';
 import { jsPDF } from 'jspdf';
@@ -37,15 +37,64 @@ export async function GET(req: NextRequest) {
       query.shiftId = shiftId;
     }
 
-    const reports = await HandoffNote.find(query)
+    const reports = await HandoffReport.find(query)
       .populate('patientId', 'firstName lastName mrn')
       .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
-      .populate('createdBy', 'fullName role')
+      .populate('createdBy', 'fullName role image initials')
       .sort({ createdAt: -1 });
 
     return NextResponse.json(reports, { status: 200 });
   } catch (error) {
     console.error('Error fetching handoff reports:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.organizationId) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const reportId = searchParams.get('id');
+
+    if (!reportId) {
+      return NextResponse.json({ message: 'Report ID is required' }, { status: 400 });
+    }
+
+    const body = await req.json() as {
+      qrCode?: string;
+    };
+
+    await dbConnect();
+
+    const updateData: any = {};
+    if (body.qrCode !== undefined) {
+      updateData.qrCode = body.qrCode;
+    }
+
+    const updatedReport = await HandoffReport.findOneAndUpdate(
+      {
+        _id: reportId,
+        organizationId: session.user.organizationId
+      },
+      updateData,
+      { new: true }
+    )
+      .populate('patientId', 'firstName lastName mrn')
+      .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
+      .populate('createdBy', 'fullName role image initials');
+
+    if (!updatedReport) {
+      return NextResponse.json({ message: 'Report not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(updatedReport, { status: 200 });
+  } catch (error) {
+    console.error('Error updating handoff report:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
@@ -67,11 +116,17 @@ export async function POST(req: NextRequest) {
         assessment: string;
         recommendation: string;
       };
+      voiceRecordings?: {
+        situation?: string;
+        background?: string;
+        assessment?: string;
+        recommendation?: string;
+      };
       type?: string;
       exportPDF?: boolean;
     };
 
-    const { patientId, shiftId, sbar, type, exportPDF } = body;
+    const { patientId, shiftId, sbar, voiceRecordings, type, exportPDF } = body;
 
     await dbConnect();
 
@@ -97,12 +152,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const newReport = new HandoffNote({
+    const newReport = new HandoffReport({
       patientId,
       shiftId,
       sbar,
+      situationVoiceRecording: voiceRecordings?.situation,
+      backgroundVoiceRecording: voiceRecordings?.background,
+      assessmentVoiceRecording: voiceRecordings?.assessment,
+      recommendationVoiceRecording: voiceRecordings?.recommendation,
       type: type || 'patient', // Default to patient if not provided
-      // Model expects `createdBy` and `organizationId`
+      authorRole: session.user.role,
       createdBy: session.user.id,
       organizationId: session.user.organizationId,
     });
@@ -181,7 +240,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const populatedReport = await HandoffNote.findById(newReport._id)
+    const populatedReport = await HandoffReport.findById(newReport._id)
       .populate('patientId', 'firstName lastName mrn')
       .populate('shiftId', 'user shiftDate scheduledStart scheduledEnd')
       .populate('createdBy', 'fullName role');

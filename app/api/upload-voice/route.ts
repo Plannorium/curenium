@@ -129,3 +129,51 @@ export async function POST(request: NextRequest) {
   }
 
 }
+
+export async function DELETE(request: NextRequest) {
+
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user || !session.user.organizationId) {
+
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  }
+
+  try {
+
+    const { publicId } = await request.json() as { publicId: string };
+
+    if (!publicId) {
+
+      return NextResponse.json({ error: 'No publicId provided' }, { status: 400 });
+
+    }
+
+    // Delete from Cloudinary
+
+    const result = await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+
+    if (result.result !== 'ok') {
+
+      return NextResponse.json({ error: 'Failed to delete from Cloudinary' }, { status: 500 });
+
+    }
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+
+    console.error('Voice delete error:', error);
+
+    return NextResponse.json(
+
+      { error: 'Failed to delete voice recording' },
+
+      { status: 500 }
+
+    );
+
+  }
+
+}

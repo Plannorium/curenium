@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import dbConnect from '@/lib/dbConnect';
-import HandoffNote from '@/models/HandoffNote';
+import HandoffReport  from '@/models/HandoffReport';
 import QRCode from 'qrcode';
 
 export async function GET(
@@ -22,7 +22,7 @@ export async function GET(
   await dbConnect();
 
   try {
-    const handoff = await HandoffNote.findOne({
+    const handoff = await HandoffReport.findOne({
       _id: id,
       organizationId: session.user.organizationId
     })
